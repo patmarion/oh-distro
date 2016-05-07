@@ -190,12 +190,12 @@ int main(int argc, char* argv[])
 
   Vector3d left_des_orient_lb = rotmat2rpy(left_foot_transform.rotation());
   Vector3d left_des_orient_ub = rotmat2rpy(left_foot_transform.rotation());
-  left_des_orient_lb(2) = -numeric_limits<double>::infinity();
-  left_des_orient_ub(2) = numeric_limits<double>::infinity();
+//  left_des_orient_lb(2) = -numeric_limits<double>::infinity();
+//  left_des_orient_ub(2) = numeric_limits<double>::infinity();
   Vector3d right_des_orient_lb = rotmat2rpy(right_foot_transform.rotation());
   Vector3d right_des_orient_ub = rotmat2rpy(right_foot_transform.rotation());
-  right_des_orient_lb(2) = -numeric_limits<double>::infinity();
-  right_des_orient_ub(2) = numeric_limits<double>::infinity();
+//  right_des_orient_lb(2) = -numeric_limits<double>::infinity();
+//  right_des_orient_ub(2) = numeric_limits<double>::infinity();
   WorldEulerConstraint left_foot_euler_constraint(&robot, left_foot_id, left_des_orient_lb,
       left_des_orient_ub);
   WorldEulerConstraint right_foot_euler_constraint(&robot, right_foot_id, right_des_orient_lb,
@@ -205,14 +205,14 @@ int main(int argc, char* argv[])
   Vector3d left_position_ub = left_foot_transform.translation();
   Vector3d right_position_lb = right_foot_transform.translation();
   Vector3d right_position_ub = right_foot_transform.translation();
-  left_position_lb(0) = -numeric_limits<double>::infinity();
-  left_position_lb(1) = -numeric_limits<double>::infinity();
-  left_position_ub(0) = numeric_limits<double>::infinity();
-  left_position_ub(1) = numeric_limits<double>::infinity();
-  right_position_lb(0) = -numeric_limits<double>::infinity();
-  right_position_lb(1) = -numeric_limits<double>::infinity();
-  right_position_ub(0) = numeric_limits<double>::infinity();
-  right_position_ub(1) = numeric_limits<double>::infinity();
+//  left_position_lb(0) = -numeric_limits<double>::infinity();
+//  left_position_lb(1) = -numeric_limits<double>::infinity();
+//  left_position_ub(0) = numeric_limits<double>::infinity();
+//  left_position_ub(1) = numeric_limits<double>::infinity();
+//  right_position_lb(0) = -numeric_limits<double>::infinity();
+//  right_position_lb(1) = -numeric_limits<double>::infinity();
+//  right_position_ub(0) = numeric_limits<double>::infinity();
+//  right_position_ub(1) = numeric_limits<double>::infinity();
   WorldPositionConstraint left_foot_pos_constraint(&robot, left_foot_id, Vector3d(0, 0, 0),
       left_position_lb, left_position_ub);
   WorldPositionConstraint right_foot_pos_constraint(&robot, right_foot_id, Vector3d(0, 0, 0),
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
   constraints.push_back(&right_foot_pos_constraint);
   constraints.push_back(&left_foot_euler_constraint);
   constraints.push_back(&right_foot_euler_constraint);
-  constraints.push_back(&relative_pos_constraint);
+//  constraints.push_back(&relative_pos_constraint);
 
 //	QUASI-STATIC CONSTRAINT
   Matrix3Xd left_contact_points;
