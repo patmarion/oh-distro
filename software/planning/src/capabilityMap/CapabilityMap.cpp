@@ -707,6 +707,7 @@ void CapabilityMap::setActiveSide(const Side side)
     {
       vox(1) *= -1;
     }
+    this->endeffector_axis = -this->endeffector_axis; //FIXME load different axis for each side
   }
   this->active_side = side;
   if (side == this->Side::LEFT)
