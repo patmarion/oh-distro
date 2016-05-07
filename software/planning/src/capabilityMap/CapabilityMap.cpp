@@ -699,6 +699,42 @@ void CapabilityMap::setOccupancyMapOrientations()
   }
 }
 
+MatrixX2d CapabilityMap::getOrientationBounds(int orient)
+{
+  MatrixX2d bounds(3,2);
+  VectorXd::Index roll_idx;
+  ((ArrayXd)(occupancy_map_orient_steps["roll"]) - occupancy_map_orientations[orient](0)).abs().minCoeff(&roll_idx);
+  VectorXd::Index pitch_idx;
+  ((ArrayXd)(occupancy_map_orient_steps["pitch"]) - occupancy_map_orientations[orient](1)).abs().minCoeff(&pitch_idx);
+  VectorXd::Index yaw_idx;
+  ((ArrayXd)(occupancy_map_orient_steps["yaw"]) - occupancy_map_orientations[orient](2)).abs().minCoeff(&yaw_idx);
+  int roll_min_idx =  max((int)roll_idx - 1, 0);
+  int picth_min_idx =  max((int)pitch_idx - 1, 0);
+  int yaw_min_idx =  max((int)yaw_idx - 1, 0);
+  int roll_max_idx =  min((int)roll_idx + 1, (int)occupancy_map_orient_steps["roll"].rows()-1);
+  int pitch_max_idx =  min((int)pitch_idx + 1, (int)occupancy_map_orient_steps["pitch"].size()-1);
+  int yaw_max_idx =  min((int)yaw_idx + 1, (int)occupancy_map_orient_steps["yaw"].size()-1);
+//  cout << occupancy_map_orientations[orient] << endl;
+  bounds(0,0) = (occupancy_map_orient_steps["roll"](roll_idx) + occupancy_map_orient_steps["roll"](roll_min_idx))/2;
+  bounds(1,0) = (occupancy_map_orient_steps["pitch"](pitch_idx) + occupancy_map_orient_steps["pitch"](picth_min_idx))/2;
+  bounds(2,0) = (occupancy_map_orient_steps["yaw"](yaw_idx) + occupancy_map_orient_steps["yaw"](yaw_min_idx))/2;
+  bounds(0,1) = (occupancy_map_orient_steps["roll"](roll_idx) + occupancy_map_orient_steps["roll"](roll_max_idx))/2;
+  bounds(1,1) = (occupancy_map_orient_steps["pitch"](pitch_idx) + occupancy_map_orient_steps["pitch"](pitch_max_idx))/2;
+  bounds(2,1) = (occupancy_map_orient_steps["yaw"](yaw_idx) + occupancy_map_orient_steps["yaw"](yaw_max_idx))/2;
+//  cout << bounds << endl;
+  return bounds;
+}
+
+MatrixX2d CapabilityMap::getPositionBounds(Vector3d position)
+{
+  MatrixX2d bounds(3,2);
+  bounds.block(0,0,3,1) = position - voxel_edge/2 * Vector3d(1, 1, 1);
+  bounds.block(0,1,3,1) = position + voxel_edge/2 * Vector3d(1, 1, 1);
+//  cout << position << endl;
+//  cout << bounds << endl;
+  return bounds;
+}
+
 void CapabilityMap::setActiveSide(const Side side)
 {
   if (this->active_side != side)

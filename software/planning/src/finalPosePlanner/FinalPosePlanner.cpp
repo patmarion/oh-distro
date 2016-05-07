@@ -110,9 +110,11 @@ int FinalPosePlanner::findFinalPose(RigidBodyTree &robot, const string end_effec
     Vector3d orientation = capability_map.getOrientation(sample[1]);
     Vector3d position = rpy2rotmat(orientation) * capability_map.getVoxelCentre(sample[0])
         + endeffector_final_pose.block<3, 1>(0, 0);
+    MatrixX2d position_bounds = capability_map.getPositionBounds(position);
+    MatrixX2d orientation_bounds = capability_map.getOrientationBounds(sample[1]);
     WorldPositionConstraint base_position_constraint(&robot, base_id, capability_map.getMapCentre(),
-        position, position);
-    WorldEulerConstraint base_euler_constraint(&robot, base_id, orientation, orientation);
+        position_bounds.block<3,1>(0,0), position_bounds.block<3,1>(0,1));
+    WorldEulerConstraint base_euler_constraint(&robot, base_id, orientation_bounds.block<3,1>(0,0), orientation_bounds.block<3,1>(0,1));
     constraints.end()[-1] = (&base_position_constraint);
     constraints.end()[-2] = (&base_euler_constraint);
     constraints_timer.stop();
