@@ -118,10 +118,14 @@ int FinalPosePlanner::findFinalPose(RigidBodyTree &robot, const string end_effec
     constraints.end()[-1] = (&base_position_constraint);
     constraints.end()[-2] = (&base_euler_constraint);
     constraints_timer.stop();
+    // move the model where the torso is to speed up IK
+    VectorXd modified_configuration = nominal_configuration;
+    modified_configuration.block(0,0,2,1) = position.block(0,0,2,1);
+    modified_configuration(5) = orientation(2);
 
 //		COMPUTE CONFIGURATION
     IK_timer.start();
-    inverseKin(&robot, nominal_configuration, nominal_configuration, constraints.size(),
+    inverseKin(&robot, modified_configuration, nominal_configuration, constraints.size(),
         constraints.data(), final_configuration, ik_info, infeasible_constraints, ik_options);
     IK_timer.stop();
     vector<string> name;
