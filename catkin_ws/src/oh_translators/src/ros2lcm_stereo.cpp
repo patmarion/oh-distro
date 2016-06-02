@@ -61,14 +61,15 @@ private:
   bot_core::images_t images_msg_out_;
   bot_core::image_t image_a_lcm_;
   bot_core::image_t image_b_lcm_;
+  int image_a_type_, image_b_type_;
   void publishStereo(const sensor_msgs::ImageConstPtr& image_a_ros, const sensor_msgs::CameraInfoConstPtr& info_a_ros,
-                     const sensor_msgs::ImageConstPtr& image_ros_b, const sensor_msgs::CameraInfoConstPtr& info_b_ros,
+                     const sensor_msgs::ImageConstPtr& image_b_ros, const sensor_msgs::CameraInfoConstPtr& info_b_ros,
                      std::string camera_out);
   image_transport::ImageTransport it_;
 
   ///////////////////////////////////////////////////////////////////////////////
   void head_stereo_cb(const sensor_msgs::ImageConstPtr& image_a_ros, const sensor_msgs::CameraInfoConstPtr& info_cam_a,
-                      const sensor_msgs::ImageConstPtr& image_ros_b, const sensor_msgs::CameraInfoConstPtr& info_cam_b);
+                      const sensor_msgs::ImageConstPtr& image_b_ros, const sensor_msgs::CameraInfoConstPtr& info_cam_b);
   image_transport::SubscriberFilter image_a_ros_sub_, image_b_ros_sub_;
   message_filters::Subscriber<sensor_msgs::CameraInfo> info_a_ros_sub_, info_b_ros_sub_;
   message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image,
@@ -96,10 +97,17 @@ App::App(ros::NodeHandle node_in) :
 
   image_a_string = head_stereo_root + "/left/image_rect_color";
   info_a_string = image_a_string + "/camera_info";
-  // rim_string = head_stereo_root + "/right/image_rect_color";
-  image_b_string = head_stereo_root + "/right/image_rect";
+  image_a_type_ = bot_core::images_t::LEFT;
+
+//  image_b_string = head_stereo_root + "/right/image_rect";
+//  info_b_string = image_b_string + "/camera_info";
+
+  image_b_string = head_stereo_root + "/left/disparity";
   info_b_string = image_b_string + "/camera_info";
+  image_b_type_ = bot_core::images_t::DISPARITY;
+
   std::cout << image_a_string << " is the image_a topic subscription [for stereo]\n";
+  std::cout << image_b_string << " is the image_b topic subscription [for stereo]\n";  
   image_a_ros_sub_.subscribe(it_, ros::names::resolve(image_a_string), 30);
   info_a_ros_sub_.subscribe(node_, ros::names::resolve(info_a_string), 30);
   image_b_ros_sub_.subscribe(it_, ros::names::resolve(image_b_string), 30);
@@ -145,16 +153,16 @@ void App::head_stereo_cb(const sensor_msgs::ImageConstPtr& image_a_ros,
 
 void App::publishStereo(const sensor_msgs::ImageConstPtr& image_a_ros,
                         const sensor_msgs::CameraInfoConstPtr& info_a_ros,
-                        const sensor_msgs::ImageConstPtr& image_ros_b,
+                        const sensor_msgs::ImageConstPtr& image_b_ros,
                         const sensor_msgs::CameraInfoConstPtr& info_b_ros, std::string camera_out)
 {
   prepImage(image_a_lcm_, image_a_ros);
-  prepImage(image_b_lcm_, image_ros_b);
+  prepImage(image_b_lcm_, image_b_ros);
 
   images_msg_out_.images[0] = image_a_lcm_;
   images_msg_out_.images[1] = image_b_lcm_;
-  images_msg_out_.image_types[0] = 0;
-  images_msg_out_.image_types[1] = 1;
+  images_msg_out_.image_types[0] = image_a_type_;
+  images_msg_out_.image_types[1] = image_b_type_;
 
   images_msg_out_.n_images = images_msg_out_.images.size();
   images_msg_out_.utime = (int64_t)floor(image_a_ros->header.stamp.toNSec() / 1000);
@@ -243,7 +251,7 @@ void App::prepImage(bot_core::image_t& lcm_image, const sensor_msgs::ImageConstP
   }
   else if (1 == 2)
   {
-    std::cout << ros_image->encoding << " | encoded not fully working - FIXME\n";
+    std::cout << ros_image->encoding << " | A encoded not fully working - FIXME\n";
     exit(-1);
     return;
 
@@ -262,17 +270,22 @@ void App::prepImage(bot_core::image_t& lcm_image, const sensor_msgs::ImageConstP
     lcm_image.size = zlib_compressed_size;
     // images_msg_out_.image_types[1] = 5;// bot_core::images_t::DISPARITY_ZIPPED );
   }
-  else
+  else if (ros_image->encoding.compare("mono16") == 0)
   {
-    std::cout << ros_image->encoding << " | encoded not fully working - FIXME\n";
-    exit(-1);
-    return;
-
     n_colors = 2;  // 2 bytes per pixel
 
-    lcm_image.data.resize(2 * isize);
-    lcm_image.size = 2 * isize;
-    // images_msg_out_.image_types[1] = 2;// bot_core::images_t::DISPARITY );
+    void* bytes = const_cast<void*>(static_cast<const void*>(ros_image->data.data()));
+    cv::Mat mat;
+    mat = cv::Mat(ros_image->height, ros_image->width, CV_16UC1, bytes, n_colors * ros_image->width);
+
+    lcm_image.data.resize(n_colors * isize);
+    memcpy(&lcm_image.data[0], mat.data, n_colors * isize);
+    lcm_image.size = n_colors * isize;
+    //lcm_image.pixelformat is not used for disparity images
+
+  }else{
+    std::cout << ros_image->encoding << " | not understood\n";
+    exit(-1);
   }
 
   lcm_image.width = ros_image->width;
