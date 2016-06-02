@@ -33,8 +33,9 @@ private:
   lcm::LCM lcmPublish_;
   ros::NodeHandle node_;
 
-  ros::Subscriber sick_lidar_sub_;
+  ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_;
   void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg);
+  void spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg);
   void publishLidar(const sensor_msgs::LaserScanConstPtr& msg, std::string channel);
 
   ros::Subscriber ekf_odom_sub_;
@@ -42,6 +43,11 @@ private:
 
   ros::Subscriber imuSensorSub_;
   void imuSensorCallback(const sensor_msgs::ImuConstPtr& msg);
+
+
+  ros::Subscriber headJointStatesSub_;
+  void publishMultisenseState(int64_t utime, float position, float velocity);
+  void headJointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
 
 };
 
@@ -55,11 +61,16 @@ App::App(ros::NodeHandle node_)
 
   sick_lidar_sub_ = node_.subscribe(std::string("/sick_scan"), 100, &App::sick_lidar_cb,
                                       this);
+  spinning_lidar_sub_ = node_.subscribe(std::string("/lidar_scan"), 100, &App::spinning_lidar_cb,
+                                      this);
   ekf_odom_sub_ = node_.subscribe(std::string("/robot_pose_ekf/odom_combined"), 100, &App::ekf_odom_cb,
                                     this);
 
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                     &App::imuSensorCallback, this);
+
+  headJointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100, &App::headJointStatesCallback,
+                                            this);
 }
 
 App::~App()
@@ -172,6 +183,12 @@ void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg)
   publishLidar(msg, "SICK_SCAN");
 }
 
+void App::spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg)
+{
+  publishLidar(msg, "SCAN");
+}
+
+
 void App::publishLidar(const sensor_msgs::LaserScanConstPtr& msg, std::string channel)
 {
   bot_core::planar_lidar_t scan_out;
@@ -185,6 +202,53 @@ void App::publishLidar(const sensor_msgs::LaserScanConstPtr& msg, std::string ch
   lcmPublish_.publish(channel.c_str(), &scan_out);
 }
 
+
+
+void App::headJointStatesCallback(const sensor_msgs::JointStateConstPtr& msg)
+{
+  if (msg->name.size() > 1)
+  {
+    // ROS_ERROR("Error: Unrecognised multisense joint: %s",msg->name[0].c_str());
+    return;
+  }
+
+  int64_t utime = (int64_t)floor(msg->header.stamp.toNSec() / 1000);
+  publishMultisenseState(utime, msg->position[0], msg->velocity[0]);
+
+  /*
+   std::string jname = "hokuyo_joint";
+   int i = std::distance( msg->name.begin(), std::find( msg->name.begin(), msg->name.end(), jname ) );
+   if( i == msg->name.size() ){
+   // std::cout << "not found: " << jname << "\n";
+   }else{
+   publishMultisenseState(utime, msg->position[i], msg->velocity[i]);
+   }
+   */
+}
+
+void App::publishMultisenseState(int64_t utime, float position, float velocity)
+{
+  bot_core::joint_state_t msg_out;
+  msg_out.utime = utime;
+  msg_out.joint_position.push_back(position);
+  msg_out.joint_velocity.push_back(velocity);
+  msg_out.joint_effort.push_back(0);
+  msg_out.joint_name.push_back("hokuyo_joint");
+  msg_out.num_joints = 1;
+  lcmPublish_.publish("MULTISENSE_STATE", &msg_out);
+
+  // publish message for bot_frames
+  bot_core::rigid_transform_t preToPostFrame;
+  preToPostFrame.utime = utime;
+  preToPostFrame.trans[0] = 0;
+  preToPostFrame.trans[1] = 0;
+  preToPostFrame.trans[2] = 0;
+  preToPostFrame.quat[0] = std::cos(position / 2);
+  preToPostFrame.quat[1] = 0;
+  preToPostFrame.quat[2] = 0;
+  preToPostFrame.quat[3] = std::sin(position / 2);
+  lcmPublish_.publish("PRE_SPINDLE_TO_POST_SPINDLE", &preToPostFrame);
+}
 
 
 int main(int argc, char **argv)
