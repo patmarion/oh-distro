@@ -46,6 +46,8 @@
 #include <lcm/lcm-cpp.hpp>
 #include <lcmtypes/bot_core.hpp>
 #include <opencv2/opencv.hpp>
+#include <zlib.h>
+
 
 class App
 {
@@ -92,6 +94,13 @@ App::App(ros::NodeHandle node_in) :
     std::cerr << "ERROR: lcm is not good()" << std::endl;
   }
 
+  // allocate space for zlib compressing depth data
+  depth_compress_buf_size_ = 1024 * 1024 * sizeof(int8_t) * 10;
+  depth_compress_buf_ = (uint8_t*)malloc(depth_compress_buf_size_);
+  do_jpeg_compress_ = true;
+  jpeg_quality_ = 95;  // 95 is opencv default
+  do_zlib_compress_ = true;
+
   std::string image_a_string, info_a_string, image_b_string, info_b_string;
   std::string head_stereo_root = "";
 
@@ -99,12 +108,25 @@ App::App(ros::NodeHandle node_in) :
   info_a_string = image_a_string + "/camera_info";
   image_a_type_ = bot_core::images_t::LEFT;
 
-//  image_b_string = head_stereo_root + "/right/image_rect";
-//  info_b_string = image_b_string + "/camera_info";
-
-  image_b_string = head_stereo_root + "/left/disparity";
-  info_b_string = image_b_string + "/camera_info";
-  image_b_type_ = bot_core::images_t::DISPARITY;
+  bool output_right_image = false; // otherwise the disparity image
+  if(output_right_image)
+  {
+    image_b_string = head_stereo_root + "/right/image_rect";
+    info_b_string = image_b_string + "/camera_info";
+    image_b_type_ = bot_core::images_t::RIGHT;
+  }
+  else
+  {
+    image_b_string = head_stereo_root + "/left/disparity";
+    info_b_string = image_b_string + "/camera_info";
+    if (do_zlib_compress_){
+      image_b_type_ = bot_core::images_t::DISPARITY_ZIPPED;
+    }
+    else
+    {
+      image_b_type_ = bot_core::images_t::DISPARITY;
+    }
+  }
 
   std::cout << image_a_string << " is the image_a topic subscription [for stereo]\n";
   std::cout << image_b_string << " is the image_b topic subscription [for stereo]\n";  
@@ -117,18 +139,11 @@ App::App(ros::NodeHandle node_in) :
 
   images_msg_out_.images.push_back(image_a_lcm_);
   images_msg_out_.images.push_back(image_b_lcm_);
-  images_msg_out_.image_types.push_back(0);
-  images_msg_out_.image_types.push_back(2);
-  // bot_core::images_t::LEFT
+  images_msg_out_.image_types.push_back(image_a_type_);
+  images_msg_out_.image_types.push_back(image_b_type_);
   // 0 left, 1 right, 2 DISPARITY, 3 maskzipped, 4 depth mm, 5 DISPARITY_ZIPPED, 6 DEPTH_MM_ZIPPED
 
-  // allocate space for zlib compressing depth data
 
-  depth_compress_buf_size_ = 800 * 800 * sizeof(int8_t) * 10;
-  depth_compress_buf_ = (uint8_t*)malloc(depth_compress_buf_size_);
-  do_jpeg_compress_ = true;
-  jpeg_quality_ = 95;  // 95 is opencv default
-  do_zlib_compress_ = true;
 }
 
 App::~App()
@@ -161,8 +176,6 @@ void App::publishStereo(const sensor_msgs::ImageConstPtr& image_a_ros,
 
   images_msg_out_.images[0] = image_a_lcm_;
   images_msg_out_.images[1] = image_b_lcm_;
-  images_msg_out_.image_types[0] = image_a_type_;
-  images_msg_out_.image_types[1] = image_b_type_;
 
   images_msg_out_.n_images = images_msg_out_.images.size();
   images_msg_out_.utime = (int64_t)floor(image_a_ros->header.stamp.toNSec() / 1000);
@@ -249,41 +262,34 @@ void App::prepImage(bot_core::image_t& lcm_image, const sensor_msgs::ImageConstP
       }
     }
   }
-  else if (1 == 2)
-  {
-    std::cout << ros_image->encoding << " | A encoded not fully working - FIXME\n";
-    exit(-1);
-    return;
-
-    n_colors = 2;  // 2 bytes per pixel
-
-    /*
-     int uncompressed_size = isize;
-     // Insert proper compression here if needed:
-     unsigned long compressed_size = depth_compress_buf_size_;
-     compress2( depth_compress_buf_, &compressed_size, (const Bytef*) imageDataP, uncompressed_size,
-     Z_BEST_SPEED);
-     lcm_image.data.resize(compressed_size);
-     */
-    unsigned long zlib_compressed_size = 1000;  // fake compressed size
-    lcm_image.data.resize(zlib_compressed_size);
-    lcm_image.size = zlib_compressed_size;
-    // images_msg_out_.image_types[1] = 5;// bot_core::images_t::DISPARITY_ZIPPED );
-  }
   else if (ros_image->encoding.compare("mono16") == 0)
   {
     n_colors = 2;  // 2 bytes per pixel
 
-    void* bytes = const_cast<void*>(static_cast<const void*>(ros_image->data.data()));
-    cv::Mat mat;
-    mat = cv::Mat(ros_image->height, ros_image->width, CV_16UC1, bytes, n_colors * ros_image->width);
-
-    lcm_image.data.resize(n_colors * isize);
-    memcpy(&lcm_image.data[0], mat.data, n_colors * isize);
-    lcm_image.size = n_colors * isize;
+    if (do_zlib_compress_)
+    {
+      int uncompressed_size = n_colors*isize;
+      unsigned long compressed_size = depth_compress_buf_size_;
+      compress2( depth_compress_buf_, &compressed_size, (const Bytef*) ros_image->data.data(), uncompressed_size,
+          Z_BEST_SPEED);
+      lcm_image.data.resize(compressed_size);      
+      memcpy(&lcm_image.data[0], depth_compress_buf_, compressed_size);
+      lcm_image.size = compressed_size;
+    }
+    else
+    {
+      // void* bytes = const_cast<void*>(static_cast<const void*>(ros_image->data.data()));
+      // cv::Mat mat;
+      // mat = cv::Mat(ros_image->height, ros_image->width, CV_16UC1, bytes, n_colors * ros_image->width);
+      lcm_image.data.resize(n_colors * isize);
+      memcpy(&lcm_image.data[0], ros_image->data.data(), n_colors * isize);
+      lcm_image.size = n_colors * isize;
+    }
     //lcm_image.pixelformat is not used for disparity images
 
-  }else{
+  }
+  else
+  {
     std::cout << ros_image->encoding << " | not understood\n";
     exit(-1);
   }
