@@ -78,7 +78,7 @@ pods_use_pkg_config_packages(ros2lcm_camera lcm bot2-core eigen3 opencv)
 add_dependencies(ros2lcm_camera ipab_msgs_generate_messages_cpp ihmc_msgs_generate_messages_cpp)
 
 add_executable(ros2lcm_stereo src/ros2lcm_stereo.cpp)
-target_link_libraries(ros2lcm_stereo ${catkin_LIBRARIES})
+target_link_libraries(ros2lcm_stereo ${catkin_LIBRARIES} z)
 pods_use_pkg_config_packages(ros2lcm_stereo lcm bot2-core eigen3 bot2-core eigen3 image_io_utils opencv)
 add_dependencies(ros2lcm_stereo ipab_msgs_generate_messages_cpp ihmc_msgs_generate_messages_cpp)
 
