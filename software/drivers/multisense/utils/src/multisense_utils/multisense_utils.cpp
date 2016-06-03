@@ -134,13 +134,6 @@ void multisense_utils::unpack_multisense(const uint8_t* depth_data, const uint8_
 }
 
 
-// msg - raw input data
-// repro_matrix is reprojection matrix e.g. this was the loan unit in feb 2013:
-//   [1, 0, 0, -512.5;
-//    0, 1, 0, -272.5;
-//    0, 0, 0, 606.034;
-//    0, 0, 14.2914745276283, 0]
-// cloud - output pcl cloud
 void multisense_utils::unpack_multisense(const bot_core_images_t *msg, cv::Mat_<double> repro_matrix, 
                                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud){
   bool is_rgb=false;
