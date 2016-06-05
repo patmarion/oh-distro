@@ -44,13 +44,15 @@ class CommandLineConfig{
       // Defaults - not read from command line:
       use_torque_adjustment = false;
 
+      use_drifting_ihmc = false;
     }
     ~CommandLineConfig(){};
 
     std::string output_channel;
     bool use_ihmc;
-    bool use_torque_adjustment;
     bool pin_floating_base;
+    bool use_torque_adjustment;
+    bool use_drifting_ihmc;
 
 };
 
