@@ -60,13 +60,18 @@ state_sync_nasa::state_sync_nasa(std::shared_ptr<lcm::LCM> &lcm_,
         iter->first, model.joint_limit_max[iter->second]));
   }
 
+  std::string ihmc_channel = "POSE_BODY_ALT";
+  // Listen to a different channel to get a POSE which drifts (used with SCS simulation)
+  if (cl_cfg_->use_drifting_ihmc)
+    ihmc_channel = "POSE_BODY_ALT_WITH_DRIFT";
+
   // Subscribe to required signals
   lcm::Subscription* sub0 = lcm_->subscribe("CORE_ROBOT_STATE", &state_sync_nasa::coreRobotHandler, this);
   lcm::Subscription* sub1 = lcm_->subscribe("FORCE_TORQUE", &state_sync_nasa::forceTorqueHandler, this);
-  lcm::Subscription* sub2 = lcm_->subscribe("POSE_BODY_ALT",&state_sync_nasa::poseIHMCHandler,this); // Always provided by the IHMC Driver
+  lcm::Subscription* sub2 = lcm_->subscribe(ihmc_channel, &state_sync_nasa::poseIHMCHandler,this); // Always provided by the IHMC Driver
   lcm::Subscription* sub3;
   if (cl_cfg_->use_ihmc){
-    sub3 = lcm_->subscribe("POSE_BODY_ALT",&state_sync_nasa::poseBodyHandler,this);  // If the Pronto state estimator isn't running
+    sub3 = lcm_->subscribe(ihmc_channel, &state_sync_nasa::poseBodyHandler,this);  // If the Pronto state estimator isn't running
   }else{
     sub3 = lcm_->subscribe("POSE_BODY",&state_sync_nasa::poseBodyHandler,this);  // Always provided the state estimator:
   }
@@ -387,6 +392,7 @@ main(int argc, char ** argv){
   opt.add(cl_cfg->output_channel, "o", "output_channel","Output Channel for robot state msg");
   opt.add(cl_cfg->use_ihmc, "i", "use_ihmc","Use the IHMC estimate of the body frame in ERS");
   opt.add(cl_cfg->pin_floating_base, "pinned", "pinned_floating_base", "pin floating base position");
+  opt.add(cl_cfg->use_drifting_ihmc, "d", "use_drifting_ihmc","Use drifting ihmc pose POSE_BODY_ALT_WITH_DRIFT");
   opt.parse();
 
   std::shared_ptr<lcm::LCM> lcm(new lcm::LCM());
