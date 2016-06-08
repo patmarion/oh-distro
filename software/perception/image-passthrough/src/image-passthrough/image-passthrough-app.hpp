@@ -7,8 +7,8 @@
 
 #include "image-passthrough.hpp"
 
-#include <visualization_utils/GlKinematicBody.hpp>
-#include <visualization_utils/GlKinematicBody.hpp>
+//#include <visualization_utils/GlKinematicBody.hpp>
+//#include <visualization_utils/GlKinematicBody.hpp>
 
 #include <pronto_utils/pronto_vis.hpp> // visualize pt clds
 #include <rgbd_simulation/rgbd_primitives.hpp> // to create basic meshes
@@ -17,10 +17,10 @@
 #include <model-client/model-client.hpp> // Receive the robot model
 
 #include <path_util/path_util.h>
-#include <affordance/AffordanceUtils.hpp>
+//#include <affordance/AffordanceUtils.hpp>
 
-#include "lcmtypes/drc/affordance_plus_t.hpp"
-#include "lcmtypes/drc/affordance_plus_collection_t.hpp"
+//#include "lcmtypes/drc/affordance_plus_t.hpp"
+//#include "lcmtypes/drc/affordance_plus_collection_t.hpp"
 
 
 #include <ConciseArgs>
@@ -96,13 +96,13 @@ class Pass{
     
     // LCM:
     boost::shared_ptr<lcm::LCM> lcm_;
-    void robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::robot_state_t* msg);   
-    void affordancePlusHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::affordance_plus_collection_t* msg);
+    void robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::robot_state_t* msg);   
+    //void affordancePlusHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::affordance_plus_collection_t* msg);
     
     // External Objects:
     BotParam* botparam_;
     pronto_vis* pc_vis_;
-    boost::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
+//    boost::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
     image_io_utils*  imgutils_; 
     SimExample::Ptr simexample;
     boost::shared_ptr<rgbd_primitives>  prim_; // this should be moved into the library
@@ -120,15 +120,15 @@ class Pass{
     
     
     std::map<std::string, boost::shared_ptr<urdf::Link> > links_map_;
-    boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
+//    boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
     pcl::PolygonMesh::Ptr combined_aff_mesh_ ;
     bool aff_mesh_filled_;
     
-    AffordanceUtils affutils;
+//    AffordanceUtils affutils;
     
     void prepareModel();
     
-    void affordancePlusInterpret(drc::affordance_plus_t affplus, int aff_uid, pcl::PolygonMesh::Ptr &mesh_out);
+//    void affordancePlusInterpret(drc::affordance_plus_t affplus, int aff_uid, pcl::PolygonMesh::Ptr &mesh_out);
     
 };
 

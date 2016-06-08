@@ -27,7 +27,7 @@
 #include <boost/shared_ptr.hpp>
 #include <lcm/lcm-cpp.hpp>
 
-#include "lcmtypes/drc/robot_state_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <bot_core/bot_core.h>
 
 #include "urdf/model.h"
@@ -97,9 +97,9 @@ class App{
     
   private:
     void robotStateHandler(const lcm::ReceiveBuffer* rbuf, 
-                             const std::string& channel, const  drc::robot_state_t* msg);    
+                             const std::string& channel, const  bot_core::robot_state_t* msg);    
     
-    void solveFK(drc::robot_state_t state);
+    void solveFK(bot_core::robot_state_t state);
     
     vector<double> trans_;
     vector<double> rpy_;
@@ -113,7 +113,7 @@ class App{
     KDL::TreeFkSolverPosFull_recursive* fksolver_;
     map<string, KDL::Frame > cartpos_;
 
-    drc::robot_state_t rstate_;
+    bot_core::robot_state_t rstate_;
 
     bool rstate_init_;
     bool cartpos_ready_;
@@ -226,13 +226,13 @@ void App::cameraHandler(const lcm::ReceiveBuffer* rbuf, const std::string& chann
 
 
 
-void App::robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::robot_state_t* msg){
+void App::robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::robot_state_t* msg){
   rstate_= *msg;
   rstate_init_ = true;
 }
   
  
-void App::solveFK(drc::robot_state_t state){
+void App::solveFK(bot_core::robot_state_t state){
   // 0. Extract World Pose of body:
   world_to_body_.setIdentity();
   world_to_body_.translation()  << state.pose.translation.x, state.pose.translation.y, state.pose.translation.z;
