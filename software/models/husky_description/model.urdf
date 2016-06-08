@@ -312,30 +312,39 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <child link="rear_bumper_link"/>
   </joint>
   <!-- Spawn the top plate -->
-  <link name="top_plate_link">
+  <!-- Corresponds to the one provided by Clearpath, added by gtinchev -->
+  <link name="topPlate">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://husky_description/meshes/top_plate.dae"/>
+        <mesh filename="package://husky_description/meshes/short_top_plate.STL"/>
       </geometry>
+      <material name="black">
+        <color rgba="0.6 0.6 0.6 1"/>
+      </material>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://husky_description/meshes/top_plate.dae"/>
-      </geometry>
-    </collision>
-    <collision>
-      <!-- Extra collision tag for widgets on top plate -->
-      <geometry>
-        <box rpy="0 0 0" size="0.32 0.41 0.09"/>
-      </geometry>
-    </collision>
   </link>
   <!-- Attach top plate -->
-  <joint name="top_plate_joint" type="fixed">
+  <!-- Corresponds to the one provided by Clearpath, added by gtinchev -->
+  <joint name="base_link_to_topPlate" type="fixed">
     <parent link="base_link"/>
-    <child link="top_plate_link"/>
-    <origin rpy="0 0 0" xyz="0.0812 0 0.245"/>
+    <child link="topPlate"/>
+    <origin xyz="0.02 0.0 0.2503" rpy="0.0 0.0 0.0"/>
   </joint>
+  <!-- Attach scaffolding at the back, provided by Clearpath, added by gtinchev -->
+  <joint name="topPlate_to_300Arch" type="fixed">
+    <parent link="topPlate"/>
+    <child link="300Arch"/>
+    <origin xyz="-0.28 0.0 0.3" rpy="0.0 0.0 3.14159"/>
+  </joint>
+
+  <link name="300Arch">
+    <visual>
+      <geometry>
+        <mesh filename="package://husky_description/meshes/300Arch.STL"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.6 0.6 0.6 1"/>
+      </material>
+    </visual>
+  </link>
 </robot>
