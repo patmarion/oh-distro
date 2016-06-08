@@ -8,7 +8,7 @@
 #include "image-passthrough.hpp"
 
 //#include <visualization_utils/GlKinematicBody.hpp>
-//#include <visualization_utils/GlKinematicBody.hpp>
+#include <renderer_rs/GlKinematicBody.hpp>
 
 #include <pronto_utils/pronto_vis.hpp> // visualize pt clds
 #include <rgbd_simulation/rgbd_primitives.hpp> // to create basic meshes
@@ -102,7 +102,7 @@ class Pass{
     // External Objects:
     BotParam* botparam_;
     pronto_vis* pc_vis_;
-//    boost::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
+    boost::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
     image_io_utils*  imgutils_; 
     SimExample::Ptr simexample;
     boost::shared_ptr<rgbd_primitives>  prim_; // this should be moved into the library
@@ -120,7 +120,7 @@ class Pass{
     
     
     std::map<std::string, boost::shared_ptr<urdf::Link> > links_map_;
-//    boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
+    boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
     pcl::PolygonMesh::Ptr combined_aff_mesh_ ;
     bool aff_mesh_filled_;
     

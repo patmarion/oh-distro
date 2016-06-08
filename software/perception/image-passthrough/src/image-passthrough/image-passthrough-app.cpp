@@ -94,7 +94,7 @@ Pass::Pass(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_,
            verbose_(verbose_){
 
   // Construct the simulation method:
-  std::string path_to_shaders;// = string(getBasePath()) + "/bin/";
+  std::string path_to_shaders = string(getBasePath()) + "/bin/";
   simexample = SimExample::Ptr (new SimExample (argc, argv,
                                                 camera_params_.height, camera_params_.width ,
                                                 lcm_, output_color_mode_, path_to_shaders));
@@ -164,7 +164,7 @@ Eigen::Isometry3d URDFPoseToEigen(urdf::Pose& pose_in){
   return pose_out;
 }
 
-/*
+
 KDL::Frame EigenToKDL(Eigen::Isometry3d tf){
   KDL::Frame tf_out;
   tf_out.p[0] = tf.translation().x();
@@ -173,12 +173,23 @@ KDL::Frame EigenToKDL(Eigen::Isometry3d tf){
   Eigen::Quaterniond  r( tf.rotation() );
   tf_out.M =  KDL::Rotation::Quaternion( r.x(), r.y(), r.z(), r.w() );
   return tf_out;
-}*/
+}
+
+
+Eigen::Isometry3d KDLToEigen(KDL::Frame tf){
+  Eigen::Isometry3d tf_out;
+  tf_out.setIdentity();
+  tf_out.translation()  << tf.p[0], tf.p[1], tf.p[2];
+  Eigen::Quaterniond q;
+  tf.M.GetQuaternion( q.x() , q.y(), q.z(), q.w());
+  tf_out.rotate(q);
+  return tf_out;
+}
 
 //////////////////////////////////////////////////////////////////////
 void Pass::prepareModel(){
   cout<< "URDF handler"<< endl;
-/*
+
   // Received robot urdf string. Store it internally and get all available joints.
   gl_robot_ = boost::shared_ptr<visualization_utils::GlKinematicBody>(new visualization_utils::GlKinematicBody(urdf_xml_string_));
   cout<< "Number of Joints: " << gl_robot_->get_num_joints() <<endl;
@@ -271,7 +282,6 @@ void Pass::prepareModel(){
     return;
   }
   fksolver_ = boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive>(new KDL::TreeFkSolverPosFull_recursive(tree));
-*/
 }
 
 /*
@@ -421,17 +431,6 @@ void Pass::robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& 
   init_rstate_=true; // first robot state handled... ready to handle data
 }
 
-/*
-Eigen::Isometry3d KDLToEigen(KDL::Frame tf){
-  Eigen::Isometry3d tf_out;
-  tf_out.setIdentity();
-  tf_out.translation()  << tf.p[0], tf.p[1], tf.p[2];
-  Eigen::Quaterniond q;
-  tf.M.GetQuaternion( q.x() , q.y(), q.z(), q.w());
-  tf_out.rotate(q);
-  return tf_out;
-}*/
-
 bool Pass::createMask(int64_t msg_time){
   if (!init_rstate_){
     std::cout << "Either ROBOT_MODEL or EST_ROBOT_STATE has not been received, ignoring image\n";
@@ -448,7 +447,7 @@ bool Pass::createMask(int64_t msg_time){
   // 1a. Solve for Forward Kinematics
   // TODO: use gl_robot routine instead of replicating this here:
   // map<string, drc::transform_t > cartpos_out;
-/*  map<string, KDL::Frame > cartpos_out;
+  map<string, KDL::Frame > cartpos_out;
   bool flatten_tree=true;
   bool kinematics_status = fksolver_->JntToCart(jointpos_,cartpos_out,flatten_tree);
   if(kinematics_status>=0){
@@ -457,10 +456,9 @@ bool Pass::createMask(int64_t msg_time){
     cerr << "Error: could not calculate forward kinematics!" <<endl;
     return false;
   }
-*/
+
   // 1b. Determine World to Camera Pose:
   Eigen::Isometry3d world_to_camera;
-/*
   map<string, KDL::Frame>::const_iterator transform_it;
   transform_it=cartpos_out.find(camera_frame_);// usually "left_camera_optical_frame"
   if(transform_it!=cartpos_out.end()){// fk cart pos exists
@@ -472,12 +470,11 @@ bool Pass::createMask(int64_t msg_time){
     //body_to_camera.rotate(quat);
     world_to_camera = world_to_body_*body_to_camera;
   }
-*/
-  // 2. Determine all Body-to-Link transforms for Visual elements:
-  //gl_robot_->set_state( EigenToKDL(world_to_body_), jointpos_);
-  //std::vector<visualization_utils::LinkFrameStruct> link_tfs; //= gl_robot_->get_link_tfs();
 
-/*
+  // 2. Determine all Body-to-Link transforms for Visual elements:
+  gl_robot_->set_state( EigenToKDL(world_to_body_), jointpos_);
+  std::vector<visualization_utils::LinkFrameStruct> link_tfs = gl_robot_->get_link_tfs();
+
   // Loop through joints and extract world positions:
   std::vector<Eigen::Isometry3d> link_tfs_e;
   int counter =msg_time;
@@ -578,7 +575,7 @@ bool Pass::createMask(int64_t msg_time){
     tic_toc.push_back(_timestamp_now());
     display_tic_toc(tic_toc,"createMask");
   #endif
-*/
+
   return true;
 }
 
@@ -598,10 +595,10 @@ void Pass::sendOutput(int64_t utime){
                           camera_params_.width, camera_params_.height, 3,
                           string( camera_channel_ +  "_MASK") );
   }else{
-    //imgutils_->sendImage( simexample->getColorBuffer(1), utime, camera_params_.width, camera_params_.height, 1, string( camera_channel_ +  "_MASK")  );
-    imgutils_->sendImageZipped( simexample->getColorBuffer(1), utime,
-                                camera_params_.width, camera_params_.height, 1,
-                                string( camera_channel_ +  "_MASKZIPPED")  );
+    imgutils_->sendImage( simexample->getColorBuffer(1), utime, camera_params_.width, camera_params_.height, 1, string( camera_channel_ +  "_MASK")  );
+    //imgutils_->sendImageZipped( simexample->getColorBuffer(1), utime,
+    //                            camera_params_.width, camera_params_.height, 1,
+    //                            string( camera_channel_ +  "_MASKZIPPED")  );
   }
 
   if (do_timing==1){

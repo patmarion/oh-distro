@@ -33,7 +33,7 @@ pods_use_pkg_config_packages(image-passthrough-app ${PCL_LIBRARIES}
   ${PKG_CONFIG_DEPS}  opencv  
   lcmtypes_bot2-core pronto_vis image-passthrough bot2-param-client model-client
   image_io_utils   rgbd_primitives   camera_params  gtk+-2.0
-  eigen3)
+  eigen3 renderer_rs path-util)
 # affordance-utils collision_object_gfe visualization-utils
 target_link_libraries (image-passthrough-app boost_system 
            ${REQUIRED_LIBS})
