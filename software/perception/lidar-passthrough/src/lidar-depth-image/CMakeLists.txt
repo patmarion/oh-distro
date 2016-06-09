@@ -1,4 +1,4 @@
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated-declarations")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated-declarations -fpermissive")
 
 add_executable(drc-get-lidar-depth-image get-lidar-depth-image.cpp)
 target_link_libraries(drc-get-lidar-depth-image boost_system)

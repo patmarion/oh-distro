@@ -79,7 +79,7 @@ Tags::Tags(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_):
    
   // left these numbers very large:
   img_buf_= (uint8_t*) malloc(3* 1524  * 1544);
-  imgutils_ = new image_io_utils( lcm_->getUnderlyingLCM(), 
+  imgutils_ = new image_io_utils( lcm_, 
                                   1524, 
                                   3*1544 );  
 }
