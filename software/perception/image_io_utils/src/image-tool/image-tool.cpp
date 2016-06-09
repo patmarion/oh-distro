@@ -53,7 +53,7 @@ Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_, std::string image_channel_,
 
   width_ = 1024;
   height_ = 1024;
-  imgutils_ = new image_io_utils( lcm_->getUnderlyingLCM(), width_, height_ );
+  imgutils_ = new image_io_utils( lcm_, width_, height_ );
   counter_=0;
   last_img_.utime=0; // used to indicate no message recieved yet
 }
@@ -61,13 +61,10 @@ Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_, std::string image_channel_,
 void Pass::sendOutput(){
   if (last_img_.utime==0){     return;   } // if no msg recieved then ignore output command
 
-
-  
-
   if (mode_==0){ // jpeg and resend 
     Mat src= Mat::zeros( last_img_.height,last_img_.width  ,CV_8UC3);
     src.data = last_img_.data.data();
-    imgutils_->jpegImageThenSend(src.data, last_img_.utime, 
+    imgutils_->sendImageJpeg(src.data, last_img_.utime, 
                 last_img_.width,last_img_.height, jpeg_quality_, string(image_channel_ + "_COMPRESSED"), 3);
     
   }else if(mode_==1){ // unzip and resend
@@ -81,7 +78,7 @@ void Pass::sendOutput(){
     Mat img = Mat::zeros( last_img_.height,last_img_.width ,CV_8UC3);
     cv::flip(src, img, -1);
 
-    imgutils_->jpegImageThenSend(img.data, last_img_.utime, 
+    imgutils_->sendImageJpeg(img.data, last_img_.utime, 
                 last_img_.width,last_img_.height, jpeg_quality_, string(image_channel_ + "_ROTATED"), 3);
   }
 }

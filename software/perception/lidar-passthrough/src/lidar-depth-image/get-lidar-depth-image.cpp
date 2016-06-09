@@ -40,21 +40,31 @@
 using namespace std;
 using namespace maps;
 
+// These conversions between boost and std shared_ptr are sloppy. Probably best to just use std shared_ptr entirely
+template<class T> std::shared_ptr<T> to_std(const boost::shared_ptr<T> &p) {
+    return std::shared_ptr<T>(p.get(), [p](...) mutable { p.reset(); });
+}
+
+template<class T> boost::shared_ptr<T> to_boost(const std::shared_ptr<T> &p) {
+    return boost::shared_ptr<T>(p.get(), [p](...) mutable { p.reset(); });
+}
+
 class State {
 public:
-  std::shared_ptr<lcm::LCM> mLcm;
+  boost::shared_ptr<lcm::LCM> mLcm;
   BotWrapper::Ptr mBotWrapper;
   std::shared_ptr<Collector> mCollector;
   int mActiveMapId;
   bot_lcmgl_t* mLcmGl;
   
-  State( std::shared_ptr<lcm::LCM> &mLcm ): mLcm(mLcm) {
-    mBotWrapper.reset(new BotWrapper(mLcm));
+  State( boost::shared_ptr<lcm::LCM> &mLcm ): mLcm(mLcm) {
+    std::shared_ptr<lcm::LCM> mLcmStd = to_std(mLcm);
+    mBotWrapper.reset(new BotWrapper(mLcmStd));
     mCollector.reset(new Collector());
     mCollector->setBotWrapper(mBotWrapper);
     mActiveMapId = 0;
     mLcmGl = bot_lcmgl_init(mLcm->getUnderlyingLCM(), "test-points");
-    drc::Clock::instance()->setLcm(mLcm);
+    drc::Clock::instance()->setLcm(mLcmStd);
   }
   
   ~State() {
@@ -65,12 +75,12 @@ public:
 
 class Pass{
   public:
-    Pass(std::shared_ptr<lcm::LCM> &lcm_, State* iState);
+    Pass(boost::shared_ptr<lcm::LCM> &lcm_, State* iState);
     
     ~Pass(){
     }    
   private:
-    std::shared_ptr<lcm::LCM> lcm_;
+    boost::shared_ptr<lcm::LCM> lcm_;
     void imageHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::image_t* msg);   
     void multisenseHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::images_t* msg);   
     void maskHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::image_t* msg);   
@@ -120,7 +130,7 @@ class Pass{
     State* mState;
 };
 
-Pass::Pass(std::shared_ptr<lcm::LCM> &lcm_,  State* iState): lcm_(lcm_), 
+Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_,  State* iState): lcm_(lcm_), 
     mState(iState){
 
   botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -145,7 +155,7 @@ Pass::Pass(std::shared_ptr<lcm::LCM> &lcm_,  State* iState): lcm_(lcm_),
   
   std::cout << camera_calib_ << " cam calib\n";
 
-  imgutils_ = new image_io_utils( lcm_->getUnderlyingLCM(), camera_params_.width, 
+  imgutils_ = new image_io_utils( lcm_, camera_params_.width, 
                                   camera_params_.height );
   disparity_data_ = (uint16_t*) malloc(camera_params_.width * camera_params_.height * 2);
   
@@ -423,7 +433,7 @@ int main(int argc, char ** argv) {
   opt.parse();
   std::cout << "lidar_channel: " << lidar_channel << "\n"; 
 
-  std::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
+  boost::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
   if(!lcm->good()){
     std::cerr <<"ERROR: lcm is not good()" <<std::endl;
   }

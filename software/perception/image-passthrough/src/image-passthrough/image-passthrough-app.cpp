@@ -123,7 +123,7 @@ Pass::Pass(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_,
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(9996,"iPass - Sim Cloud"     ,1,1, 9995,0, colors_v ));
   pc_vis_->obj_cfg_list.push_back( obj_cfg(9994,"iPass - Null",5,1) );
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(9993,"iPass - World "     ,7,1, 9994,0, colors_v ));
-  imgutils_ = new image_io_utils( lcm_->getUnderlyingLCM(), 
+  imgutils_ = new image_io_utils( lcm_, 
                                   camera_params_.width, 
                                   camera_params_.height ); // Actually outputs the Mask PCLImage:
 
@@ -608,7 +608,7 @@ void Pass::sendOutput(int64_t utime){
 }
 
 // Blend the simulated output with the input image:
-void Pass::sendOutputOverlay(int64_t utime, uint8_t* img_buf){
+void Pass::overlayMask(int64_t utime, uint8_t* img_buf){
 
   float blend = 0.5;
   if (1==1){
@@ -629,13 +629,26 @@ void Pass::sendOutputOverlay(int64_t utime, uint8_t* img_buf){
       img_buf[i*3+2] = int( blend*img_buf[i*3+2] + (1.0-blend)*mask_buf[i*3+2] );
     }
   }
+}
 
 
-  // Zipping assumes gray for now - so don't zup for color (which will not be primarily be used:
-  imgutils_->sendImage( img_buf, utime,
-                          camera_params_.width, camera_params_.height, 3,
-                          string( camera_channel_ +  "_OVERLAY") );
+void Pass::applyMask(int64_t utime, uint8_t* img_buf, int background_value, int set_value){
+  uint8_t* mask_buf = simexample->getColorBuffer(1);
+  for (size_t i=0; i < camera_params_.width * camera_params_.height; i++){
+    if ( !mask_buf[i] == background_value){
+       img_buf[i*3]   = set_value;
+       img_buf[i*3+1] = set_value;
+       img_buf[i*3+2] = set_value;
+    }
+  }
+}
 
 
-
+void Pass::applyMask(int64_t utime, uint16_t* img_buf, int background_value, int set_value){
+  uint8_t* mask_buf = simexample->getColorBuffer(1);
+  for (size_t i=0; i < camera_params_.width * camera_params_.height; i++){
+    if ( !mask_buf[i] == background_value){
+       img_buf[i]   = set_value;
+    }
+  }
 }

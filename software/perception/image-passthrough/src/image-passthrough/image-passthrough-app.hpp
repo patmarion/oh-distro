@@ -47,7 +47,13 @@ class Pass{
     bool createMask(int64_t msg_time);
     void sendOutput(int64_t utime);
     
-    void sendOutputOverlay(int64_t utime, uint8_t* img_buf);
+    void overlayMask(int64_t utime, uint8_t* img_buf);
+
+    // look for pixels in the mask with background_value
+    // then set the corresponding pixels in img_buf to set_value
+    void applyMask(int64_t utime, uint8_t* img_buf, int background_value, int set_value);
+
+    void applyMask(int64_t utime, uint16_t* img_buf, int background_value, int set_value);
     
     // Get the GL depth buffer, flip up/down it, color mask it. always 3 colors
     uint8_t* getDepthBufferAsColor(){
@@ -83,7 +89,7 @@ class Pass{
       renderer_robot_ = renderer_robot_in;
     }
     
-    
+
   private:
     boost::shared_ptr<ModelClient> model_;
     
