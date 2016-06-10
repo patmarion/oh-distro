@@ -42,6 +42,9 @@ class Pass{
     image_io_utils*  imgutils_;
   
     bot_core::image_t last_img_;  
+
+    int img_buf_size_;
+    uint8_t* img_buf_;
 };
 
 Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_, std::string image_channel_, 
@@ -56,6 +59,8 @@ Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_, std::string image_channel_,
   imgutils_ = new image_io_utils( lcm_, width_, height_ );
   counter_=0;
   last_img_.utime=0; // used to indicate no message recieved yet
+
+  img_buf_= (uint8_t*) malloc(10* width_  * height_);
 }
 
 void Pass::sendOutput(){
@@ -80,6 +85,25 @@ void Pass::sendOutput(){
 
     imgutils_->sendImageJpeg(img.data, last_img_.utime, 
                 last_img_.width,last_img_.height, jpeg_quality_, string(image_channel_ + "_ROTATED"), 3);
+  }else if(mode_==3){ // save to png
+
+    Mat src= Mat::zeros( last_img_.height,last_img_.width  ,CV_8UC3);
+    if (last_img_.pixelformat == bot_core::image_t::PIXEL_FORMAT_MJPEG){
+      imgutils_->decodeImageToRGB( &(last_img_), img_buf_);
+      src.data = img_buf_;
+    }else{
+      src.data = last_img_.data.data();
+    }
+
+    Mat src_rgb_cv;
+
+    cvtColor( src, src_rgb_cv, CV_BGR2RGB );
+
+    std::stringstream img_name;
+    img_name << "images/" << counter_ << ".png";
+    std::cout << img_name.str() << "\n";
+
+    imwrite(  img_name.str(), src_rgb_cv );
   }
 }
 
@@ -114,7 +138,7 @@ int main(int argc, char ** argv) {
   ConciseArgs opt(argc, (char**)argv);
   opt.add(jpeg_quality, "j", "jpeg_quality","jpeg_quality");
   opt.add(channel, "c", "channel","channel");
-  opt.add(mode, "m", "mode","0=rgbinJPEGOUT 1=zipinGRAYOUT, 2=rotate180");
+  opt.add(mode, "m", "mode","0=rgbinJPEGOUT 1=zipinGRAYOUT, 2=rotate180, 3=write to file");
   opt.add(downsample, "d", "downsample","Downsample Factor");
   opt.parse();
   std::cout << "jpeg_quality: " << jpeg_quality << "\n";  
