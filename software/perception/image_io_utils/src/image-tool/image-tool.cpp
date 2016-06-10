@@ -100,7 +100,7 @@ void Pass::sendOutput(){
     cvtColor( src, src_rgb_cv, CV_BGR2RGB );
 
     std::stringstream img_name;
-    img_name << "images/" << counter_ << ".png";
+    img_name << counter_ << ".png";
     std::cout << img_name.str() << "\n";
 
     imwrite(  img_name.str(), src_rgb_cv );
