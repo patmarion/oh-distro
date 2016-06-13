@@ -64,13 +64,18 @@ class App{
     std::shared_ptr<lcm::LCM> lcm_;
         
     void poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg);
+    void poseCorrHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg);
     void behaviorHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::behavior_t* msg);
     
     //Eigen::Isometry3d
     Isometry3dTime driftingPose_;
+    Isometry3dTime previousCorrection_;
+    Isometry3dTime currentCorrection_;
+    Eigen::Isometry3d correction_;
     Isometry3dTime previousCorrectPose_;    
 
     int last_behavior_;
+    bool updatedCorrection_;
 };    
 
 #endif

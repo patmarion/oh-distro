@@ -1,5 +1,9 @@
-// Input: POSE_BODY_ALT, Output POSE_BODY_ALT_WITH_DRIFT
-// applies incremental drift while the robot is walking
+// Script which generates artificial drift and subscribes to a correction.
+// To be used in simulation.
+
+// Input: POSE_BODY_ALT, POSE_BODY_CORRECTED, Output: POSE_BODY_ALT_WITH_DRIFT
+// Applies incremental drift while the robot is walking
+// Also, it subscribes to a correction which estimates (ICP) and corrects the drift
 
 // Problem: to our system will appear to have drifted
 // but any goals we give to IHMC will be interpreted from their (true)
@@ -24,13 +28,19 @@
 /////////////////////////////////////
 App::App(std::shared_ptr<lcm::LCM> &lcm_,
                        std::shared_ptr<CommandLineConfig> &cl_cfg_):
-                       lcm_(lcm_), cl_cfg_(cl_cfg_), driftingPose_(0,Eigen::Isometry3d::Identity()), previousCorrectPose_(0,Eigen::Isometry3d::Identity()) {
+                       lcm_(lcm_), cl_cfg_(cl_cfg_), driftingPose_(0,Eigen::Isometry3d::Identity()),
+                       currentCorrection_(0,Eigen::Isometry3d::Identity()), previousCorrection_(0,Eigen::Isometry3d::Identity()),
+                       previousCorrectPose_(0,Eigen::Isometry3d::Identity()) {
 
   // Subscribe to required signals
   lcm_->subscribe("POSE_BODY_ALT",&App::poseIHMCHandler,this); // Always provided by the IHMC Driver
+  lcm_->subscribe("POSE_BODY_CORRECTED",&App::poseCorrHandler,this); // If a correction is published... identity otherwise
   lcm_->subscribe("ROBOT_BEHAVIOR", &App::behaviorHandler, this);
 
   last_behavior_ = -1; // uninitialised
+
+  correction_ = Eigen::Isometry3d::Identity();
+  updatedCorrection_ = false;
 }
 
 bot_core::pose_t getIsometry3dAsBotPose(Eigen::Isometry3d pose, int64_t utime){
@@ -82,9 +92,8 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
   driftingPose_.pose = driftingPose_.pose * deltaCorrectPose;
   driftingPose_.utime = msg->utime;
 
-
   // If walking: rotate the pose in yaw (world aligned) and add translations
-  if (last_behavior_==4){
+  if (last_behavior_ == 4){
 
     Eigen::Quaterniond quat_original(driftingPose_.pose.rotation());
     double rpy_original[3];
@@ -99,14 +108,36 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     driftingPoseNew.rotate(quat_yaw_drift);
     driftingPose_.pose = driftingPoseNew;
   }else{
-    std::cout << msg->utime <<"standing; not corrupting\n";
+    std::cout << msg->utime <<": standing, not corrupting.\n";
   }
 
-  bot_core::pose_t msg_out = getIsometry3dAsBotPose(driftingPose_.pose, driftingPose_.utime);
+  // If we got an updated correction: concatenate to the previous ones.
+  if(updatedCorrection_)
+  {
+    correction_ = currentCorrection_.pose * correction_;
+    updatedCorrection_ = false;
+  }
+
+  // Apply correction if available
+  Eigen::Isometry3d currentDriftingPose;
+  currentDriftingPose = correction_ * driftingPose_.pose;
+
+  bot_core::pose_t msg_out = getIsometry3dAsBotPose(currentDriftingPose, driftingPose_.utime);
   lcm_->publish("POSE_BODY_ALT_WITH_DRIFT",&msg_out);
 
-
   previousCorrectPose_ = currentCorrectPose;
+}
+
+void App::poseCorrHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg){
+
+    previousCorrection_ = currentCorrection_;
+    currentCorrection_ = getPoseAsIsometry3dTime(msg);
+
+    // Did we get an updated correction?
+    if((currentCorrection_.pose.rotation() != previousCorrection_.pose.rotation()) && (currentCorrection_.pose.translation() != previousCorrection_.pose.translation()))
+    {
+      updatedCorrection_ = true;
+    }
 }
 
 int
