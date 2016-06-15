@@ -118,13 +118,23 @@ group "7.control" {
         host = "link";
     }
 
-    cmd "HandControl" {
-        exec = "roslaunch valkyrie_translator HandControl.launch";
+    cmd "LeftHandControl" {
+        exec = "roslaunch valkyrie_translator UoE_LeftHandControl.launch";
         host = "link";
     }
 
-    cmd "ForearmControl" {
-        exec = "roslaunch valkyrie_translator ForearmControl.launch";
+    cmd "RightHandControl" {
+        exec = "roslaunch valkyrie_translator UoE_RightHandControl.launch";
+        host = "link";
+    }
+
+    cmd "LeftForearmControl" {
+        exec = "roslaunch valkyrie_translator LeftForearmControl.launch";
+        host = "link";
+    }
+
+    cmd "RightForearmControl" {
+        exec = "roslaunch valkyrie_translator RightForearmControl.launch";
         host = "link";
     }
 }
