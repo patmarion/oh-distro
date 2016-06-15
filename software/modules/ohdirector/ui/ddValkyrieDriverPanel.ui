@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>438</width>
+    <width>465</width>
     <height>980</height>
    </rect>
   </property>
@@ -17,16 +17,7 @@
    <property name="spacing">
     <number>0</number>
    </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
+   <property name="margin">
     <number>0</number>
    </property>
    <item>
@@ -51,7 +42,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>438</width>
+        <width>465</width>
         <height>980</height>
        </rect>
       </property>
@@ -134,12 +125,6 @@
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
            <widget class="QPushButton" name="lFootUpButton">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
             <property name="text">
              <string>Lfoot Up</string>
             </property>
@@ -147,12 +132,6 @@
           </item>
           <item>
            <widget class="QPushButton" name="lFootDownButton">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
             <property name="text">
              <string>Lfoot Down</string>
             </property>
@@ -169,6 +148,36 @@
            <widget class="QPushButton" name="rFootDownButton">
             <property name="text">
              <string>Rfoot Down</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="ihmchandPoseCommandSupportBox">
+         <property name="title">
+          <string>IHMC Hand Pose Command (Experimental)</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QPushButton" name="lHandPoseButton">
+            <property name="text">
+             <string>Lhand Cmd</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="sendPlanPauseButton">
+            <property name="text">
+             <string>Stop</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="rHandPoseButton">
+            <property name="text">
+             <string>Rhand Cmd</string>
             </property>
            </widget>
           </item>

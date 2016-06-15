@@ -43,13 +43,13 @@
 #include <ihmc_msgs/FootPosePacketMessage.h>
 #include <std_msgs/String.h>
 
-
-//#define LEFT 0
-//#define RIGHT 1
+#define LEFT 0
+#define RIGHT 1
 #define MIN_SWING_HEIGHT 0.05
 #define MAX_SWING_HEIGHT 0.1 
 
 enum class TrajectoryMode {wholeBody, leftArm, rightArm, bothArms}; // 0,1,2,3
+static const char * TrajectoryNames[] = {"Whole Body", "Left Arm", "Right Arm", "Both Arms"};
 
 
 class LCM2ROS
@@ -61,6 +61,12 @@ public:
   }
 
 private:
+
+const char * getTrajectoryName( int enumVal )
+{
+  return TrajectoryNames[enumVal];
+}
+
   boost::shared_ptr<lcm::LCM> lcm_;
   ros::NodeHandle nh_;
   ros::NodeHandle* node_;
@@ -106,8 +112,8 @@ private:
   bool getChestTrajectoryPlan(const drc::robot_plan_t* msg, std::vector<geometry_msgs::Quaternion> &m);
 
 
-  void handPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::pose_t* msg);
-  ros::Publisher hand_pose_pub_;
+  void handPoseCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::pose_t* msg);
+  ros::Publisher hand_pose_command_pub_;
 
 
   // Neck Control Messages

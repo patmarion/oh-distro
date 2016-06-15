@@ -19,7 +19,7 @@ import calisthenicsdemo
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
 
-    valkyrieDriver = valkyriedriver.ValkyrieDriver(rs.ikPlanner)
+    valkyrieDriver = valkyriedriver.ValkyrieDriver(rs.ikPlanner, rs.handFactory)
     valkyrieDriverPanel = valkyriedriverpanel.init(valkyrieDriver)
 
     atlasPanelAction = applogic.getToolBarActions()['ActionAtlasDriverPanel']

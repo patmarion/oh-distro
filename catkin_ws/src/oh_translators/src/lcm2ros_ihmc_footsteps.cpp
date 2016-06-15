@@ -120,7 +120,7 @@ void LCM2ROS::footstepPlanBDIModeHandler(const lcm::ReceiveBuffer* rbuf, const s
 void LCM2ROS::lFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const ihmc::foot_pose_packet_message_t* msg)
 {
   ROS_ERROR("LCM2ROS got desired left foot pose");
-  if (msg->robot_side != 0){ // left foot check
+  if (msg->robot_side != LEFT){ // left foot check
     ROS_ERROR("LCM2ROS foot side not correct, not sending");
     return;
   }
@@ -130,7 +130,7 @@ void LCM2ROS::lFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string
 void LCM2ROS::rFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const ihmc::foot_pose_packet_message_t* msg)
 {
   ROS_ERROR("LCM2ROS got desired right foot pose");
-  if (msg->robot_side != 1){ // right foot check
+  if (msg->robot_side != RIGHT){ // right foot check
     ROS_ERROR("LCM2ROS foot side not correct, not sending");
     return;
   }
