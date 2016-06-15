@@ -1,136 +1,10 @@
 // Copyright 2015 Maurice Fallon, Vladimir Ivan
 
-#include <cstdlib>
-#include <string>
-#include <ros/ros.h>
-#include <lcm/lcm-cpp.hpp>
+#include "lcm2ros_ihmc.hpp"
 
-#include "urdf/model.h"
-#include "kdl/tree.hpp"
-#include "kdl_parser/kdl_parser.hpp"
-#include "forward_kinematics/treefksolverposfull_recursive.hpp"
-#include <model-client/model-client.hpp>
-
-#include "lcmtypes/bot_core/pose_t.hpp"
-#include "lcmtypes/bot_core/joint_angles_t.hpp"
-#include "lcmtypes/drc/walking_plan_t.hpp"
-#include "lcmtypes/drc/walking_plan_request_t.hpp"
-#include "lcmtypes/drc/footstep_plan_t.hpp"
-#include "lcmtypes/drc/plan_control_t.hpp"
-#include "lcmtypes/drc/robot_plan_t.hpp"
-#include "lcmtypes/drc/scs_api_command_t.hpp"
-#include "lcmtypes/drc/int64_stamped_t.hpp"
-
-#include "lcmtypes/ihmc/com_height_packet_message_t.hpp"
-#include "lcmtypes/ihmc/pause_command_message_t.hpp"
-#include "lcmtypes/ihmc/hand_pose_packet_message_t.hpp"
-#include "lcmtypes/ihmc/foot_pose_packet_message_t.hpp"
-
-#include <ihmc_msgs/FootstepDataListMessage.h>
-#include <ihmc_msgs/ComHeightPacketMessage.h>
-#include <ihmc_msgs/PauseCommandMessage.h>
-#include <ihmc_msgs/HandPosePacketMessage.h>
-#include <ihmc_msgs/ArmJointTrajectoryPacketMessage.h>
-#include <ihmc_msgs/WholeBodyTrajectoryPacketMessage.h>
-#include <ihmc_msgs/StopMotionPacketMessage.h>
-#include <ihmc_msgs/HeadOrientationPacketMessage.h>
-#include <ihmc_msgs/FootPosePacketMessage.h>
-
-#include <nav_msgs/Odometry.h>
-#include <sensor_msgs/JointState.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Twist.h>
-#include <std_msgs/Float64.h>
-#include <std_msgs/String.h>
-#include <trajectory_msgs/JointTrajectory.h>
-#include <map>
-#include <vector>
-
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-
-#define LEFT 0
-#define RIGHT 1
-#define MIN_SWING_HEIGHT 0.05
-#define MAX_SWING_HEIGHT 0.1 
-
-enum class TrajectoryMode {wholeBody, leftArm, rightArm, bothArms}; // 0,1,2,3
 std::vector<std::string> TrajectoryNames = {"Whole Body", "Left Arm", "Right Arm", "Both Arms"};
 
 
-class LCM2ROS
-{
-public:
-  LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_, ros::NodeHandle &nh_, std::string robotName_);
-  ~LCM2ROS()
-  {
-  }
-
-private:
-  boost::shared_ptr<lcm::LCM> lcm_;
-  ros::NodeHandle nh_;
-  ros::NodeHandle* node_;
-  std::string robotName_;
-  boost::shared_ptr<ModelClient> model_;
-  boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
-  std::string chestLinkName_;
-
-  // Parameters and Variables:
-  // Seconds to offset the plan so that the controller
-  // can blend from the current desired joint position to the plan joint position
-  // this was added to avoid controller jerks when starting short plans.
-  double planDesiredOffset_;
-  TrajectoryMode outputTrajectoryMode_;
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // Walking Messages
-  void footstepPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                           const drc::walking_plan_request_t* msg);
-  void footstepPlanBDIModeHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                                  const drc::footstep_plan_t* msg);
-  ros::Publisher walking_plan_pub_;
-  ihmc_msgs::FootstepDataMessage convertFootStepToIHMC(const drc::footstep_t & drc_step);
-
-  // Safety Messages
-  void pauseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                    const ihmc::pause_command_message_t* msg);
-  void stopHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::plan_control_t* msg);
-  void stopManipHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::plan_control_t* msg);
-  ros::Publisher pause_pub_, stop_manip_pub_;
-
-  // Whole Body and Arm Plan Messages
-  void ihmcControlModeCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::int64_stamped_t* msg);
-  void robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::robot_plan_t* msg);
-  ros::Publisher arm_joint_traj2_pub_, whole_body_trajectory_pub_;
-
-  double getPlanTimeAtWaypoint(int64_t planUtime);
-  void sendSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
-                         std::vector<std::string> input_joint_names, bool is_right);
-  bool getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
-                        std::vector<std::string> input_joint_names, bool is_right,
-                        ihmc_msgs::ArmJointTrajectoryPacketMessage &m);
-  bool getChestTrajectoryPlan(const drc::robot_plan_t* msg, std::vector<geometry_msgs::Quaternion> &m);
-
-  // Neck Control Messages
-  void neckPitchHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::joint_angles_t* msg);
-  void headOrientationHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::pose_t* msg);
-  ros::Publisher neck_orientation_pub_;
-
-  // Feet Control Messages
-  void lFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const ihmc::foot_pose_packet_message_t* msg);
-  void rFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const ihmc::foot_pose_packet_message_t* msg);
-  ros::Publisher foot_pose_pub_;
-  void sendFootPose(const ihmc::foot_pose_packet_message_t* msg);
-
-  // Misc Messages
-  void comHeightHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                        const ihmc::com_height_packet_message_t* msg);
-  ros::Publisher com_height_pub_;
-
-  void scsAPIHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::scs_api_command_t* msg);
-  ros::Publisher scs_api_pub_;
-
-};
 
 LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, std::string robotName_in):
     lcm_(lcm_in), nh_(nh_in), robotName_(robotName_in)
@@ -166,9 +40,6 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
   walking_plan_pub_ = nh_.advertise<ihmc_msgs::FootstepDataListMessage>(
       "/ihmc_ros/" + robotName_ + "/control/footstep_list", 10);
 
-  lcm_->subscribe("VAL_COMMAND_COM_HEIGHT", &LCM2ROS::comHeightHandler, this);
-  com_height_pub_ = nh_.advertise<ihmc_msgs::ComHeightPacketMessage>("/ihmc_ros/" + robotName_ + "/control/com_height",
-                                                                     10);
 
   lcm_->subscribe("VAL_COMMAND_PAUSE", &LCM2ROS::pauseHandler, this);
   lcm_->subscribe("STOP_WALKING", &LCM2ROS::stopHandler, this);  // from Director
@@ -185,8 +56,6 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
   whole_body_trajectory_pub_ = nh_.advertise<ihmc_msgs::WholeBodyTrajectoryPacketMessage>(
       "/ihmc_ros/" + robotName_ + "/control/whole_body_trajectory", 10);
 
-  lcm_->subscribe("SCS_API_CONTROL", &LCM2ROS::scsAPIHandler, this);
-  scs_api_pub_ = nh_.advertise<std_msgs::String>("/ihmc_ros/" + robotName_ + "/api_command", 10);
 
   lcm_->subscribe("DESIRED_NECK_ANGLES", &LCM2ROS::neckPitchHandler, this);
   lcm_->subscribe("DESIRED_HEAD_ORIENTATION", &LCM2ROS::headOrientationHandler, this);
@@ -200,94 +69,22 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
       "/ihmc_ros/" + robotName_ + "/control/foot_pose", 10);
 
 
+  lcm_->subscribe("VAL_COMMAND_COM_HEIGHT", &LCM2ROS::comHeightHandler, this);
+  com_height_pub_ = nh_.advertise<ihmc_msgs::ComHeightPacketMessage>("/ihmc_ros/" + robotName_ + "/control/com_height",
+                                                                     10);
+
+
+  lcm_->subscribe("SCS_API_CONTROL", &LCM2ROS::scsAPIHandler, this);
+  scs_api_pub_ = nh_.advertise<std_msgs::String>("/ihmc_ros/" + robotName_ + "/api_command", 10);
+
+
   // Subscriptions that handle local variables:
   lcm_->subscribe("IHMC_CONTROL_MODE_COMMAND", &LCM2ROS::ihmcControlModeCommandHandler, this);
 
   node_ = new ros::NodeHandle();
 }
 
-ihmc_msgs::FootstepDataMessage LCM2ROS::convertFootStepToIHMC(const drc::footstep_t &drc_step) {
-  ihmc_msgs::FootstepDataMessage ihmc_step;
-  ihmc_step.robot_side = drc_step.is_right_foot;
-  ihmc_step.location.x = drc_step.pos.translation.x;
-  ihmc_step.location.y = drc_step.pos.translation.y;
-  ihmc_step.location.z = drc_step.pos.translation.z;
-  ihmc_step.orientation.w = drc_step.pos.rotation.w;
-  ihmc_step.orientation.x = drc_step.pos.rotation.x;
-  ihmc_step.orientation.y = drc_step.pos.rotation.y;
-  ihmc_step.orientation.z = drc_step.pos.rotation.z;
 
-  // Used values from footstepsdriver.py for Valkyrie version 2
-  // foot_length = 0.21, foot_width = 0.11 (dimension of the sole))
-  if (robotName_.compare("valkyrie") == 0)
-  {
-    double footsizeReduction = 0.04;
-    double foot_length = 0.25 - footsizeReduction;
-    double foot_width = 0.15 - footsizeReduction;
-    // if (support_contact_groups == 0) we do not set the contact points because
-    // a value of null will default to use the entire foot
-    if (drc_step.params.support_contact_groups == 1)
-    {
-      ihmc_msgs::Point2dMessage point;
-      point.x = 0.5 * foot_length;
-      point.y = -0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-      point.x = 0.5 * foot_length;
-      point.y = 0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-      point.x = -0.166666667 * foot_length;
-      point.y = -0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-      point.x = -0.166666667 * foot_length;
-      point.y = 0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-    }
-    else if (drc_step.params.support_contact_groups == 2)
-    {
-      ihmc_msgs::Point2dMessage point;
-      point.x = 0.166666667 * foot_length;
-      point.y = -0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-      point.x = 0.166666667 * foot_length;
-      point.y = 0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-      point.x = -0.5 * foot_length;
-      point.y = -0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-      point.x = -0.5 * foot_length;
-      point.y = 0.5 * foot_width;
-      ihmc_step.predicted_contact_points.push_back(point);
-    }
-  }
-  // else if atlas, always use the entire foot
-
-
-  double max_relative_terrain_height = 0.0;
-  ihmc_step.trajectory_type = ihmc_step.BASIC;
-
-  if (drc_step.terrain_height.size() > 0) {
-    assert(drc_step.terrain_height.size() == drc_step.terrain_path_dist.size());
-    double starting_terrain_height = drc_step.terrain_height[0];
-    max_relative_terrain_height = *std::max_element(drc_step.terrain_height.begin(), drc_step.terrain_height.end()) - starting_terrain_height;
-    double swing_distance_in_plane = drc_step.terrain_path_dist[drc_step.terrain_path_dist.size() - 1] - drc_step.terrain_path_dist[0];
-    if (swing_distance_in_plane > 0) {
-      // Does the terrain rise significantly above a triangle that starts at the initial foot pose, rises to the maximum terrain height halfway through the swing, and finishes at the final foot pose? If so, do a high clearance step. 
-      for (size_t i = 0; i < drc_step.terrain_height.size(); i++) {
-        double expected_relative_terrain_height = max_relative_terrain_height * (1 - std::abs(drc_step.terrain_path_dist[i] - swing_distance_in_plane / 2.0) / (swing_distance_in_plane / 2.0));
-        if (drc_step.terrain_height[i] > expected_relative_terrain_height + starting_terrain_height + 0.02) {
-          ihmc_step.trajectory_type = ihmc_step.OBSTACLE_CLEARANCE;
-          break;
-        }
-      }
-    }
-  }
-
-  double swing_height = max_relative_terrain_height + drc_step.params.step_height;
-  ihmc_step.swing_height = std::min(std::max(swing_height, MIN_SWING_HEIGHT),
-                                    MAX_SWING_HEIGHT);
-
-  return ihmc_step;
-}
 
 Eigen::Quaterniond euler_to_quat(double roll, double pitch, double yaw)
 {
@@ -329,35 +126,7 @@ void LCM2ROS::scsAPIHandler(const lcm::ReceiveBuffer* rbuf, const std::string &c
   scs_api_pub_.publish(rmsg);
 }
 
-void LCM2ROS::footstepPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                                  const drc::walking_plan_request_t* msg)
-{
-  ROS_ERROR("LCM2ROS got WALKING_CONTROLLER_PLAN_REQUEST (non-pronto and drake mode)");
 
-  ihmc_msgs::FootstepDataListMessage mout;
-  mout.transfer_time = msg->footstep_plan.footsteps[0].params.ihmc_transfer_time;
-  mout.swing_time = msg->footstep_plan.footsteps[0].params.ihmc_swing_time;
-  for (int i = 2; i < msg->footstep_plan.num_steps; i++)  // skip the first two standing steps
-  {
-    mout.footstep_data_list.push_back(convertFootStepToIHMC(msg->footstep_plan.footsteps[i]));
-  }
-  walking_plan_pub_.publish(mout);
-}
-
-void LCM2ROS::footstepPlanBDIModeHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                                         const drc::footstep_plan_t* msg)
-{
-  ROS_ERROR("LCM2ROS got BDI_ADJUSTED_FOOTSTEP_PLAN or COMMITTED_FOOTSTEP_PLAN (pronto and bdi mode)");
-
-  ihmc_msgs::FootstepDataListMessage mout;
-  mout.transfer_time = msg->footsteps[0].params.ihmc_transfer_time;
-  mout.swing_time = msg->footsteps[0].params.ihmc_swing_time;
-  for (int i = 2; i < msg->num_steps; i++)  // skip the first two standing steps
-  {
-    mout.footstep_data_list.push_back(convertFootStepToIHMC(msg->footsteps[i]));
-  }
-  walking_plan_pub_.publish(mout);
-}
 
 void LCM2ROS::comHeightHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
                                const ihmc::com_height_packet_message_t* msg)
@@ -435,41 +204,7 @@ void LCM2ROS::headOrientationHandler(const lcm::ReceiveBuffer* rbuf, const std::
   neck_orientation_pub_.publish(mout);
 }
 
-void LCM2ROS::lFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const ihmc::foot_pose_packet_message_t* msg)
-{
-  ROS_ERROR("LCM2ROS got desired left foot pose");
-  if (msg->robot_side != 0){ // left foot check
-    ROS_ERROR("LCM2ROS foot side not correct, not sending");
-    return;
-  }
-  sendFootPose(msg);
-}
 
-void LCM2ROS::rFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const ihmc::foot_pose_packet_message_t* msg)
-{
-  ROS_ERROR("LCM2ROS got desired right foot pose");
-  if (msg->robot_side != 1){ // right foot check
-    ROS_ERROR("LCM2ROS foot side not correct, not sending");
-    return;
-  }
-  sendFootPose(msg);
-}
-
-void LCM2ROS::sendFootPose(const ihmc::foot_pose_packet_message_t* msg)
-{
-  ihmc_msgs::FootPosePacketMessage mout;
-  mout.trajectory_time = msg->trajectory_time;
-  mout.position.x = msg->position[0];
-  mout.position.y = msg->position[1];
-  mout.position.z = msg->position[2];
-  mout.orientation.w = msg->orientation[0];
-  mout.orientation.x = msg->orientation[1];
-  mout.orientation.y = msg->orientation[2];
-  mout.orientation.z = msg->orientation[3];
-  mout.unique_id = msg->utime;
-  mout.robot_side = msg->robot_side;
-  foot_pose_pub_.publish(mout);
-}
 
 void filterJointNamesToIHMC(std::vector<std::string> &joint_name)
 {
