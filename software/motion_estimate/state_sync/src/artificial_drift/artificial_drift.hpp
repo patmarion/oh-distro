@@ -19,6 +19,7 @@ class CommandLineConfig{
     CommandLineConfig(){
       // Read from command line:
       output_channel = "EST_ROBOT_STATE";
+      apply_correction = "n";
 
       // drift rates (in si) per second (reasonable rates)
       x_drift_rate = 0.0005;
@@ -39,6 +40,7 @@ class CommandLineConfig{
     ~CommandLineConfig(){};
 
     std::string output_channel;
+    std::string apply_correction;
 
   // drift rates (in si) per second
   double x_drift_rate;
@@ -72,7 +74,7 @@ class App{
     Isometry3dTime previousCorrection_;
     Isometry3dTime currentCorrection_;
     Eigen::Isometry3d correction_;
-    Isometry3dTime previousCorrectPose_;    
+    Isometry3dTime previousCorrectPose_;
 
     int last_behavior_;
     bool updatedCorrection_;
