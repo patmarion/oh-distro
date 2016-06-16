@@ -185,7 +185,6 @@ void App::footstepStatusCallback(const ihmc_msgs::FootstepStatusRosMessageConstP
   msg_out.actual_foot_orientation_in_world[1] = msg->actual_foot_orientation_in_world.x;
   msg_out.actual_foot_orientation_in_world[2] = msg->actual_foot_orientation_in_world.y;
   msg_out.actual_foot_orientation_in_world[3] = msg->actual_foot_orientation_in_world.z;
-//  msg_out.is_done_walking = msg->is_done_walking;
   msg_out.unique_id = msg->unique_id;
   lcmPublish_.publish("IHMC_FOOTSTEP_STATUS", &msg_out);
 }
