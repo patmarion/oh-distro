@@ -1,6 +1,6 @@
 #include "lcm2ros_ihmc.hpp"
 
-
+/*
 ihmc_msgs::FootstepDataMessage LCM2ROS::convertFootStepToIHMC(const drc::footstep_t &drc_step) {
   ihmc_msgs::FootstepDataMessage ihmc_step;
   ihmc_step.robot_side = drc_step.is_right_foot;
@@ -152,3 +152,4 @@ void LCM2ROS::sendFootPose(const ihmc::foot_pose_packet_message_t* msg)
   mout.robot_side = msg->robot_side;
   foot_pose_pub_.publish(mout);
 }
+*/

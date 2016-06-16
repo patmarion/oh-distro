@@ -1,7 +1,7 @@
 #include "lcm2ros_ihmc.hpp"
 #include "lcm2ros_ihmc_conversions.hpp"
 
-
+/*
 void LCM2ROS::handPoseCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::pose_t* msg)
 {
 
@@ -403,3 +403,4 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     }
   }
 }
+*/

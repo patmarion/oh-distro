@@ -32,15 +32,15 @@
 
 
 
-#include <ihmc_msgs/FootstepDataListMessage.h>
-#include <ihmc_msgs/ComHeightPacketMessage.h>
-#include <ihmc_msgs/PauseCommandMessage.h>
-#include <ihmc_msgs/HandPosePacketMessage.h>
-#include <ihmc_msgs/ArmJointTrajectoryPacketMessage.h>
-#include <ihmc_msgs/WholeBodyTrajectoryPacketMessage.h>
-#include <ihmc_msgs/StopMotionPacketMessage.h>
-#include <ihmc_msgs/HeadOrientationPacketMessage.h>
-#include <ihmc_msgs/FootPosePacketMessage.h>
+#include <ihmc_msgs/FootstepDataListRosMessage.h>
+//#include <ihmc_msgs/ComHeightPacketMessage.h>
+#include <ihmc_msgs/PauseWalkingRosMessage.h>
+//#include <ihmc_msgs/HandPosePacketMessage.h>
+#include <ihmc_msgs/ArmTrajectoryRosMessage.h>
+#include <ihmc_msgs/WholeBodyTrajectoryRosMessage.h>
+#include <ihmc_msgs/StopAllTrajectoryRosMessage.h>
+#include <ihmc_msgs/HeadTrajectoryRosMessage.h>
+#include <ihmc_msgs/FootTrajectoryRosMessage.h>
 #include <std_msgs/String.h>
 
 #define LEFT 0
@@ -89,7 +89,7 @@ const char * getTrajectoryName( int enumVal )
   void footstepPlanBDIModeHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
                                   const drc::footstep_plan_t* msg);
   ros::Publisher walking_plan_pub_;
-  ihmc_msgs::FootstepDataMessage convertFootStepToIHMC(const drc::footstep_t & drc_step);
+  ihmc_msgs::FootstepDataRosMessage convertFootStepToIHMC(const drc::footstep_t & drc_step);
 
   // Safety Messages
   void pauseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
@@ -108,7 +108,7 @@ const char * getTrajectoryName( int enumVal )
                          std::vector<std::string> input_joint_names, bool is_right);
   bool getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
                         std::vector<std::string> input_joint_names, bool is_right,
-                        ihmc_msgs::ArmJointTrajectoryPacketMessage &m);
+                        ihmc_msgs::ArmTrajectoryRosMessage &m);
   bool getChestTrajectoryPlan(const drc::robot_plan_t* msg, std::vector<geometry_msgs::Quaternion> &m);
 
 

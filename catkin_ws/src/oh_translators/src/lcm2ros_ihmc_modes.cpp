@@ -13,7 +13,7 @@ void LCM2ROS::scsAPIHandler(const lcm::ReceiveBuffer* rbuf, const std::string &c
   scs_api_pub_.publish(rmsg);
 }
 
-
+/*
 void LCM2ROS::comHeightHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
                                const ihmc::com_height_packet_message_t* msg)
 {
@@ -22,6 +22,7 @@ void LCM2ROS::comHeightHandler(const lcm::ReceiveBuffer* rbuf, const std::string
   mout.height_offset = msg->height_offset;
   com_height_pub_.publish(mout);
 }
+
 
 void LCM2ROS::pauseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
                            const ihmc::pause_command_message_t* msg)
@@ -89,3 +90,4 @@ void LCM2ROS::headOrientationHandler(const lcm::ReceiveBuffer* rbuf, const std::
   mout.unique_id = msg->utime;
   neck_orientation_pub_.publish(mout);
 }
+*/
