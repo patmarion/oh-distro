@@ -7,6 +7,7 @@ from director import lcmUtils
 
 import os
 import bot_core as lcmbotcore
+import drc as lcmdrc
 
 def addWidgetsToDict(widgets, d):
 
@@ -54,6 +55,11 @@ class ValkyrieDriverPanel(object):
         # Hand Control
         self.ui.sendHandCommandButton.connect('clicked()', self.sendHandCommandButtonClicked)
         self.ui.openHandButton.connect('clicked()', self.openHandButtonClicked)
+
+        # Hand Pose Message
+        self.ui.lHandPoseButton.connect('clicked()', self.moveLeftHandButtonClicked)
+        self.ui.rHandPoseButton.connect('clicked()', self.moveRightHandButtonClicked)
+        self.ui.sendPlanPauseButton.connect('clicked()', self.sendPlanPauseClicked)
 
 
     def getModeInt(self, inputStr):
@@ -108,6 +114,19 @@ class ValkyrieDriverPanel(object):
         else:
             msg.robot_side = 1
             lcmUtils.publish("DESIRED_RIGHT_FOOT_POSE", msg)
+
+    def moveLeftHandButtonClicked(self):
+        self.driver.sendHandPoseCommand('left')
+
+    def moveRightHandButtonClicked(self):
+        self.driver.sendHandPoseCommand('right')
+
+    def sendPlanPauseClicked(self):
+        msg = lcmdrc.plan_control_t()
+        msg.utime = getUtime()
+        msg.control = lcmdrc.plan_control_t.PAUSE
+        lcmUtils.publish('COMMITTED_PLAN_PAUSE', msg)
+
 
     def setNeckPitchButtonClicked(self):
         self.driver.setNeckPitch(self.ui.lowerNeckPitchSpinBox.value)

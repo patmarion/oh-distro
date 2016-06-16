@@ -3,14 +3,18 @@ import math
 
 from director import lcmUtils
 from director.utime import getUtime
+import director.objectmodel as om
+from director import visualization as vis
+from director import transformUtils
 
 import drc as lcmdrc
 import bot_core as lcmbotcore
 
 class ValkyrieDriver(object):
 
-    def __init__(self, ikPlanner):
+    def __init__(self, ikPlanner, handFactory):
         self.ikPlanner = ikPlanner
+        self.handFactory = handFactory
 
         self.leftHandJoints = ["leftIndexFingerMotorPitch1", "leftMiddleFingerMotorPitch1", "leftPinkyMotorPitch1", "leftThumbMotorPitch1", "leftThumbMotorPitch2", "leftThumbMotorRoll"]
         self.rightHandJoints = ["rightIndexFingerMotorPitch1", "rightMiddleFingerMotorPitch1", "rightPinkyMotorPitch1", "rightThumbMotorPitch1", "rightThumbMotorPitch2", "rightThumbMotorRoll"]
@@ -66,6 +70,7 @@ class ValkyrieDriver(object):
 
         lcmUtils.publish("DESIRED_HAND_ANGLES", msg)
 
+
     def openHand(self, side):
         '''
         Opens all pitch joints, doesn't move the thumb roll (Pseudo soft E-stop)
@@ -74,10 +79,34 @@ class ValkyrieDriver(object):
         self.sendHandCommand(side, thumbRoll=None, thumbPitch1=0.0, thumbPitch2=0.0, indexFingerPitch=0.0, middleFingerPitch=0.0, pinkyPitch=0.0)
 
 
+    def sendHandPoseCommand(self,side):
+        handModel = om.findObjectByName( side + ' valkyrie')
+        print side
 
-def init(ikPlanner):
+        if handModel is None:
+            print(side + " valkyrie object not found")
+            return
+
+        self.handFrame = handModel.getChildFrame().transform
+        self.handLinkToPalm = self.handFactory.loaders[ side + '_valkyrie'].handLinkToPalm
+
+        palmTransform = transformUtils.copyFrame(self.handFrame)
+        palmTransform.PreMultiply()
+        palmTransform.Concatenate(self.handLinkToPalm)
+        # Visualise the actual goal send to the controller:
+        #vis.updateFrame(palmTransform, side + " palm goal frame", visible=True)
+
+        pos_out, orientation_out = transformUtils.poseFromTransform(palmTransform)
+        msg = lcmbotcore.pose_t()
+        msg.utime = getUtime()
+        msg.pos = pos_out
+        msg.orientation = orientation_out
+        lcmUtils.publish("HAND_POSE_COMMAND_" + side.upper(), msg)
+
+
+def init(ikPlanner, handFactory):
 
     global driver
-    driver = ValkyrieDriver(ikPlanner)
+    driver = ValkyrieDriver(ikPlanner, handFactory)
 
     return driver

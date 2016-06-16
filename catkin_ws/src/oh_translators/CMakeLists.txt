@@ -66,7 +66,9 @@ pods_use_pkg_config_packages(ros2lcm_ihmc lcm lcmtypes_ihmc bot2-core eigen3)
 add_dependencies(ros2lcm_ihmc ipab_msgs_generate_messages_cpp ihmc_msgs_generate_messages_cpp)
 
 set(KDL_PACKAGES urdf orocos-kdl kdl-parser forward-kinematics model-client)
-add_executable(lcm2ros_ihmc src/lcm2ros_ihmc.cpp)
+add_executable(lcm2ros_ihmc src/lcm2ros_ihmc.cpp
+         src/lcm2ros_ihmc_conversions.cpp  src/lcm2ros_ihmc_modes.cpp
+         src/lcm2ros_ihmc_footsteps.cpp  src/lcm2ros_ihmc_motionplans.cpp)
 target_link_libraries(lcm2ros_ihmc ${catkin_LIBRARIES})
 pods_use_pkg_config_packages(lcm2ros_ihmc lcm bot2-core pronto_vis ${KDL_PACKAGES})
 add_dependencies(lcm2ros_ihmc ipab_msgs_generate_messages_cpp ihmc_msgs_generate_messages_cpp)
