@@ -16,6 +16,7 @@
 
 #include "artificial_drift.hpp"
 #include <pronto_utils/pronto_math.hpp>
+#include <pronto_utils/pronto_conversions_lcm.hpp>
 
 #include <ConciseArgs>
 #include <sys/time.h>
@@ -33,30 +34,6 @@ App::App(std::shared_ptr<lcm::LCM> &lcm_,
   last_behavior_ = -1; // uninitialised
 }
 
-bot_core::pose_t getIsometry3dAsBotPose(Eigen::Isometry3d pose, int64_t utime){
-  bot_core::pose_t tf;
-  tf.utime = utime;
-  tf.pos[0] = pose.translation().x();
-  tf.pos[1] = pose.translation().y();
-  tf.pos[2] = pose.translation().z();
-  Eigen::Quaterniond quat(pose.rotation());
-  tf.orientation[0] = quat.w();
-  tf.orientation[1] = quat.x();
-  tf.orientation[2] = quat.y();
-  tf.orientation[3] = quat.z();
-  return tf;
-}
-
-Isometry3dTime getPoseAsIsometry3dTime(const bot_core::pose_t* pose){
-  Eigen::Isometry3d pose_iso;
-  pose_iso.setIdentity();
-  pose_iso.translation()  << pose->pos[0], pose->pos[1] , pose->pos[2];
-  Eigen::Quaterniond quat = Eigen::Quaterniond(pose->orientation[0], pose->orientation[1], 
-                                               pose->orientation[2], pose->orientation[3]);
-  pose_iso.rotate(quat);
-  return Isometry3dTime(pose->utime, pose_iso);
-}
-
 
 void App::behaviorHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::behavior_t* msg){
 
@@ -67,14 +44,14 @@ void App::behaviorHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
 void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg){
   if (driftingPose_.utime == 0){
     std::cout << "initializing drifting pose\n";
-    driftingPose_ = getPoseAsIsometry3dTime(msg);
+    driftingPose_ = pronto::getPoseAsIsometry3dTime(msg);
 
     // TODO: publish inital pose to system unmodified
     previousCorrectPose_ = driftingPose_;
     return;
   }
 
-  Isometry3dTime currentCorrectPose = getPoseAsIsometry3dTime(msg);
+  Isometry3dTime currentCorrectPose = pronto::getPoseAsIsometry3dTime(msg);
 
   // Calculate the most recentl differential motion and apply as transform:
   Eigen::Isometry3d deltaCorrectPose = previousCorrectPose_.pose.inverse() * currentCorrectPose.pose ;  
@@ -102,7 +79,7 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     std::cout << msg->utime <<"standing; not corrupting\n";
   }
 
-  bot_core::pose_t msg_out = getIsometry3dAsBotPose(driftingPose_.pose, driftingPose_.utime);
+  bot_core::pose_t msg_out = pronto::getIsometry3dAsBotPose(driftingPose_.pose, driftingPose_.utime);
   lcm_->publish("POSE_BODY_ALT_WITH_DRIFT",&msg_out);
 
 

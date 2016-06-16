@@ -13,3 +13,9 @@ add_executable(se-ers-delay se-ers-delay.cpp)
 pods_use_pkg_config_packages(se-ers-delay eigen3
   lcmtypes_drc_lcmtypes bot2-param-client bot2-frames bot2-frames_cpp)
 pods_install_executables(se-ers-delay)
+
+
+add_executable(se-pose-to-delta pose_to_delta.cpp)
+pods_use_pkg_config_packages(se-pose-to-delta eigen3
+  lcmtypes_drc_lcmtypes bot2-param-client bot2-frames bot2-frames_cpp pronto_math)
+pods_install_executables(se-pose-to-delta)
