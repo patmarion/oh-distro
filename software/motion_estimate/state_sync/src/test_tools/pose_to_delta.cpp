@@ -45,11 +45,11 @@ App::App(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& ca_cfg_):
     lcm_(lcm_), ca_cfg_(ca_cfg_), previousPoseT_(0,Eigen::Isometry3d::Identity()){
 
   std::cout << "POSE_BODY body_linear_rate_to_local_linear_rate\n";
-  lcm_->subscribe( ca_cfg_.channel,&App::pbdih,this);  
+  lcm_->subscribe( ca_cfg_.channel,&App::poseHandler,this);  
 }
 
 void App::poseHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg){
-  std::cout << channel <<  "\n" << msg->utime << "\n";
+  // std::cout << channel <<  " " << msg->utime << "\n";
 
   if (previousPoseT_.utime == 0){
     std::cout << "initializing pose\n";
@@ -60,14 +60,14 @@ void App::poseHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel
 
   // Get the delta distance travelled:
   Eigen::Isometry3d deltaPose = previousPoseT_.pose.inverse() * currentPoseT.pose ;  
-  double dt = (currentPoseT.utime - previousPoseT_.utime)*1E-6;
-  Isometry3dTime deltaPoseT = Isometry3dTime(dt, deltaPose);
+  Isometry3dTime deltaPoseT = Isometry3dTime(currentPoseT.utime, deltaPose);
   bot_core::pose_t msg_out = pronto::getIsometry3dAsBotPose(deltaPoseT.pose, deltaPoseT.utime);
   lcm_->publish(std::string(ca_cfg_.channel + "_DELTA"),&msg_out);
 
   // Convert delta distance into a rate
-  Eigen::Isometry3d ratePose = pronto::getTransAsVelocityTrans(deltaPoseT.pose, deltaPoseT.utime);
-  bot_core::pose_t msg_out_rate = pronto::getIsometry3dAsBotPose(ratePose, deltaPoseT.utime);
+  int64_t dt = (currentPoseT.utime - previousPoseT_.utime);
+  Eigen::Isometry3d ratePose = pronto::getTransAsVelocityTrans(deltaPoseT.pose, dt);
+  bot_core::pose_t msg_out_rate = pronto::getIsometry3dAsBotPoseVelocity(ratePose, deltaPoseT.utime);
   lcm_->publish(std::string(ca_cfg_.channel + "_VELOCITY"),&msg_out_rate);
 
   previousPoseT_ = currentPoseT;
