@@ -1,8 +1,8 @@
 #include "lcm2ros_ihmc.hpp"
 
-/*
-ihmc_msgs::FootstepDataMessage LCM2ROS::convertFootStepToIHMC(const drc::footstep_t &drc_step) {
-  ihmc_msgs::FootstepDataMessage ihmc_step;
+
+ihmc_msgs::FootstepDataRosMessage LCM2ROS::convertFootStepToIHMC(const drc::footstep_t &drc_step) {
+  ihmc_msgs::FootstepDataRosMessage ihmc_step;
   ihmc_step.robot_side = drc_step.is_right_foot;
   ihmc_step.location.x = drc_step.pos.translation.x;
   ihmc_step.location.y = drc_step.pos.translation.y;
@@ -23,7 +23,7 @@ ihmc_msgs::FootstepDataMessage LCM2ROS::convertFootStepToIHMC(const drc::footste
     // a value of null will default to use the entire foot
     if (drc_step.params.support_contact_groups == 1)
     {
-      ihmc_msgs::Point2dMessage point;
+      ihmc_msgs::Point2dRosMessage point;
       point.x = 0.5 * foot_length;
       point.y = -0.5 * foot_width;
       ihmc_step.predicted_contact_points.push_back(point);
@@ -39,7 +39,7 @@ ihmc_msgs::FootstepDataMessage LCM2ROS::convertFootStepToIHMC(const drc::footste
     }
     else if (drc_step.params.support_contact_groups == 2)
     {
-      ihmc_msgs::Point2dMessage point;
+      ihmc_msgs::Point2dRosMessage point;
       point.x = 0.166666667 * foot_length;
       point.y = -0.5 * foot_width;
       ihmc_step.predicted_contact_points.push_back(point);
@@ -91,7 +91,7 @@ void LCM2ROS::footstepPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::str
 {
   ROS_ERROR("LCM2ROS got WALKING_CONTROLLER_PLAN_REQUEST (non-pronto and drake mode)");
 
-  ihmc_msgs::FootstepDataListMessage mout;
+  ihmc_msgs::FootstepDataListRosMessage mout;
   mout.transfer_time = msg->footstep_plan.footsteps[0].params.ihmc_transfer_time;
   mout.swing_time = msg->footstep_plan.footsteps[0].params.ihmc_swing_time;
   for (int i = 2; i < msg->footstep_plan.num_steps; i++)  // skip the first two standing steps
@@ -101,12 +101,13 @@ void LCM2ROS::footstepPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::str
   walking_plan_pub_.publish(mout);
 }
 
+/*
 void LCM2ROS::footstepPlanBDIModeHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
                                          const drc::footstep_plan_t* msg)
 {
   ROS_ERROR("LCM2ROS got BDI_ADJUSTED_FOOTSTEP_PLAN or COMMITTED_FOOTSTEP_PLAN (pronto and bdi mode)");
 
-  ihmc_msgs::FootstepDataListMessage mout;
+  ihmc_msgs::FootstepDataListRosMessage mout;
   mout.transfer_time = msg->footsteps[0].params.ihmc_transfer_time;
   mout.swing_time = msg->footsteps[0].params.ihmc_swing_time;
   for (int i = 2; i < msg->num_steps; i++)  // skip the first two standing steps

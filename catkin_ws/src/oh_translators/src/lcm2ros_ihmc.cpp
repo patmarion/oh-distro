@@ -34,7 +34,7 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
 
   ////////////////// Subscriptions and Adverts //////////////////////
   // If pronto is running never send plans like this:
-//  lcm_->subscribe("WALKING_CONTROLLER_PLAN_REQUEST", &LCM2ROS::footstepPlanHandler, this);
+  lcm_->subscribe("WALKING_CONTROLLER_PLAN_REQUEST", &LCM2ROS::footstepPlanHandler, this);
   // COMMITTED_FOOTSTEP_PLAN is creating in Pronto frame and transformed into 
   // BDI/IHMC coordinate frame using BDI_ADJUSTED_FOOTSTEP_PLAN
 //  lcm_->subscribe("BDI_ADJUSTED_FOOTSTEP_PLAN", &LCM2ROS::footstepPlanBDIModeHandler, this);
@@ -44,16 +44,16 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
 
 //  lcm_->subscribe("VAL_COMMAND_PAUSE", &LCM2ROS::pauseHandler, this);
 //  lcm_->subscribe("STOP_WALKING", &LCM2ROS::stopHandler, this);  // from Director
-  pause_pub_ = nh_.advertise<ihmc_msgs::PauseWalkingRosMessage>("/ihmc_ros/" + robotName_ + "/control/pause_footstep_exec",
+  pause_pub_ = nh_.advertise<ihmc_msgs::PauseWalkingRosMessage>("/ihmc_ros/" + robotName_ + "/control/pause_walking",
                                                              10);
 //  lcm_->subscribe("COMMITTED_PLAN_PAUSE", &LCM2ROS::stopManipHandler, this);  // from Director to stop manipulation plans
   stop_manip_pub_ = nh_.advertise<ihmc_msgs::StopAllTrajectoryRosMessage>(
       "/ihmc_ros/" + robotName_ + "/control/stop_motion", 10);
 
   // robot plan messages now used, untested
-//  lcm_->subscribe("COMMITTED_ROBOT_PLAN", &LCM2ROS::robotPlanHandler, this);
+  lcm_->subscribe("COMMITTED_ROBOT_PLAN", &LCM2ROS::robotPlanHandler, this);
   arm_joint_traj2_pub_ = nh_.advertise<ihmc_msgs::ArmTrajectoryRosMessage>(
-      "/ihmc_ros/" + robotName_ + "/control/arm_joint_trajectory", 10);
+      "/ihmc_ros/" + robotName_ + "/control/arm_trajectory", 10);
   whole_body_trajectory_pub_ = nh_.advertise<ihmc_msgs::WholeBodyTrajectoryRosMessage>(
       "/ihmc_ros/" + robotName_ + "/control/whole_body_trajectory", 10);
 
@@ -68,14 +68,14 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
 
 //  lcm_->subscribe("DESIRED_NECK_ANGLES", &LCM2ROS::neckPitchHandler, this);
 //  lcm_->subscribe("DESIRED_HEAD_ORIENTATION", &LCM2ROS::headOrientationHandler, this);
-  neck_orientation_pub_ = nh_.advertise<ihmc_msgs::HeadTrajectoryRosMessage>(
-      "/ihmc_ros/" + robotName_ + "/control/head_orientation", 10);
+//  neck_orientation_pub_ = nh_.advertise<ihmc_msgs::HeadTrajectoryRosMessage>(
+//      "/ihmc_ros/" + robotName_ + "/control/head_orientation", 10);
 
 //  lcm_->subscribe("DESIRED_LEFT_FOOT_POSE", &LCM2ROS::lFootPoseHandler, this);
 //  lcm_->subscribe("DESIRED_RIGHT_FOOT_POSE", &LCM2ROS::rFootPoseHandler, this);
   // Only one topic for both feet
-  foot_pose_pub_ = nh_.advertise<ihmc_msgs::FootTrajectoryRosMessage>(
-      "/ihmc_ros/" + robotName_ + "/control/foot_pose", 10);
+//  foot_pose_pub_ = nh_.advertise<ihmc_msgs::FootTrajectoryRosMessage>(
+//      "/ihmc_ros/" + robotName_ + "/control/foot_pose", 10);
 
 
 //  lcm_->subscribe("VAL_COMMAND_COM_HEIGHT", &LCM2ROS::comHeightHandler, this);
@@ -88,7 +88,7 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
 
 
   // Subscriptions that handle local variables:
-//  lcm_->subscribe("IHMC_CONTROL_MODE_COMMAND", &LCM2ROS::ihmcControlModeCommandHandler, this);
+  lcm_->subscribe("IHMC_CONTROL_MODE_COMMAND", &LCM2ROS::ihmcControlModeCommandHandler, this);
 
   node_ = new ros::NodeHandle();
 }

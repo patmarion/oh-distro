@@ -37,6 +37,7 @@ void LCM2ROS::handPoseCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::
   hand_pose_command_pub_.publish(rmsg);
 
 }
+*/
 
 void LCM2ROS::ihmcControlModeCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::int64_stamped_t* msg)
 {
@@ -110,7 +111,7 @@ void filterJointNamesToIHMC(std::vector<std::string> &joint_name)
 void LCM2ROS::sendSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
                                 std::vector<std::string> input_joint_names, bool is_right)
 {
-  ihmc_msgs::ArmJointTrajectoryPacketMessage m;
+  ihmc_msgs::ArmTrajectoryRosMessage m;
   bool status = getSingleArmPlan(msg, output_joint_names_arm, input_joint_names, is_right, m);
   if (status)
     arm_joint_traj2_pub_.publish(m);
@@ -131,7 +132,7 @@ double LCM2ROS::getPlanTimeAtWaypoint(int64_t planUtime)
 
 bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
                                std::vector<std::string> input_joint_names, bool is_right,
-                               ihmc_msgs::ArmJointTrajectoryPacketMessage &m)
+                               ihmc_msgs::ArmTrajectoryRosMessage &m)
 {
   // Find the indices of the arm joints which we want to extract
   std::vector<int> arm_indices;
@@ -164,6 +165,42 @@ bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::st
     m.robot_side = 0;
   }
 
+
+  for (int j = 0; j < arm_indices.size(); j++)
+  {
+
+    ihmc_msgs::OneDoFJointTrajectoryRosMessage joint_trajectory_message;
+
+    std::vector<ihmc_msgs::TrajectoryPoint1DRosMessage> points;
+    for (int i = 0; i < msg->num_states; i++)  // NB: skipping the first sample as it has time = 0
+    {
+      bot_core::robot_state_t state = msg->plan[i];
+      ihmc_msgs::TrajectoryPoint1DRosMessage point;
+      int i1 = (i > 0) ? (i - 1) : 0;
+      int i2 = i;
+      int i3 = (i < msg->num_states - 1) ? (i + 1) : (msg->num_states - 1);
+
+      point.position = state.joint_position[arm_indices[j]];
+      double dt1 = (msg->plan[i2].utime - msg->plan[i1].utime) * 1e-6;
+      double dt2 = (msg->plan[i3].utime - msg->plan[i2].utime) * 1e-6;
+      double dq1 = msg->plan[i2].joint_position[arm_indices[j]] - msg->plan[i1].joint_position[arm_indices[j]];
+      double dq2 = msg->plan[i3].joint_position[arm_indices[j]] - msg->plan[i2].joint_position[arm_indices[j]];
+      point.velocity = (dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0;
+      // point.accelerations.push_back( 0  );
+      // point.effort.push_back( state.joint_effort[ arm_indices[j] ] );
+
+      point.time = getPlanTimeAtWaypoint( state.utime );
+
+      points.push_back(point);
+    }
+    joint_trajectory_message.trajectory_points = points;
+    m.joint_trajectory_messages.push_back( joint_trajectory_message );
+  }
+
+  m.execution_mode = 0;//OVERRIDE;
+  m.previous_message_id = -1; // not used for override
+
+/*
   // m.joint_names = output_joint_names_arm;
   for (int i = 0; i < msg->num_states; i++)  // NB: skipping the first sample as it has time = 0
   {
@@ -187,10 +224,11 @@ bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::st
 //      std::cout << i << ": " << getPlanTimeAtWaypoint(state.utime) << " " << (state.utime - msg->plan[i-1].utime) * 1E-6
 //                << " is time and difference of the arm waypoints [Right: " << is_right << "]\n";
 
-
     }
     m.trajectory_points.push_back(point);
   }
+*/
+
   return true;
 }
 
@@ -254,7 +292,7 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
 {
   ROS_ERROR("LCM2ROS got robot plan with %d states", msg->num_states);
 
-  ihmc_msgs::WholeBodyTrajectoryPacketMessage wbt_msg;
+  ihmc_msgs::WholeBodyTrajectoryRosMessage wbt_msg;
   wbt_msg.unique_id = msg->utime;
 
   // 1. Insert Arm Joints
@@ -279,19 +317,20 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     {"rightShoulderPitch", "rightShoulderRoll", "rightShoulderYaw", "rightElbowPitch", "rightForearmYaw",
     "rightWristRoll", "rightWristPitch"};
   }
-  ihmc_msgs::ArmJointTrajectoryPacketMessage left_arm_trajectory;
+  ihmc_msgs::ArmTrajectoryRosMessage left_arm_trajectory;
   bool status_left = getSingleArmPlan(msg, l_arm_strings, input_joint_names, false, left_arm_trajectory);
-  ihmc_msgs::ArmJointTrajectoryPacketMessage right_arm_trajectory;
+  ihmc_msgs::ArmTrajectoryRosMessage right_arm_trajectory;
   bool status_right = getSingleArmPlan(msg, r_arm_strings, input_joint_names, true, right_arm_trajectory);
   if (!status_left || !status_right)
   {
     ROS_ERROR("LCM2ROS: problem with arm plan, not sending");
     return;
   }
-  wbt_msg.left_arm_trajectory = left_arm_trajectory;
-  wbt_msg.right_arm_trajectory = right_arm_trajectory;
-  wbt_msg.num_joints_per_arm = l_arm_strings.size();
+  wbt_msg.left_arm_trajectory_message = left_arm_trajectory;
+  wbt_msg.right_arm_trajectory_message = right_arm_trajectory;
+  //wbt_msg.num_joints_per_arm = l_arm_strings.size();
 
+  /*
   // 2. Insert Pelvis Pose
   for (int i = 0; i < msg->num_states; i++)  // NB: skipping the first sample as it has time = 0
   {
@@ -313,9 +352,10 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     std::cout << i << ": " << getPlanTimeAtWaypoint(state.utime) << " " << (state.utime - msg->plan[i-1].utime) * 1E-6 << " is time and difference of the pelvis waypoints\n";
 
   }
-  wbt_msg.num_waypoints = msg->num_states - 0;  // NB: skipping the first sample as it has time = 0
+  */
 
   // 3. Insert Chest Pose (in work frame)
+  /*
   std::vector<geometry_msgs::Quaternion> chest_trajectory;
   bool status_chest = getChestTrajectoryPlan(msg, chest_trajectory);
   if (!status_chest)
@@ -324,36 +364,10 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     return;
   }
   wbt_msg.chest_world_orientation = chest_trajectory;
+  */
 
   if (outputTrajectoryMode_ == TrajectoryMode::wholeBody)
   {
-    //  Temporary fix
-    bool send_last = false;
-    if(nh_.hasParam("/lcm2ros_ihmc/only_send_last_traj_point"))
-      nh_.getParam("/lcm2ros_ihmc/only_send_last_traj_point",send_last);
-    if(send_last)
-    {
-      ROS_WARN_STREAM("Actual trajectory length "<<msg->num_states<<", only last point will be sent");
-      wbt_msg.right_arm_trajectory.trajectory_points.resize(1);
-      wbt_msg.right_arm_trajectory.trajectory_points[0] = right_arm_trajectory.trajectory_points[right_arm_trajectory.trajectory_points.size()-1];
-      wbt_msg.left_arm_trajectory.trajectory_points.resize(1);
-      wbt_msg.left_arm_trajectory.trajectory_points[0] = left_arm_trajectory.trajectory_points[left_arm_trajectory.trajectory_points.size()-1];
-      bot_core::robot_state_t last_state = msg->plan[msg->num_states-1];
-      wbt_msg.pelvis_world_position.resize(1);
-      wbt_msg.pelvis_world_position[0].x = last_state.pose.translation.x;
-      wbt_msg.pelvis_world_position[0].y = last_state.pose.translation.y;
-      wbt_msg.pelvis_world_position[0].z = last_state.pose.translation.z;
-      wbt_msg.pelvis_world_orientation.resize(1);
-      wbt_msg.pelvis_world_orientation[0].x = last_state.pose.rotation.x;
-      wbt_msg.pelvis_world_orientation[0].y = last_state.pose.rotation.y;
-      wbt_msg.pelvis_world_orientation[0].z = last_state.pose.rotation.z;
-      wbt_msg.pelvis_world_orientation[0].w = last_state.pose.rotation.w;
-      wbt_msg.chest_world_orientation.resize(1);
-      wbt_msg.chest_world_orientation[0] = chest_trajectory[chest_trajectory.size()-1];
-      wbt_msg.time_at_waypoint.resize(1);
-      wbt_msg.time_at_waypoint[0] = getPlanTimeAtWaypoint(last_state.utime);
-      wbt_msg.num_waypoints = 1;
-    }
     whole_body_trajectory_pub_.publish(wbt_msg);
     ROS_ERROR("LCM2ROS sent Whole Body Trajectory");
   }
@@ -377,6 +391,7 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     ROS_ERROR("LCM2ROS sent right arm");
   }
 
+  /*
   if (1==0){
     if (robotName_.compare("valkyrie") == 0){
 
@@ -402,5 +417,6 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
       ROS_ERROR("LCM2ROS sent desired head orientation");
     }
   }
+  */
+  
 }
-*/
