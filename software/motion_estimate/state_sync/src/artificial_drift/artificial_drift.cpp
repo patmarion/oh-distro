@@ -1,7 +1,7 @@
 // Script which generates artificial drift and subscribes to a correction.
 // To be used in simulation.
 
-// Input: POSE_BODY_ALT, POSE_BODY_CORRECTED, Output: POSE_BODY_ALT_WITH_DRIFT
+// Input: POSE_BODY_ALT, POSE_BODY_CORRECTION, Output: POSE_BODY_ALT_WITH_DRIFT
 // Applies incremental drift while the robot is walking
 // Also, it subscribes to a correction which estimates (ICP) and corrects the drift
 
