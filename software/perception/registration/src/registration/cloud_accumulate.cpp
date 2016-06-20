@@ -4,10 +4,23 @@
 
 CloudAccumulate::CloudAccumulate(boost::shared_ptr<lcm::LCM> &lcm_, const CloudAccumulateConfig& ca_cfg_):
     lcm_(lcm_), ca_cfg_(ca_cfg_){
-  botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
-  botframes_= bot_frames_get_global(lcm_->getUnderlyingLCM(), botparam_);
-  
-  
+  BotParam* botparam = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
+  BotFrames* botframes = bot_frames_get_global(lcm_->getUnderlyingLCM(), botparam);
+  init(lcm_, ca_cfg_, botparam, botframes);
+}
+
+CloudAccumulate::CloudAccumulate(boost::shared_ptr<lcm::LCM> &lcm_, const CloudAccumulateConfig& ca_cfg_,
+  BotParam* botparam, BotFrames* botframes):
+    lcm_(lcm_), ca_cfg_(ca_cfg_){
+  init(lcm_, ca_cfg_, botparam, botframes);
+}
+
+void CloudAccumulate::init(boost::shared_ptr<lcm::LCM> &lcm_, const CloudAccumulateConfig& ca_cfg_,
+  BotParam* botparam, BotFrames* botframes)
+{  
+  botparam_ = botparam;
+  botframes_ = botframes;
+
   bool reset =0;
   pc_vis_ = new pronto_vis( lcm_->getUnderlyingLCM() );
   // obj: id name type reset
@@ -19,20 +32,16 @@ CloudAccumulate::CloudAccumulate(boost::shared_ptr<lcm::LCM> &lcm_, const CloudA
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(60012,"Cloud (full sweep) - Null"         ,1,1, 60010,1, {1.0, 0.0, 0.0} ));
   
   counter_ =0;  
-  verbose_=3; // 1 important, 2 useful 3, lots
+  verbose_=1; // 1 important, 2 useful 3, lots
   
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB> ());
-  combined_cloud_ = cloud_ptr;    
+  combined_cloud_ = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB> ());    
   
   finished_ = false;
   
   const char * laser_name;
-  if(ca_cfg_.lidar_channel == "FIXED_SCAN")
-    laser_name = ca_cfg_.lidar_channel.c_str();
-  else
-    laser_name = "laser";
+  laser_name = ca_cfg_.lidar_channel.c_str();
 
-  laser_projector_ = laser_projector_new(botparam_, botframes_, laser_name, 1); //TODO: "laser" name should be a param
+  laser_projector_ = laser_projector_new(botparam_, botframes_, laser_name, 1);
 }
 
 
@@ -97,7 +106,6 @@ void transformPointCloud(pronto::PointCloud &cloud_in, pronto::PointCloud &cloud
   }
 }
 
-
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr  CloudAccumulate::convertPlanarScanToCloud(std::shared_ptr<bot_core::planar_lidar_t> this_msg){
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr scan_local (new pcl::PointCloud<pcl::PointXYZRGB> ());
   
@@ -111,6 +119,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr  CloudAccumulate::convertPlanarScanToClou
     std::cout << "projection failed\n";
     return scan_local;
   }
+  // %%%%%%%%%%%%
 
   // 2. Convert set of points into a point cloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr scan_body (new pcl::PointCloud<pcl::PointXYZRGB> ());
@@ -130,6 +139,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr  CloudAccumulate::convertPlanarScanToClou
   
   // 3. Visualize the scan:
   Eigen::Isometry3d body_to_local;
+  // bot_frames_structure,from_frame,to_frame,utime,result
   get_trans_with_utime( botframes_ , "body", "local"  , this_msg->utime, body_to_local);
   
   // 4. Project the scan into local frame:
@@ -141,16 +151,22 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr  CloudAccumulate::convertPlanarScanToClou
   return scan_local;
 }
 
-
 void CloudAccumulate::processLidar(const  bot_core::planar_lidar_t* msg){
   
-//  if (!frame_check_tools_.isLocalToScanValid(botframes_)){
-//    return;
-//  }
-  
-  // Convert Scan to local frame:
   std::shared_ptr<bot_core::planar_lidar_t>  this_msg;
   this_msg = std::shared_ptr<bot_core::planar_lidar_t>(new bot_core::planar_lidar_t(*msg));
+  processLidar(this_msg);
+}
+
+
+void CloudAccumulate::processLidar(std::shared_ptr<bot_core::planar_lidar_t> this_msg){
+  
+  if (!frame_check_tools_.isLocalToScanValid(botframes_)){
+    cout << "Is local to scan valid? NO." << endl; 
+    return;
+  }
+  
+  // Convert Scan to local frame:
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr scan_local (new pcl::PointCloud<pcl::PointXYZRGB> ());
   scan_local = convertPlanarScanToCloud( this_msg );
     
@@ -162,5 +178,4 @@ void CloudAccumulate::processLidar(const  bot_core::planar_lidar_t* msg){
     std::cout << "Finished Collecting: " << this_msg->utime << "\n";
     finished_ = true;
   }
-
 }

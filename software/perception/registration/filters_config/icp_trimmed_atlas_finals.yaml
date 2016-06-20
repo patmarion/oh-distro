@@ -19,8 +19,6 @@ matcher:
 outlierFilters:
   - TrimmedDistOutlierFilter:
       ratio: 0.75
-#   - MaxDistOutlierFilter:
-#       maxDist: 0.025
 
 errorMinimizer:
   PointToPlaneErrorMinimizer

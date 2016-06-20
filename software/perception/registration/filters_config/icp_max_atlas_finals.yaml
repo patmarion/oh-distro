@@ -17,10 +17,10 @@ matcher:
     epsilon: 0 
 
 outlierFilters:
-  - TrimmedDistOutlierFilter:
-      ratio: 0.75
-#   - MaxDistOutlierFilter:
-#       maxDist: 0.025
+#  - TrimmedDistOutlierFilter:
+#      ratio: 0.75
+   - MaxDistOutlierFilter:
+       maxDist: 0.05
 
 errorMinimizer:
   PointToPlaneErrorMinimizer

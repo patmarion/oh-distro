@@ -19,6 +19,7 @@
 #include <pcl/point_types.h>
 #include <pcl/io/vtk_io.h>
 
+#include <icp-registration/vtkUtils.h>
 #include <icp-registration/icp_utils.h>
 #include <icp-registration/cloud_accumulate.hpp>
 
@@ -43,28 +44,46 @@ class Registration{
     Registration(boost::shared_ptr<lcm::LCM> &lcm_, const RegistrationConfig& reg_cfg_);
     
     ~Registration(){
-    }    
+    }   
+
+    PM::ICP getIcp(){ return icp_; } 
     
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCloud(int idx){ 
       if (idx == 0) 
         return reference_cloud_; 
-      else
-        return transformed_input_cloud_; }
+      else if (idx == 1)
+        return transformed_input_cloud_;
+      else if (idx == 2)
+        return input_cloud_;
+      else //idx == 3
+        return initialized_input_cloud_; }
     
     PM::TransformationParameters getTransform(){ return out_transform_; }
+    DP getDataOut(){ return out_cloud_; }
+    string getConfigFileName(){ return reg_cfg_.configFile3D_; }
     
-    void publishCloud(int cloud_id, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud);
+    void publishCloud(pronto_vis* vis, int cloud_id, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
     void getICPTransform(DP &cloud_in, DP &cloud_ref);
+
+    void setDefaultIcp(){ icp_.setDefault(); }
+
+    void setConfigFile(string configName){ 
+        reg_cfg_.configFile3D_.clear();
+        reg_cfg_.configFile3D_.append(configName); }
 
   private:
     boost::shared_ptr<lcm::LCM> lcm_;
     RegistrationConfig reg_cfg_;
-    
-    pronto_vis* pc_vis_ ;
+
+    // Create the default ICP algorithm
+    PM::ICP icp_;
   
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr reference_cloud_;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud_;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr initialized_input_cloud_;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_input_cloud_;
-    PM::TransformationParameters out_transform_;     
+    PM::TransformationParameters out_transform_;    
+    DP out_cloud_; 
 };
 
 #endif
