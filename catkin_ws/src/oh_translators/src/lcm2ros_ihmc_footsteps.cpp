@@ -94,6 +94,7 @@ void LCM2ROS::footstepPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::str
   ihmc_msgs::FootstepDataListRosMessage mout;
   mout.transfer_time = msg->footstep_plan.footsteps[0].params.ihmc_transfer_time;
   mout.swing_time = msg->footstep_plan.footsteps[0].params.ihmc_swing_time;
+  mout.unique_id = msg->utime; // TODO: needs a better ID, but without unique_id the message gets ignored
   for (int i = 2; i < msg->footstep_plan.num_steps; i++)  // skip the first two standing steps
   {
     mout.footstep_data_list.push_back(convertFootStepToIHMC(msg->footstep_plan.footsteps[i]));
