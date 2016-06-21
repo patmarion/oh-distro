@@ -26,22 +26,18 @@
 #include "lcmtypes/drc/scs_api_command_t.hpp"
 #include "lcmtypes/drc/int64_stamped_t.hpp"
 #include "lcmtypes/ihmc/com_height_packet_message_t.hpp"
-#include "lcmtypes/ihmc/pause_command_message_t.hpp"
 #include "lcmtypes/ihmc/hand_pose_packet_message_t.hpp"
 #include "lcmtypes/ihmc/foot_pose_packet_message_t.hpp"
 
 
-
-#include <ihmc_msgs/FootstepDataListRosMessage.h>
-//#include <ihmc_msgs/ComHeightPacketMessage.h>
-#include <ihmc_msgs/PauseWalkingRosMessage.h>
-//#include <ihmc_msgs/HandPosePacketMessage.h>
-#include <ihmc_msgs/ArmTrajectoryRosMessage.h>
-#include <ihmc_msgs/WholeBodyTrajectoryRosMessage.h>
-#include <ihmc_msgs/StopAllTrajectoryRosMessage.h>
-#include <ihmc_msgs/HeadTrajectoryRosMessage.h>
-#include <ihmc_msgs/FootTrajectoryRosMessage.h>
 #include <std_msgs/String.h>
+#include <ihmc_msgs/FootstepDataListRosMessage.h>
+#include <ihmc_msgs/PauseWalkingRosMessage.h>
+#include <ihmc_msgs/StopAllTrajectoryRosMessage.h>
+#include <ihmc_msgs/WholeBodyTrajectoryRosMessage.h>
+//#include <ihmc_msgs/ArmTrajectoryRosMessage.h>
+//#include <ihmc_msgs/HeadTrajectoryRosMessage.h>
+//#include <ihmc_msgs/FootTrajectoryRosMessage.h>
 
 #define LEFT 0
 #define RIGHT 1
@@ -92,8 +88,6 @@ const char * getTrajectoryName( int enumVal )
   ihmc_msgs::FootstepDataRosMessage convertFootStepToIHMC(const drc::footstep_t & drc_step);
 
   // Safety Messages
-  void pauseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                    const ihmc::pause_command_message_t* msg);
   void stopHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::plan_control_t* msg);
   void stopManipHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::plan_control_t* msg);
   ros::Publisher pause_pub_, stop_manip_pub_;

@@ -102,7 +102,7 @@ void LCM2ROS::footstepPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::str
   walking_plan_pub_.publish(mout);
 }
 
-/*
+
 void LCM2ROS::footstepPlanBDIModeHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
                                          const drc::footstep_plan_t* msg)
 {
@@ -111,13 +111,13 @@ void LCM2ROS::footstepPlanBDIModeHandler(const lcm::ReceiveBuffer* rbuf, const s
   ihmc_msgs::FootstepDataListRosMessage mout;
   mout.transfer_time = msg->footsteps[0].params.ihmc_transfer_time;
   mout.swing_time = msg->footsteps[0].params.ihmc_swing_time;
+  mout.unique_id = msg->utime; // TODO: needs a better ID, but without unique_id the message gets ignored 
   for (int i = 2; i < msg->num_steps; i++)  // skip the first two standing steps
   {
     mout.footstep_data_list.push_back(convertFootStepToIHMC(msg->footsteps[i]));
   }
   walking_plan_pub_.publish(mout);
 }
-
 
 void LCM2ROS::lFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const ihmc::foot_pose_packet_message_t* msg)
 {
@@ -141,17 +141,35 @@ void LCM2ROS::rFootPoseHandler(const lcm::ReceiveBuffer* rbuf, const std::string
 
 void LCM2ROS::sendFootPose(const ihmc::foot_pose_packet_message_t* msg)
 {
-  ihmc_msgs::FootPosePacketMessage mout;
-  mout.trajectory_time = msg->trajectory_time;
-  mout.position.x = msg->position[0];
-  mout.position.y = msg->position[1];
-  mout.position.z = msg->position[2];
-  mout.orientation.w = msg->orientation[0];
-  mout.orientation.x = msg->orientation[1];
-  mout.orientation.y = msg->orientation[2];
-  mout.orientation.z = msg->orientation[3];
-  mout.unique_id = msg->utime;
+  ihmc_msgs::SE3TrajectoryPointRosMessage point;
+  point.time = msg->trajectory_time;
+
+  point.position.x = msg->position[0];
+  point.position.y = msg->position[1];
+  point.position.z = msg->position[2];
+  point.orientation.w = msg->orientation[0];
+  point.orientation.x = msg->orientation[1];
+  point.orientation.y = msg->orientation[2];
+  point.orientation.z = msg->orientation[3];
+
+  point.linear_velocity.x = 0;
+  point.linear_velocity.y = 0;
+  point.linear_velocity.z = 0;
+  point.angular_velocity.x = 0;
+  point.angular_velocity.y = 0;
+  point.angular_velocity.z = 0;
+  point.unique_id = -1;
+
+  std::vector<ihmc_msgs::SE3TrajectoryPointRosMessage> points;
+  points.push_back(point);
+
+
+  ihmc_msgs::FootTrajectoryRosMessage mout;
   mout.robot_side = msg->robot_side;
+  mout.taskspace_trajectory_points = points;
+  mout.execution_mode = 0;//OVERRIDE;
+  mout.previous_message_id = -1;
+  mout.unique_id = msg->utime;
   foot_pose_pub_.publish(mout);
+
 }
-*/

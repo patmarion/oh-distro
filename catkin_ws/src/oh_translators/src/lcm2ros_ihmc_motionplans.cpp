@@ -1,43 +1,54 @@
 #include "lcm2ros_ihmc.hpp"
 #include "lcm2ros_ihmc_conversions.hpp"
 
-/*
+
 void LCM2ROS::handPoseCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::pose_t* msg)
 {
 
   ROS_ERROR("LCM2ROS got hand pose on %s" , channel.c_str() );
 
-  ihmc_msgs::HandPosePacketMessage rmsg;
+  ihmc_msgs::SE3TrajectoryPointRosMessage point;
+  point.time = 10;
+
+  point.position.x = msg->pos[0];
+  point.position.y = msg->pos[1];
+  point.position.z = msg->pos[2];
+  point.orientation.w = msg->orientation[0];
+  point.orientation.x = msg->orientation[1];
+  point.orientation.y = msg->orientation[2];
+  point.orientation.z = msg->orientation[3];
+
+  point.linear_velocity.x = 0;
+  point.linear_velocity.y = 0;
+  point.linear_velocity.z = 0;
+  point.angular_velocity.x = 0;
+  point.angular_velocity.y = 0;
+  point.angular_velocity.z = 0;
+  point.unique_id = -1;
+
+  std::vector<ihmc_msgs::SE3TrajectoryPointRosMessage> points;
+  points.push_back(point);
+
+
+  ihmc_msgs::HandTrajectoryRosMessage mout;
+  mout.base_for_control = 1;//WORLD;
+  mout.taskspace_trajectory_points = points;
+  mout.execution_mode = 0;//OVERRIDE;
+  mout.previous_message_id = -1;
+  mout.unique_id = msg->utime;
+
   if (channel == "HAND_POSE_COMMAND_LEFT")
   {
-    rmsg.robot_side = LEFT;
+    mout.robot_side = LEFT;
   }
   else if (channel == "HAND_POSE_COMMAND_RIGHT")
   {
-    rmsg.robot_side = RIGHT;
+    mout.robot_side = RIGHT;
   }
 
-  rmsg.data_type = 0; // hand pose
-  rmsg.reference_frame = 1; // world
-
-  rmsg.position.x = msg->pos[0];
-  rmsg.position.y = msg->pos[1];
-  rmsg.position.z = msg->pos[2];
-
-  rmsg.orientation.w = msg->orientation[0];
-  rmsg.orientation.x = msg->orientation[1];
-  rmsg.orientation.y = msg->orientation[2];
-  rmsg.orientation.z = msg->orientation[3];  
-
-  rmsg.trajectory_time = 10;
-  rmsg.control_orientation = true;
-  rmsg.unique_id = msg->utime;
-
-
-  hand_pose_command_pub_.publish(rmsg);
-
+  hand_pose_command_pub_.publish(mout);
 }
-*/
+
 
 void LCM2ROS::ihmcControlModeCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::int64_stamped_t* msg)
 {
@@ -199,6 +210,7 @@ bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::st
 
   m.execution_mode = 0;//OVERRIDE;
   m.previous_message_id = -1; // not used for override
+  m.unique_id = msg->utime; // this is now required for execution
 
 /*
   // m.joint_names = output_joint_names_arm;
@@ -365,6 +377,13 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
   }
   wbt_msg.chest_world_orientation = chest_trajectory;
   */
+
+  wbt_msg.left_hand_trajectory_message.unique_id = -1;
+  wbt_msg.right_hand_trajectory_message.unique_id = -1;
+  wbt_msg.chest_trajectory_message.unique_id = -1;
+  wbt_msg.pelvis_trajectory_message.unique_id = -1;
+  wbt_msg.left_foot_trajectory_message.unique_id = -1;
+  wbt_msg.right_foot_trajectory_message.unique_id = -1;
 
   if (outputTrajectoryMode_ == TrajectoryMode::wholeBody)
   {
