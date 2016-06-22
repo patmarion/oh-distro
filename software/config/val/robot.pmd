@@ -103,38 +103,48 @@ group "6.exotica" {
 }
 
 group "7.control" {
-    cmd "JointStatePublisher" {
+    cmd "1. JointStatePublisher" {
         exec = "roslaunch valkyrie_translator JointStatePublisher.launch";
         host = "link";
     }
 
-    cmd "LCM2ROSControl" {
+    cmd "9. LCM2ROSControl" {
         exec = "roslaunch valkyrie_translator LCM2ROSControl.launch";
         host = "link";
     }
 
-    cmd "NeckControl" {
+    cmd "2. NeckControl" {
         exec = "roslaunch valkyrie_translator NeckControl.launch";
         host = "link";
     }
 
-    cmd "LeftHandControl" {
+    cmd "3.a. LeftHandControl" {
         exec = "roslaunch valkyrie_translator UoE_LeftHandControl.launch";
         host = "link";
     }
 
-    cmd "RightHandControl" {
+    cmd "3.b. RightHandControl" {
         exec = "roslaunch valkyrie_translator UoE_RightHandControl.launch";
         host = "link";
     }
 
-    cmd "LeftForearmControl" {
+    cmd "3.c. BothHandControl" {
+        exec = "roslaunch valkyrie_translator UoE_BothHandControl.launch";
+        host = "link";
+    }
+
+    cmd "4.a. LeftForearmControl" {
         exec = "roslaunch valkyrie_translator LeftForearmControl.launch";
         host = "link";
     }
 
-    cmd "RightForearmControl" {
+    cmd "4.b. RightForearmControl" {
         exec = "roslaunch valkyrie_translator RightForearmControl.launch";
+        host = "link";
+    }
+
+    cmd "4.c. BothForearmControl" {
+        exec = "roslaunch valkyrie_translator BothForearmControl.launch";
         host = "link";
     }
 }
