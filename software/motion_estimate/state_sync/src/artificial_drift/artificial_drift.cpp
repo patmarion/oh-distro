@@ -89,7 +89,7 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
   }
 
   // If we got an updated correction: apply correction
-  if(cl_cfg_->apply_correction == "y" && updatedCorrection_)
+  if(cl_cfg_->apply_correction && updatedCorrection_)
   {
     // PROBLEM: the result of each correction depends on the previous corrections.
     // Correction should be applied to the pose estimated using kin only.
@@ -97,7 +97,7 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     correction_ = currentCorrection_.pose;
     driftingPose_.pose = correction_ * driftingPose_.pose;
   }
-  else if(cl_cfg_->apply_correction == "n")
+  else if(!(cl_cfg_->apply_correction))
   {
     // Apply correction if available (identity otherwise)
     Eigen::Isometry3d corrected_pose;
@@ -130,7 +130,7 @@ int main(int argc, char ** argv)
   std::shared_ptr<CommandLineConfig> cl_cfg(new CommandLineConfig());
   ConciseArgs opt(argc, (char**)argv);
   opt.add(cl_cfg->output_channel, "o", "output_channel","Output Channel for robot state msg");
-  opt.add(cl_cfg->apply_correction, "c", "apply_correction","Correct POSE_BODY_ALT_WITH_DRIFT? (i.e. y or n)");
+  opt.add(cl_cfg->apply_correction, "c", "apply_correction","Correct POSE_BODY_ALT_WITH_DRIFT?");
   opt.parse();
 
   std::shared_ptr<lcm::LCM> lcm(new lcm::LCM());

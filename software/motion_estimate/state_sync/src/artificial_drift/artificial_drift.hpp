@@ -19,7 +19,7 @@ class CommandLineConfig{
     CommandLineConfig(){
       // Read from command line:
       output_channel = "EST_ROBOT_STATE";
-      apply_correction = "n";
+      apply_correction = false;
 
       // drift rates (in si) per second (reasonable rates)
       x_drift_rate = 0.0005;
@@ -40,7 +40,7 @@ class CommandLineConfig{
     ~CommandLineConfig(){};
 
     std::string output_channel;
-    std::string apply_correction;
+    bool apply_correction;
 
   // drift rates (in si) per second
   double x_drift_rate;
