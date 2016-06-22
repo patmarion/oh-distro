@@ -378,12 +378,52 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
   wbt_msg.chest_world_orientation = chest_trajectory;
   */
 
-  wbt_msg.left_hand_trajectory_message.unique_id = -1;
-  wbt_msg.right_hand_trajectory_message.unique_id = -1;
-  wbt_msg.chest_trajectory_message.unique_id = -1;
+
+  // Various bits and bobs required for the WBT to do <something> at present
+  // the below are all hacks but are needed  until some bugs from IHMC are resolved
+  wbt_msg.left_hand_trajectory_message.unique_id = 0;
+  wbt_msg.right_hand_trajectory_message.unique_id = 0;
+  wbt_msg.chest_trajectory_message.unique_id = 0;
+  wbt_msg.pelvis_trajectory_message.unique_id = 0;
+  wbt_msg.left_foot_trajectory_message.unique_id = 0;
+  wbt_msg.right_foot_trajectory_message.unique_id = 0;
+
+  wbt_msg.left_hand_trajectory_message.execution_mode = 1;
+  wbt_msg.right_hand_trajectory_message.execution_mode = 1;
+  wbt_msg.chest_trajectory_message.execution_mode = 1;
+  wbt_msg.pelvis_trajectory_message.execution_mode = 1;
+  wbt_msg.left_foot_trajectory_message.execution_mode = 1;
+  wbt_msg.right_foot_trajectory_message.execution_mode = 1;
+
+  wbt_msg.right_hand_trajectory_message.robot_side = 1;
+  wbt_msg.right_foot_trajectory_message.robot_side = 1;
+
+
+  ihmc_msgs::SE3TrajectoryPointRosMessage point;
+  point.time = 3;//msg->trajectory_time;
+
+  point.position.x = -0.06;
+  point.position.y = -0.06;
+  point.position.z = 1.0;
+  point.orientation.w = 1;
+  point.orientation.x = 0;
+  point.orientation.y = 0;
+  point.orientation.z = 0;
+
+  point.linear_velocity.x = 0;
+  point.linear_velocity.y = 0;
+  point.linear_velocity.z = 0;
+  point.angular_velocity.x = 0;
+  point.angular_velocity.y = 0;
+  point.angular_velocity.z = 0;
+  point.unique_id = -1;
+  wbt_msg.pelvis_trajectory_message.taskspace_trajectory_points.push_back(point);
+
   wbt_msg.pelvis_trajectory_message.unique_id = -1;
-  wbt_msg.left_foot_trajectory_message.unique_id = -1;
-  wbt_msg.right_foot_trajectory_message.unique_id = -1;
+  wbt_msg.pelvis_trajectory_message.execution_mode = 0;
+
+  // end hacks
+
 
   if (outputTrajectoryMode_ == TrajectoryMode::wholeBody)
   {
