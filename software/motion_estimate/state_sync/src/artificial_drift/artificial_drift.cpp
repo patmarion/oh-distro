@@ -103,7 +103,7 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     Eigen::Isometry3d corrected_pose;
     corrected_pose = currentCorrection_.pose * driftingPose_.pose;
     // To correct robot drift publish CORRECTED POSE
-    bot_core::pose_t corr_out = getIsometry3dAsBotPose(corrected_pose, driftingPose_.utime);
+    bot_core::pose_t corr_out = pronto::getIsometry3dAsBotPose(corrected_pose, driftingPose_.utime);
     lcm_->publish("POSE_BODY_CORRECTED",&corr_out);
   }
 
@@ -115,7 +115,7 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
 
 void App::poseCorrHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg){
     previousCorrection_ = currentCorrection_;
-    currentCorrection_ = getPoseAsIsometry3dTime(msg);
+    currentCorrection_ = pronto::getPoseAsIsometry3dTime(msg);
 
     // Did we get an updated correction?
     if((currentCorrection_.pose.rotation() != previousCorrection_.pose.rotation())
