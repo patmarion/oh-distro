@@ -3,7 +3,6 @@
 // Input: POSE_BODY, Output POSE_BODY_CORRECTED
 // Computes T_DICP and corrects the estimate from ihmc (POSE_BODY)
 
-
 #include <zlib.h>
 #include <lcm/lcm-cpp.hpp>
 
@@ -27,8 +26,10 @@
 #include <icp-registration/icp_utils.h>
 #include <icp-registration/vtkUtils.h>
 
-#include "drawingUtils/drawingUtils.hpp"
 #include "timingUtils/timingUtils.hpp"
+#include "drawingUtils/drawingUtils.hpp"
+#include "filteringUtils/filteringUtils.hpp"
+
 #include "aligned_sweeps_collection.hpp"
 
 using namespace std;
@@ -50,8 +51,6 @@ class App{
     
     CloudAccumulateConfig ca_cfg_;
     RegistrationConfig reg_cfg_;
-
-    void plotBotFrame(const char* from_frame, const char* to_frame, int64_t utime);
 
     // thread function for doing actual work
     void operator()();
@@ -83,6 +82,7 @@ class App{
     AlignedSweepsCollection* sweep_scans_list_;
 
     // Transformation matrices
+    Eigen::Isometry3d local_;
     Eigen::Isometry3d body_to_lidar_; // Variable tf from the lidar to the robot's base link
     Eigen::Isometry3d head_to_lidar_; // Fixed tf from the lidar to the robot's head frame
     Eigen::Isometry3d world_to_body_msg_; // Captures the position of the body frame in world from launch
@@ -100,6 +100,13 @@ class App{
     bool accumulate_;
     int robot_behavior_now_;
     int robot_behavior_previous_;
+
+    // Overlap parameter
+    float overlap_;
+    float angularView_;
+    float outlierFilterRatio_;
+    // Temporary config file for ICP chain: copied and trimmed ratio replaced
+    string tmpConfigName_;
 
     // Correction variables
     Eigen::Isometry3d current_correction_;
@@ -134,6 +141,19 @@ App::App(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_,
   robot_behavior_now_ = -1;
   robot_behavior_previous_ = -1;
 
+  overlap_ = -1.0;
+  outlierFilterRatio_ = 0.40;
+  if (cl_cfg_.robot_name == "val")
+    angularView_ = 200.0;
+  else if (cl_cfg_.robot_name == "atlas")
+    angularView_ = 220.0;
+  else
+    angularView_ = 270.0;
+  // File used to update config file for ICP chain
+  tmpConfigName_.append(getenv("DRC_BASE"));
+  tmpConfigName_.append("/software/perception/registration/filters_config/icp_autotuned_default.yaml");
+
+  local_ = Eigen::Isometry3d::Identity();
   world_to_body_msg_ = Eigen::Isometry3d::Identity();
   world_to_frame_vicon_ = Eigen::Isometry3d::Identity();
   world_to_frame_vicon_first_ = Eigen::Isometry3d::Identity();
@@ -246,29 +266,40 @@ Eigen::Isometry3d App::getTransfParamAsIsometry3d(PM::TransformationParameters T
   return pose_iso;
 }
 
-void App::plotBotFrame(const char* from_frame, const char* to_frame, int64_t utime)
-{
-  Eigen::Isometry3d transform;
-  get_trans_with_utime( botframes_, from_frame, to_frame, utime, transform); 
-
-  //To director
-  bot_lcmgl_t* lcmgl_fr = bot_lcmgl_init(lcm_->getUnderlyingLCM(), from_frame);
-  drawFrame(lcmgl_fr, transform);
-}
-
 void App::doRegistration(DP &reference, DP &reading, DP &output, PM::TransformationParameters &T)
 {
+  // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  // To file: DEBUG
+  std::stringstream vtk_fname;
+  vtk_fname << "beforeICP_";
+  vtk_fname << to_string(sweep_scans_list_->getNbClouds());
+  vtk_fname << ".vtk";
+  savePointCloudVTK(vtk_fname.str().c_str(), reading);
+  // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   // ............do registration.............
   // First ICP loop
   string configName1;
-  configName1.append(reg_cfg_.homedir);
-  //configName1.append("/oh-distro/software/perception/registration/filters_config/Chen91_pt2plane.yaml");
-  configName1.append("/oh-distro/software/perception/registration/filters_config/icp_trimmed_atlas_finals.yaml");
+  configName1.append(getenv("DRC_BASE"));
+  //configName1.append("/software/perception/registration/filters_config/Chen91_pt2plane.yaml");
+  configName1.append("/software/perception/registration/filters_config/icp_autotuned.yaml");
+
+  // Auto-tune ICP chain (quantile for the Trimmed Outlier Filter)
+  float current_ratio = overlap_/100.0;
+  if (current_ratio < 0.25)
+    current_ratio = 0.25;
+  replaceRatioConfigFile(tmpConfigName_, configName1, current_ratio);
+
   registr_->setConfigFile(configName1);
   registr_->getICPTransform(reading, reference);
   PM::TransformationParameters T1 = registr_->getTransform();
   cout << "3D Transformation (Trimmed Outlier Filter):" << endl << T1 << endl;
-  DP out1 = registr_->getDataOut();
+  // Store output after first ICP
+  // (if second ICP gives exception the output cloud remains this one)
+  output = registr_->getDataOut();
+
+  PM::ICP icp = registr_->getIcp();
+  DP readFiltered = icp.getReadingFiltered();
 
   // To file, registration advanced %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% EVALUATION
   /*
@@ -277,38 +308,40 @@ void App::doRegistration(DP &reference, DP &reading, DP &output, PM::Transformat
   PM::Matrix distsRead = distancesKNN(reference, reading);
   writeLineToFile(distsRead, "distsBeforeRegistration.txt", line_number);
   // Distance out_trimmed_filter points from KNN in ref
-  PM::Matrix distsOut1 = distancesKNN(reference, out1);
+  PM::Matrix distsOut1 = distancesKNN(reference, output);
   writeLineToFile(distsOut1, "distsAfterSimpleRegistration.txt", line_number);*/
+  pairedPointsMeanDistance(reference, output, icp);
 
   // To director
-  std::stringstream vtk_simpleICP;
-  vtk_simpleICP << "accum_simpleICP_";
-  vtk_simpleICP << to_string(sweep_scans_list_->getNbClouds());
-  vtk_simpleICP << ".vtk";
-  bot_lcmgl_t* lcmgl_pc1 = bot_lcmgl_init(lcm_->getUnderlyingLCM(), vtk_simpleICP.str().c_str());
-  drawPointCloud(lcmgl_pc1, out1);
+  //drawPointCloudCollections(lcm_, sweep_scans_list_->getNbClouds(), local_, output, 1);
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+/*
   // Second ICP loop
-  // DP out1 = registr_->getDataOut();
-  /*string configName2;
-  configName2.append(reg_cfg_.homedir);
-  configName2.append("/oh-distro/software/perception/registration/filters_config/icp_max_atlas_finals.yaml");
+  string configName2;
+  configName2.append(getenv("DRC_BASE"));
+  configName2.append("/software/perception/registration/filters_config/icp_max_atlas_finals.yaml");
   registr_->setConfigFile(configName2);
+  PM::TransformationParameters T2 = PM::TransformationParameters::Identity(4,4);
 
-  registr_->getICPTransform(out1, reference);
-  PM::TransformationParameters T2 = registr_->getTransform();
-  cout << "3D Transformation (Max Distance Outlier Filter):" << endl << T2 << endl;*/
-  output = registr_->getDataOut();
+  try {
+    registr_->getICPTransform(output, reference);
+    T2 = registr_->getTransform();
+    cout << "3D Transformation (Max Distance Outlier Filter):" << endl << T2 << endl;
+    output = registr_->getDataOut();
 
-  // To file, registration advanced %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% EVALUATION
-  /*
-  // Distance out_max_filter points from KNN in ref
-  PM::Matrix distsOut2 = distancesKNN(reference, output);
-  writeLineToFile(distsOut2, "distsAfterAdvancedRegistration.txt", line_number);*/
-  //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    // To file, registration advanced %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% EVALUATION
+    // // Distance out_max_filter points from KNN in ref
+    // PM::Matrix distsOut2 = distancesKNN(reference, output);
+    // writeLineToFile(distsOut2, "distsAfterAdvancedRegistration.txt", line_number);
+    pairedPointsMeanDistance(reference, output, icp);
+    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  }
+  catch (std::runtime_error e) {
+    cout << "Exception: No points for Max Outlier Distance --> T2 = Identity \n";
+    T2 = PM::TransformationParameters::Identity(4,4);
+  }
 
-  //T = T2 * T1;
+  T = T2 * T1;*/
   T = T1;
 }
 
@@ -341,7 +374,7 @@ void App::operator()() {
       vector<LidarScan> first_sweep_scans_list = scans_queue.front();
       scans_queue.pop_front();
 
-      // To file and drawing
+      // To file
       std::stringstream vtk_fname;
       vtk_fname << "accum_advICP_";
       vtk_fname << to_string(sweep_scans_list_->getNbClouds());
@@ -351,11 +384,8 @@ void App::operator()() {
         current_sweep->populateSweepScan(first_sweep_scans_list, dp_cloud, sweep_scans_list_->getNbClouds());
         sweep_scans_list_->initializeCollection(*current_sweep);
 
-        // To director (NOTE: Visualization using lcmgl shows (sometimes) imperfections
-        // in clouds (random lines). The clouds are actually correct, but lcm cannot manage 
-        // so many points and introduces mistakes in visualization.
-        bot_lcmgl_t* lcmgl_pc = bot_lcmgl_init(lcm_->getUnderlyingLCM(), "ref_cloud");
-        drawPointCloud(lcmgl_pc, dp_cloud);
+        // To director
+        drawPointCloudCollections(lcm_, 0, local_, dp_cloud, 1);
       }
       else
       {
@@ -364,6 +394,20 @@ void App::operator()() {
         DP ref = sweep_scans_list_->getReference().getCloud();
         DP out;
         PM::TransformationParameters Ttot;
+
+        // PRE-FILTERING using filteringUtils
+        //planeModelSegmentationFilter(ref);
+        //planeModelSegmentationFilter(dp_cloud);
+        regionGrowingPlaneSegmentationFilter(ref);
+        regionGrowingPlaneSegmentationFilter(dp_cloud);
+        //Overlap
+        Eigen::Isometry3d ref_pose = sweep_scans_list_->getReference().getBodyPose();
+        Eigen::Isometry3d read_pose = first_sweep_scans_list.back().getBodyPose();
+        DP ref_try, read_try;
+        ref_try = ref;
+        read_try = dp_cloud;
+        overlap_ = overlapFilter(ref_try, read_try, ref_pose, read_pose, ca_cfg_.max_range, angularView_);
+        cout << "Overlap: " << overlap_ << "%" << endl;
 
         this->doRegistration(ref, dp_cloud, out, Ttot);
 
@@ -381,8 +425,7 @@ void App::operator()() {
         sweep_scans_list_->addSweep(*current_sweep, Ttot);
 
         // To director
-        bot_lcmgl_t* lcmgl_pc = bot_lcmgl_init(lcm_->getUnderlyingLCM(), vtk_fname.str().c_str());
-        //drawPointCloud(lcmgl_pc, out);  
+        drawPointCloudCollections(lcm_, sweep_scans_list_->getNbClouds(), local_, out, 1);
       }
      
       // To file
@@ -400,7 +443,6 @@ void App::planarLidarHandler(const lcm::ReceiveBuffer* rbuf, const std::string& 
     cout << "Estimate not initialized, exiting planarLidarHandler.\n";
     return;
   }
-  //plotBotFrame("head", "local", msg->utime);
     
   // 1. copy robot state
   Eigen::Isometry3d world_to_body_last;
@@ -418,7 +460,8 @@ void App::planarLidarHandler(const lcm::ReceiveBuffer* rbuf, const std::string& 
   world_to_head_now_ = world_to_lidar_now * head_to_lidar_.inverse();
   // 4. Store in LidarScan current scan wrt lidar frame
   LidarScan* current_scan = new LidarScan(msg->utime,msg->rad0,msg->radstep,
-                                          msg->ranges,msg->intensities,world_to_head_now_,head_to_lidar_);
+                                          msg->ranges,msg->intensities,world_to_head_now_,head_to_lidar_,
+                                          world_to_body_last);
 
   // DEBUG: Storage in full sweep structure......%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   // Accumulate current scan in point cloud (projection to default reference "body")
@@ -534,10 +577,6 @@ void App::poseInitHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     // Update world to body transform (from kinematics msg) 
     world_to_body_msg_ = getPoseAsIsometry3d(msg);
     world_to_body_last = world_to_body_msg_;
-
-    // To director
-    bot_lcmgl_t* lcmgl_fr = bot_lcmgl_init(lcm_->getUnderlyingLCM(), "pelvis");
-    //drawFrame(lcmgl_fr, world_to_body_msg_);
   }
 
   bot_core::pose_t msg_out;
@@ -621,10 +660,6 @@ int main(int argc, char **argv){
     std::cerr <<"ERROR: lcm is not good()" <<std::endl;
   }
   App* app= new App(lcm, cl_cfg, ca_cfg, reg_cfg);
-
-  // To director
-  bot_lcmgl_t* lcmgl_fr = bot_lcmgl_init(lcm->getUnderlyingLCM(), "local");
-  //drawFrame(lcmgl_fr);
 
   while(0 == lcm->handle());
 }
