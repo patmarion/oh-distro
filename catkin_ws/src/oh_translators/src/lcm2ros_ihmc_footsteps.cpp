@@ -99,6 +99,7 @@ void LCM2ROS::footstepPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::str
   {
     mout.footstep_data_list.push_back(convertFootStepToIHMC(msg->footstep_plan.footsteps[i]));
   }
+  mout.execution_mode = ihmc_msgs::FootstepDataListRosMessage::OVERRIDE;
   walking_plan_pub_.publish(mout);
 }
 
