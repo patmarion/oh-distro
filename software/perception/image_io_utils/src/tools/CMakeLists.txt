@@ -22,6 +22,19 @@ target_link_libraries(drc-multisense-image-tool-basic boost_system)
 pods_install_executables(drc-multisense-image-tool-basic )
 
 
+
+add_executable(drc-multisense-to-png multisense-to-png.cpp  )
+pods_use_pkg_config_packages(drc-multisense-to-png
+  lcmtypes_bot2-core 
+    ${PCL_LIBRARIES} pronto_vis
+  multisense_utils   bot2-core 
+  bot2-frames  bot2-frames_cpp
+  image_io_utils  camera_params  opencv)
+target_link_libraries(drc-multisense-to-png boost_system)
+pods_install_executables(drc-multisense-to-png )
+
+
+
 add_executable(drc-video-write video-write.cpp  )
 pods_use_pkg_config_packages(drc-video-write
   opencv)
@@ -39,8 +52,3 @@ pods_use_pkg_config_packages(lcm-log-to-avi lcm
   image_io_utils
   opencv)
 pods_install_executables(lcm-log-to-avi)
-
-#add_executable(old-robot-state-upgrade old-robot-state-upgrade.cpp  )
-#pods_use_pkg_config_packages(old-robot-state-upgrade
-#  lcmtypes_multisense)
-#pods_install_executables(old-robot-state-upgrade )
