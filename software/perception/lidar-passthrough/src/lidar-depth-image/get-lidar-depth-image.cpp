@@ -137,13 +137,9 @@ Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_,  State* iState): lcm_(lcm_),
   botframes_= bot_frames_get_global(lcm_->getUnderlyingLCM(), botparam_);
   camera_params_ = CameraParams();
 
-  //lcm_->subscribe( "CAMERA" ,&Pass::multisenseHandler,this);
-  //camera_params_.setParams(botparam_, "cameras.CAMERA_LEFT");
-
-  // Previous:
-  lcm_->subscribe( "CAMERA_LEFT" ,&Pass::imageHandler,this);
   camera_params_.setParams(botparam_, "cameras.CAMERA_LEFT");
-  
+  lcm_->subscribe( "CAMERA" ,&Pass::multisenseHandler,this);
+ 
   string mask_channel="CAMERALEFT_MASKZIPPED";
   lcm_->subscribe( mask_channel ,&Pass::maskHandler,this);
 
@@ -235,9 +231,9 @@ void Pass::getSweepDepthImage(LocalMap::SpaceTimeBounds bounds){
 
 // Publish Various Representations of the Depth Image:
 void Pass::sendSweepDepthImage(){
-  bool write_raw = false;
+  bool write_raw = true;
   bool publish_raw = true;
-  bool publish_range_image = false;
+  bool publish_range_image = true;
   
   // a. Write raw depths to file
   if (write_raw){
@@ -403,7 +399,6 @@ void Pass::queryNewSweep(){
   // 3. Create a depth image object:
   botframes_cpp_->get_trans_with_utime( botframes_ ,  "CAMERA_LEFT", "local", current_utime_, camera_pose_);   // ...? not sure what to use
 
-
   LocalMap::SpaceTimeBounds bounds;
   if (getSweep(bounds, head_to_local.cast<float>().translation() ,  Eigen::Vector3f( 1.3, 1.3, 1.3)) ){ 
     std::cout << "getSweep\n";
@@ -412,8 +407,8 @@ void Pass::queryNewSweep(){
     sendSweepCloud();
 
     // use the time and space bounds to get a new depth image
-    //getSweepDepthImage(bounds);
-    //sendSweepDepthImage();
+    getSweepDepthImage(bounds);
+    sendSweepDepthImage();
   }
 }
 
@@ -457,6 +452,7 @@ int main(int argc, char ** argv) {
     addChannel(laserChannel,
                SensorDataReceiver::SensorTypePlanarLidar,
                laserChannel, "local");
+  state.mCollector->bind(lidar_channel, 1);
   state.mCollector->start();  
   
   
