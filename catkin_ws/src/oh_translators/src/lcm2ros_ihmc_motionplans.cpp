@@ -212,35 +212,6 @@ bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::st
   m.previous_message_id = -1; // not used for override
   m.unique_id = msg->utime; // this is now required for execution
 
-/*
-  // m.joint_names = output_joint_names_arm;
-  for (int i = 0; i < msg->num_states; i++)  // NB: skipping the first sample as it has time = 0
-  {
-    bot_core::robot_state_t state = msg->plan[i];
-    ihmc_msgs::JointTrajectoryPointMessage point;
-    int i1 = (i > 0) ? (i - 1) : 0;
-    int i2 = i;
-    int i3 = (i < msg->num_states - 1) ? (i + 1) : (msg->num_states - 1);
-    for (int j = 0; j < arm_indices.size(); j++)
-    {
-      point.positions.push_back(state.joint_position[arm_indices[j]]);
-      double dt1 = (msg->plan[i2].utime - msg->plan[i1].utime) * 1e-6;
-      double dt2 = (msg->plan[i3].utime - msg->plan[i2].utime) * 1e-6;
-      double dq1 = msg->plan[i2].joint_position[arm_indices[j]] - msg->plan[i1].joint_position[arm_indices[j]];
-      double dq2 = msg->plan[i3].joint_position[arm_indices[j]] - msg->plan[i2].joint_position[arm_indices[j]];
-      point.velocities.push_back((dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0);
-      // point.accelerations.push_back( 0  );
-      // point.effort.push_back( state.joint_effort[ arm_indices[j] ] );
-
-      point.time = getPlanTimeAtWaypoint( state.utime );
-//      std::cout << i << ": " << getPlanTimeAtWaypoint(state.utime) << " " << (state.utime - msg->plan[i-1].utime) * 1E-6
-//                << " is time and difference of the arm waypoints [Right: " << is_right << "]\n";
-
-    }
-    m.trajectory_points.push_back(point);
-  }
-*/
-
   return true;
 }
 
