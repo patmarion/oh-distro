@@ -230,6 +230,9 @@ int main(int argc, char ** argv) {
     addChannel(laserChannel,
                SensorDataReceiver::SensorTypePlanarLidar,
                laserChannel, "local");
+
+  state.mCollector->bind(lidar_channel, 1);
+
   state.mCollector->start();  
   
   Pass app(lcm, &state);
