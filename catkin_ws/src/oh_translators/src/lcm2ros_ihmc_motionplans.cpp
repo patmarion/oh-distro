@@ -197,11 +197,8 @@ bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::st
       double dq1 = msg->plan[i2].joint_position[arm_indices[j]] - msg->plan[i1].joint_position[arm_indices[j]];
       double dq2 = msg->plan[i3].joint_position[arm_indices[j]] - msg->plan[i2].joint_position[arm_indices[j]];
       point.velocity = (dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0;
-      // point.accelerations.push_back( 0  );
-      // point.effort.push_back( state.joint_effort[ arm_indices[j] ] );
 
       point.time = getPlanTimeAtWaypoint( state.utime );
-
       points.push_back(point);
     }
     joint_trajectory_message.trajectory_points = points;
@@ -338,8 +335,7 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     point.orientation.y = state.pose.rotation.y;
     point.orientation.z = state.pose.rotation.z;
 
-    // TODO: compute velocity
-
+    // TODO: compute velocity, zero velocities are likely to result in poor tracking
     point.linear_velocity.x = 0;
     point.linear_velocity.y = 0;
     point.linear_velocity.z = 0;
@@ -351,41 +347,41 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     std::cout << i << ": " << getPlanTimeAtWaypoint(state.utime) << " " << (state.utime - msg->plan[i-1].utime) * 1E-6 << " is time and difference of the pelvis waypoints\n";
 
   }
+  wbt_msg.pelvis_trajectory_message.unique_id = 1;
+  wbt_msg.pelvis_trajectory_message.execution_mode = 0;
 
 
-  // 3. Insert Chest Pose (in work frame)
-
+  // 3. Insert Chest Pose (in world frame)
   bool status_chest = getChestTrajectoryPlan(msg,  wbt_msg.chest_trajectory_message);
   if (!status_chest)
   {
     ROS_ERROR("LCM2ROS: problem with chest plan, not sending");
     return;
   }
-
-
-
-  // Various bits and bobs required for the WBT to do <something> at present
-  // the below are all hacks but are needed  until some bugs from IHMC are resolved
-  wbt_msg.left_hand_trajectory_message.unique_id = 0;
-  wbt_msg.right_hand_trajectory_message.unique_id = 0;
   wbt_msg.chest_trajectory_message.unique_id = 1;
-  wbt_msg.pelvis_trajectory_message.unique_id = 1;
-  wbt_msg.left_foot_trajectory_message.unique_id = 0;
-  wbt_msg.right_foot_trajectory_message.unique_id = 0;
-
-  wbt_msg.left_hand_trajectory_message.execution_mode = 0;
-  wbt_msg.right_hand_trajectory_message.execution_mode = 0;
   wbt_msg.chest_trajectory_message.execution_mode = 0;
-  wbt_msg.pelvis_trajectory_message.execution_mode = 0;
-  wbt_msg.left_foot_trajectory_message.execution_mode = 0;
-  wbt_msg.right_foot_trajectory_message.execution_mode = 0;
 
+
+  // 5. Fill in the parts of the whole body message we DONT want to execute
+  // unique_id = 0 means don't execute this part of the message
+  wbt_msg.left_hand_trajectory_message.unique_id = 0;
+  wbt_msg.left_hand_trajectory_message.execution_mode = 0;
+  wbt_msg.left_hand_trajectory_message.robot_side = 0;
+
+  wbt_msg.right_hand_trajectory_message.unique_id = 0;
+  wbt_msg.right_hand_trajectory_message.execution_mode = 0;
   wbt_msg.right_hand_trajectory_message.robot_side = 1;
+
+  wbt_msg.left_foot_trajectory_message.unique_id = 0;
+  wbt_msg.left_foot_trajectory_message.execution_mode = 0;
+  wbt_msg.left_foot_trajectory_message.robot_side = 0;
+
+  wbt_msg.right_foot_trajectory_message.unique_id = 0;
+  wbt_msg.right_foot_trajectory_message.execution_mode = 0;
   wbt_msg.right_foot_trajectory_message.robot_side = 1;
 
-  // end hacks
 
-
+  // 5. Actually send the message - either in parts or entirely
   if (outputTrajectoryMode_ == TrajectoryMode::wholeBody)
   {
     whole_body_trajectory_pub_.publish(wbt_msg);
@@ -410,33 +406,5 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     sendSingleArmPlan(msg, r_arm_strings, input_joint_names, true);
     ROS_ERROR("LCM2ROS sent right arm");
   }
-
-  /*
-  if (1==0){
-    if (robotName_.compare("valkyrie") == 0){
-
-      std::vector<std::string>::iterator it1 = find(input_joint_names.begin(),
-          input_joint_names.end(), "lowerNeckPitch");
-      int lowerNeckPitchIndex = std::distance(input_joint_names.begin(), it1);
-      float lowerNeckPitchAngle = msg->plan[ msg->num_states-1 ].joint_position[lowerNeckPitchIndex];
-
-      std::vector<std::string>::iterator it2 = find(input_joint_names.begin(),
-          input_joint_names.end(), "neckYaw");
-      int neckYawIndex = std::distance(input_joint_names.begin(), it2);
-      float neckYawAngle = msg->plan[ msg->num_states-1 ].joint_position[neckYawIndex];
-
-      Eigen::Quaterniond headOrientation = euler_to_quat(0, lowerNeckPitchAngle, neckYawAngle);
-      ihmc_msgs::HeadOrientationPacketMessage mout;
-      mout.trajectory_time = 1; // time doesn't seem to be tracked currently.
-      mout.orientation.w = headOrientation.w();
-      mout.orientation.x = headOrientation.x();
-      mout.orientation.y = headOrientation.y();
-      mout.orientation.z = headOrientation.z();
-      mout.unique_id = msg->utime;
-      neck_orientation_pub_.publish(mout);
-      ROS_ERROR("LCM2ROS sent desired head orientation");
-    }
-  }
-  */
-  
+ 
 }
