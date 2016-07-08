@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
     // to view lidar:
     bot_lcmgl_add_renderer_to_viewer(viewer, lcm, 1);
     // to view camera:
-    multisense_add_renderer_to_viewer(viewer, 0,lcm,bot_frames,"CAMERA", "CAMERA", bot_param);
+    multisense_add_renderer_to_viewer(viewer, 0,lcm,bot_frames,"CAMERA_LEFT", "CAMERA", bot_param);
     
-    multisense_add_renderer_to_viewer(viewer, 0,lcm,NULL,"CAMERA_FUSED", "CAMERA_FUSED", bot_param);
+    multisense_add_renderer_to_viewer(viewer, 0,lcm,NULL,"CAMERA_LEFT", "LIDARSWEEP", bot_param);
 
     // load saved preferences
     char *fname = g_build_filename(g_get_user_config_dir(), ".multisense-viewerrc", NULL);
