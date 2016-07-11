@@ -27,10 +27,8 @@
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Imu.h>
 
-#include <ihmc_msgs/BatchRawImuData.h>
-#include <ihmc_msgs/RawImuData.h>
 #include <ihmc_msgs/LastReceivedMessage.h>
-#include <ihmc_msgs/FootstepStatusMessage.h>
+#include <ihmc_msgs/FootstepStatusRosMessage.h>
 
 // Core Bot Types
 #include <lcmtypes/bot_core.hpp>
@@ -71,7 +69,7 @@ private:
   bool verbose_;
 
   ros::Subscriber jointStatesSub_, headJointStatesSub_, poseSub_;
-  ros::Subscriber laserScanSub_, imuBatchSub_, imuSensorSub_;
+  ros::Subscriber laserScanSub_, imuSensorSub_;
   ros::Subscriber leftFootSensorSub_, rightFootSensorSub_, leftHandSensorSub_;
   ros::Subscriber rightHandSensorSub_, behaviorSub_, lastReceivedMessageSub_;
   ros::Subscriber footstepStatusSub_;
@@ -80,13 +78,12 @@ private:
   void poseCallBack(const nav_msgs::OdometryConstPtr& msg);
   void behaviorCallback(const std_msgs::Int32ConstPtr& msg);
   void lastReceivedMessageCallback(const ihmc_msgs::LastReceivedMessageConstPtr& msg);
-  void footstepStatusCallback(const ihmc_msgs::FootstepStatusMessageConstPtr& msg);
+  void footstepStatusCallback(const ihmc_msgs::FootstepStatusRosMessageConstPtr& msg);
 
   // The following sensor signals are published only in simulation:
   void jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
   void headJointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
   void laserScanCallback(const sensor_msgs::LaserScanConstPtr& msg);
-  void imuBatchCallback(const ihmc_msgs::BatchRawImuDataConstPtr& msg);
   void imuSensorCallback(const sensor_msgs::ImuConstPtr& msg);
   void leftFootSensorCallback(const geometry_msgs::WrenchStampedConstPtr& msg);
   void rightFootSensorCallback(const geometry_msgs::WrenchStampedConstPtr& msg);
@@ -151,9 +148,6 @@ App::App(ros::NodeHandle node_in, int mode_in, std::string robotName_in, std::st
     // Robot joint angles
     jointStatesSub_ = node_.subscribe(std::string("/ihmc_ros/" + robotName_ + "/output/joint_states"), queue_size,
                                       &App::jointStatesCallback, this);
-    // Atlas IMU Batch is depreciated:
-    //imuBatchSub_ = node_.subscribe(std::string("/ihmc_ros/" + robotName_ + "/output/imu/" + imuSensor_ + "_batch"), queue_size,
-    //                               &App::imuBatchCallback, this);
     imuSensorSub_ = node_.subscribe(std::string("/ihmc_ros/" + robotName_ + "/output/imu/" + imuSensor_), queue_size,
                                     &App::imuSensorCallback, this);
 
@@ -178,7 +172,7 @@ App::~App()
 {
 }
 
-void App::footstepStatusCallback(const ihmc_msgs::FootstepStatusMessageConstPtr& msg)
+void App::footstepStatusCallback(const ihmc_msgs::FootstepStatusRosMessageConstPtr& msg)
 {
   ihmc::footstep_status_t msg_out;
   msg_out.status = msg->status;
@@ -191,7 +185,6 @@ void App::footstepStatusCallback(const ihmc_msgs::FootstepStatusMessageConstPtr&
   msg_out.actual_foot_orientation_in_world[1] = msg->actual_foot_orientation_in_world.x;
   msg_out.actual_foot_orientation_in_world[2] = msg->actual_foot_orientation_in_world.y;
   msg_out.actual_foot_orientation_in_world[3] = msg->actual_foot_orientation_in_world.z;
-  msg_out.is_done_walking = msg->is_done_walking;
   msg_out.unique_id = msg->unique_id;
   lcmPublish_.publish("IHMC_FOOTSTEP_STATUS", &msg_out);
 }
@@ -335,38 +328,6 @@ void App::lastReceivedMessageCallback(const ihmc_msgs::LastReceivedMessageConstP
   msg_out.receive_timestamp = msg->receive_timestamp / 1000;
   msg_out.time_since_last_received = msg->time_since_last_received / 1000;
   lcmPublish_.publish("IHMC_LAST_RECEIVED", &msg_out);
-}
-
-void App::imuBatchCallback(const ihmc_msgs::BatchRawImuDataConstPtr& msg)
-{
-  bot_core::kvh_raw_imu_batch_t imu;
-  imu.utime = (int64_t)floor(msg->header.stamp.toNSec() / 1000);
-
-  if (verbose_)
-    std::cout << "                              " << imu.utime << " imu\n";
-
-  imu.num_packets = 15;
-  for (size_t i = 0; i < 15; i++)
-  {
-    // std::cout << i
-    //   << " | " <<  msg->data[i].imu_timestamp
-    //   << " | " <<  msg->data[i].packet_count
-    //   << " | " <<  msg->data[i].dax << " " << msg->data[i].day << " " << msg->data[i].daz
-    //   << " | " <<  msg->data[i].ddx << " " << msg->data[i].ddy << " " << msg->data[i].ddz << "\n";
-
-    bot_core::kvh_raw_imu_t raw;
-    raw.utime = msg->data[i].imu_timestamp;
-    raw.packet_count = msg->data[i].packet_count;
-    raw.delta_rotation[0] = msg->data[i].dax;
-    raw.delta_rotation[1] = msg->data[i].day;
-    raw.delta_rotation[2] = msg->data[i].daz;
-
-    raw.linear_acceleration[0] = msg->data[i].ddx;
-    raw.linear_acceleration[1] = msg->data[i].ddy;
-    raw.linear_acceleration[2] = msg->data[i].ddz;
-    imu.raw_imu.push_back(raw);
-  }
-  lcmPublish_.publish(("ATLAS_IMU_BATCH"), &imu);
 }
 
 void App::imuSensorCallback(const sensor_msgs::ImuConstPtr& msg)

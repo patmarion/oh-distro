@@ -13,30 +13,12 @@ void LCM2ROS::scsAPIHandler(const lcm::ReceiveBuffer* rbuf, const std::string &c
   scs_api_pub_.publish(rmsg);
 }
 
-
-void LCM2ROS::comHeightHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                               const ihmc::com_height_packet_message_t* msg)
-{
-  ROS_ERROR("LCM2ROS got com height");
-  ihmc_msgs::ComHeightPacketMessage mout;
-  mout.height_offset = msg->height_offset;
-  com_height_pub_.publish(mout);
-}
-
-void LCM2ROS::pauseHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                           const ihmc::pause_command_message_t* msg)
-{
-  ROS_ERROR("LCM2ROS got pause %d", static_cast<int>(msg->pause));
-  ihmc_msgs::PauseCommandMessage mout;
-  mout.pause = msg->pause;
-  pause_pub_.publish(mout);
-}
-
 void LCM2ROS::stopHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::plan_control_t* msg)
 {
   ROS_ERROR("LCM2ROS got STOP_WALKING - sending pause=true");
-  ihmc_msgs::PauseCommandMessage mout;
+  ihmc_msgs::PauseWalkingRosMessage mout;
   mout.pause = true;
+  mout.unique_id = msg->utime;
   pause_pub_.publish(mout);
 }
 
@@ -44,11 +26,12 @@ void LCM2ROS::stopManipHandler(const lcm::ReceiveBuffer* rbuf, const std::string
                                const drc::plan_control_t* msg)
 {
   ROS_ERROR("LCM2ROS got COMMITTED_PLAN_PAUSE - sending manipulate stop");
-  ihmc_msgs::StopMotionPacketMessage mout;
+  ihmc_msgs::StopAllTrajectoryRosMessage mout;
   mout.unique_id = msg->utime;
   stop_manip_pub_.publish(mout);
 }
 
+/*
 void LCM2ROS::neckPitchHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::joint_angles_t* msg)
 {
   ROS_ERROR("LCM2ROS got desired neck pitch");
@@ -89,3 +72,4 @@ void LCM2ROS::headOrientationHandler(const lcm::ReceiveBuffer* rbuf, const std::
   mout.unique_id = msg->utime;
   neck_orientation_pub_.publish(mout);
 }
+*/

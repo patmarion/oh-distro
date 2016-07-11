@@ -35,7 +35,6 @@ pods_install_python_script(drc-rewrite-log-timestamps python/lcm_log_timestamps.
 
 # Misc Tools added from ipab/tools
 pods_install_python_script(drc-send-com-height python/send_com_height.py)
-pods_install_python_script(drc-send-pause python/send_pause.py)
 pods_install_python_script(drc-send-arm-test python/send_arm_test.py)
 pods_install_python_script(drc-send-pose-body python/send_a_pose_msg.py)
 pods_install_python_script(drc-plan-passthrough python/plan_passthrough.py)

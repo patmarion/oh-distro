@@ -8,6 +8,7 @@ from director import lcmUtils
 import os
 import bot_core as lcmbotcore
 import drc as lcmdrc
+import ihmc as lcmihmc
 
 def addWidgetsToDict(widgets, d):
 
