@@ -255,12 +255,13 @@ set(PointCloudLibraryPlugin_external_args
 
 
 set(isam_url https://github.com/ipab-slmc/isam.git)
-set(isam_revision a6795ce22a8a90cdf87e3d1306af93adbeec1aeb)
+set(isam_revision df3154d7b583a66bd2c3c04b6d519bcbd6c18eec)
 set(isam_depends)
 set(isam_external_args
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
     ${eigen_args}
+    -DUSE_LCM:BOOL=ON
   )
 
 set(yaml_cpp_url https://github.com/jbeder/yaml-cpp.git)
