@@ -10,7 +10,7 @@
 #include <bot_vis/bot_vis.h>
 #include <bot_frames/bot_frames.h>
 
-#include <lcmtypes/multisense_images_t.h>
+#include <lcmtypes/bot_core_images_t.h>
 #include "../multisense-glview/jpeg-utils-ijg.h"
 
 #define PARAM_HISTORY_FREQUENCY "Scan Hist. Freq."
@@ -40,7 +40,7 @@ typedef struct _MultisenseRenderer {
   char * camera_channel;
   char * renderer_name;
 
-  multisense_images_t* msg;
+  bot_core_images_t* msg;
   
   uint8_t* depth_uncompress_buffer;
   uint8_t* left_img_data;
@@ -89,16 +89,16 @@ recompute_frame_data(MultisenseRenderer* self)
   cv::Mat_<cv::Vec3f> points(h, w, &(self->points_buff_[0]));
   
   //std::cout << (int) self->msg->image_types[1]  << " types are\n";
-  if ( (self->msg->image_types[1] == MULTISENSE_IMAGES_T_DISPARITY) ||
-       (self->msg->image_types[1] == MULTISENSE_IMAGES_T_DISPARITY_ZIPPED) )  {
+  if ( (self->msg->image_types[1] == BOT_CORE_IMAGES_T_DISPARITY) ||
+       (self->msg->image_types[1] == BOT_CORE_IMAGES_T_DISPARITY_ZIPPED) )  {
     cv::Mat disparity_orig_temp = cv::Mat::zeros(h,w,CV_16UC1); // h,w
 
     // Convert Carnegie disparity format into floating point disparity. Store in local buffer
-    if(self->msg->image_types[1] == MULTISENSE_IMAGES_T_DISPARITY) {
+    if(self->msg->image_types[1] == BOT_CORE_IMAGES_T_DISPARITY) {
       disparity_orig_temp.data = self->msg->images[1].data;  
       //depth = (uint16_t*) self->msg->images[1].data;
       
-    }else if (self->msg->image_types[1] == MULTISENSE_IMAGES_T_DISPARITY_ZIPPED ) {
+    }else if (self->msg->image_types[1] == BOT_CORE_IMAGES_T_DISPARITY_ZIPPED ) {
       unsigned long dlen = w*h*2 ;//msg->depth.uncompressed_size;
       uncompress(self->depth_uncompress_buffer, &dlen, self->msg->images[1].data, self->msg->images[1].size);
       disparity_orig_temp.data = self->depth_uncompress_buffer;  
@@ -114,12 +114,12 @@ recompute_frame_data(MultisenseRenderer* self)
     // Do the reprojection in open space
     static const bool handle_missing_values = true;
     cv::reprojectImageTo3D(disparity, points, Q_, handle_missing_values);
-  }else if( (self->msg->image_types[1] == MULTISENSE_IMAGES_T_DEPTH_MM) ||
-            (self->msg->image_types[1] == MULTISENSE_IMAGES_T_DEPTH_MM_ZIPPED) ){
+  }else if( (self->msg->image_types[1] == BOT_CORE_IMAGES_T_DEPTH_MM) ||
+            (self->msg->image_types[1] == BOT_CORE_IMAGES_T_DEPTH_MM_ZIPPED) ){
     uint16_t* depths;
-    if(self->msg->image_types[1] == MULTISENSE_IMAGES_T_DEPTH_MM) {
+    if(self->msg->image_types[1] == BOT_CORE_IMAGES_T_DEPTH_MM) {
       depths =(uint16_t*)   self->msg->images[1].data;
-    }else if (self->msg->image_types[1] == MULTISENSE_IMAGES_T_DEPTH_MM_ZIPPED ) {
+    }else if (self->msg->image_types[1] == BOT_CORE_IMAGES_T_DEPTH_MM_ZIPPED ) {
       unsigned long dlen = w*h*2 ;//msg->depth.uncompressed_size;
       uncompress(self->depth_uncompress_buffer, &dlen, self->msg->images[1].data, self->msg->images[1].size);
       depths =(uint16_t*) self->depth_uncompress_buffer;
@@ -168,7 +168,7 @@ recompute_frame_data(MultisenseRenderer* self)
 
 static void 
 on_camera_frame (const lcm_recv_buf_t *rbuf, const char *channel,
-    const multisense_images_t *msg, void *user_data )
+    const bot_core_images_t *msg, void *user_data )
 {
   MultisenseRenderer *self = (MultisenseRenderer*) user_data;
 
@@ -180,8 +180,8 @@ on_camera_frame (const lcm_recv_buf_t *rbuf, const char *channel,
     self->last_utime = msg->utime;
     
     if(self->msg)
-      multisense_images_t_destroy(self->msg);
-    self->msg = multisense_images_t_copy(msg);
+      bot_core_images_t_destroy(self->msg);
+    self->msg = bot_core_images_t_copy(msg);
     self->need_to_recompute_frame_data = 1;
     
     if ((now - last_redraw_utime) > MAX_REFERSH_RATE_USEC) {
@@ -294,7 +294,7 @@ static void _free(BotRenderer *renderer){
   MultisenseRenderer *self = (MultisenseRenderer*) renderer;
 
   if(self->msg)
-    multisense_images_t_destroy(self->msg);
+    bot_core_images_t_destroy(self->msg);
 
   if(self->camera_frame)
     free(self->camera_frame);
@@ -427,6 +427,6 @@ multisense_add_renderer_to_viewer(BotViewer* viewer, int priority, lcm_t* lcm,
   g_signal_connect (G_OBJECT (self->pw), "changed",
             G_CALLBACK (on_param_widget_changed), self);
 
-  multisense_images_t_subscribe(self->lcm, camera_channel, on_camera_frame, self);
+  bot_core_images_t_subscribe(self->lcm, camera_channel, on_camera_frame, self);
   bot_viewer_add_renderer(viewer, renderer, priority);
 }

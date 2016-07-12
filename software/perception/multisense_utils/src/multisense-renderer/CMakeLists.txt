@@ -20,7 +20,6 @@ target_link_libraries(multisense-renderer
 
 pods_use_pkg_config_packages(multisense-renderer
     bot2-vis opencv
-    lcmtypes_multisense
     bot2-frames eigen3)
 
 pods_install_headers(multisense_renderer.h 
