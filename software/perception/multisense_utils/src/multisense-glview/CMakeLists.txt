@@ -3,12 +3,12 @@ add_executable(multisense-glview main.c jpeg-utils-ijg.c)
 set(CMAKE_CXX_FLAGS "-g")
 add_definitions(-g)
 
-pods_use_pkg_config_packages(multisense-glview lcmtypes_bot2-core lcmtypes_multisense
+pods_use_pkg_config_packages(multisense-glview lcmtypes_bot2-core
     lcm
     glib-2.0
     )
 
-target_link_libraries(multisense-glview  lcmtypes_bot2-core lcmtypes_multisense
+target_link_libraries(multisense-glview  lcmtypes_bot2-core
     ${LCMTYPES_LIBS} 
     z 
     jpeg

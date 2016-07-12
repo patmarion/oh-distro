@@ -3,7 +3,7 @@
 
 #include <ConciseArgs>
 #include <zlib.h>
-#include <lcmtypes/multisense.hpp>
+#include <lcmtypes/bot_core.hpp>
 
 #include <multisense_image_utils/multisense_image_utils.hpp>
 
@@ -30,7 +30,7 @@ class App{
     const CommandLineConfig cl_cfg_;
 
     void msHandler(const lcm::ReceiveBuffer* rbuf,
-                           const std::string& channel, const  multisense::images_t* msg);
+                           const std::string& channel, const  bot_core::images_t* msg);
 
     multisense_image_utils miu_;
 };
@@ -40,7 +40,7 @@ App::App(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_):
   lcm_->subscribe( cl_cfg_.input ,&App::msHandler,this);
 }
 
-void App::msHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  multisense::images_t* msg){
+void App::msHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::images_t* msg){
   int n_bytes =2;
   int width =msg->images[0].width;
   int height = msg->images[0].height;
@@ -73,18 +73,18 @@ void App::msHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, 
             Z_BEST_SPEED);
 
   // 4. Publish
-  multisense::image_t image;
+  bot_core::image_t image;
   image.utime =msg->utime;
   image.width =width;
   image.height=height;
   image.row_stride =n_bytes*width; // this is useless if doing zip
-  image.pixelformat = multisense::image_t::PIXEL_FORMAT_RGB;// This label will be invalid...
+  image.pixelformat = bot_core::image_t::PIXEL_FORMAT_RGB;// This label will be invalid...
   image.size = (int) compressed_size;
   image.data = buf2;
   image.nmetadata =0;
   //image.metadata = NULL;
 
-  multisense::images_t out;
+  bot_core::images_t out;
   out.utime =msg->utime;
   out.n_images = 2;
   out.image_types = msg->image_types;
