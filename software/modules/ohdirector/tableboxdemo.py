@@ -402,6 +402,9 @@ class TableboxDemo(object):
 
         # Basic Constraint set:
         constraints = self.ikPlanner.createMovingBodyConstraints('reach_start', lockBase=self.lockBase, lockBack=self.lockBack, lockLeftArm=True, lockRightArm=True)
+        #self.constraints = constraints
+        del constraints[4]
+
         self.constraintSet = self.ikPlanner.makeConstraintSet(constraints, startPose)
 
 
@@ -410,13 +413,8 @@ class TableboxDemo(object):
         tf.Concatenate( transformUtils.frameFromPositionAndRPY([0.0,0,1.0],[0,0,0]) )
         vis.updateFrame(tf,'goal pelvis frame', visible=True)
 
-        # append a constraint to move the pelvis up by 10cm
-        #tf = transformUtils.copyFrame(self.robotStateModel.getLinkFrame('pelvis'))
-        #tf.Concatenate( transformUtils.frameFromPositionAndRPY([0,0,0.075],[0,0,0]) )
-        #vis.updateFrame(tf,'goal pelvis frame', visible=False)
-
-        p = ik.PositionConstraint(linkName="pelvis", referenceFrame=tf, lowerBound=-0.0001*np.ones(3), upperBound=0.0001*np.ones(3))
-        q = ik.QuatConstraint(linkName="pelvis", quaternion=tf)
+        p = ik.PositionConstraint(linkName="pelvis", referenceFrame=tf, lowerBound=-0.001*np.ones(3), upperBound=0.001*np.ones(3))
+        q = ik.QuatConstraint(linkName="pelvis", quaternion=tf, angleToleranceInDegrees=1.0)
         p.tspan = [1.0,1.0]
         q.tspan = [1.0,1.0]
         self.constraintSet.constraints.extend([p, q])
