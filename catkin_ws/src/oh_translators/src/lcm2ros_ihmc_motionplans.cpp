@@ -139,8 +139,6 @@ double LCM2ROS::getPlanTimeAtWaypoint(int64_t planUtime)
   return time_at_waypoint;
 }
 
-
-
 bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
                                std::vector<std::string> input_joint_names, bool is_right,
                                ihmc_msgs::ArmTrajectoryRosMessage &m)
@@ -197,8 +195,11 @@ bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::st
       double dq1 = msg->plan[i2].joint_position[arm_indices[j]] - msg->plan[i1].joint_position[arm_indices[j]];
       double dq2 = msg->plan[i3].joint_position[arm_indices[j]] - msg->plan[i2].joint_position[arm_indices[j]];
       point.velocity = (dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0;
+      // point.accelerations.push_back( 0  );
+      // point.effort.push_back( state.joint_effort[ arm_indices[j] ] );
 
       point.time = getPlanTimeAtWaypoint( state.utime );
+
       points.push_back(point);
     }
     joint_trajectory_message.trajectory_points = points;
@@ -208,6 +209,35 @@ bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::st
   m.execution_mode = 0;//OVERRIDE;
   m.previous_message_id = -1; // not used for override
   m.unique_id = msg->utime; // this is now required for execution
+
+/*
+  // m.joint_names = output_joint_names_arm;
+  for (int i = 0; i < msg->num_states; i++)  // NB: skipping the first sample as it has time = 0
+  {
+    bot_core::robot_state_t state = msg->plan[i];
+    ihmc_msgs::JointTrajectoryPointMessage point;
+    int i1 = (i > 0) ? (i - 1) : 0;
+    int i2 = i;
+    int i3 = (i < msg->num_states - 1) ? (i + 1) : (msg->num_states - 1);
+    for (int j = 0; j < arm_indices.size(); j++)
+    {
+      point.positions.push_back(state.joint_position[arm_indices[j]]);
+      double dt1 = (msg->plan[i2].utime - msg->plan[i1].utime) * 1e-6;
+      double dt2 = (msg->plan[i3].utime - msg->plan[i2].utime) * 1e-6;
+      double dq1 = msg->plan[i2].joint_position[arm_indices[j]] - msg->plan[i1].joint_position[arm_indices[j]];
+      double dq2 = msg->plan[i3].joint_position[arm_indices[j]] - msg->plan[i2].joint_position[arm_indices[j]];
+      point.velocities.push_back((dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0);
+      // point.accelerations.push_back( 0  );
+      // point.effort.push_back( state.joint_effort[ arm_indices[j] ] );
+
+      point.time = getPlanTimeAtWaypoint( state.utime );
+//      std::cout << i << ": " << getPlanTimeAtWaypoint(state.utime) << " " << (state.utime - msg->plan[i-1].utime) * 1E-6
+//                << " is time and difference of the arm waypoints [Right: " << is_right << "]\n";
+
+    }
+    m.trajectory_points.push_back(point);
+  }
+*/
 
   return true;
 }
@@ -335,7 +365,8 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     point.orientation.y = state.pose.rotation.y;
     point.orientation.z = state.pose.rotation.z;
 
-    // TODO: compute velocity, zero velocities are likely to result in poor tracking
+    // TODO: compute velocity
+
     point.linear_velocity.x = 0;
     point.linear_velocity.y = 0;
     point.linear_velocity.z = 0;
@@ -347,41 +378,41 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     std::cout << i << ": " << getPlanTimeAtWaypoint(state.utime) << " " << (state.utime - msg->plan[i-1].utime) * 1E-6 << " is time and difference of the pelvis waypoints\n";
 
   }
-  wbt_msg.pelvis_trajectory_message.unique_id = 1;
-  wbt_msg.pelvis_trajectory_message.execution_mode = 0;
 
 
-  // 3. Insert Chest Pose (in world frame)
+  // 3. Insert Chest Pose (in work frame)
+
   bool status_chest = getChestTrajectoryPlan(msg,  wbt_msg.chest_trajectory_message);
   if (!status_chest)
   {
     ROS_ERROR("LCM2ROS: problem with chest plan, not sending");
     return;
   }
-  wbt_msg.chest_trajectory_message.unique_id = 1;
-  wbt_msg.chest_trajectory_message.execution_mode = 0;
 
 
-  // 5. Fill in the parts of the whole body message we DONT want to execute
-  // unique_id = 0 means don't execute this part of the message
+
+  // Various bits and bobs required for the WBT to do <something> at present
+  // the below are all hacks but are needed  until some bugs from IHMC are resolved
   wbt_msg.left_hand_trajectory_message.unique_id = 0;
-  wbt_msg.left_hand_trajectory_message.execution_mode = 0;
-  wbt_msg.left_hand_trajectory_message.robot_side = 0;
-
   wbt_msg.right_hand_trajectory_message.unique_id = 0;
-  wbt_msg.right_hand_trajectory_message.execution_mode = 0;
-  wbt_msg.right_hand_trajectory_message.robot_side = 1;
-
+  wbt_msg.chest_trajectory_message.unique_id = 1;
+  wbt_msg.pelvis_trajectory_message.unique_id = 1;
   wbt_msg.left_foot_trajectory_message.unique_id = 0;
-  wbt_msg.left_foot_trajectory_message.execution_mode = 0;
-  wbt_msg.left_foot_trajectory_message.robot_side = 0;
-
   wbt_msg.right_foot_trajectory_message.unique_id = 0;
+
+  wbt_msg.left_hand_trajectory_message.execution_mode = 0;
+  wbt_msg.right_hand_trajectory_message.execution_mode = 0;
+  wbt_msg.chest_trajectory_message.execution_mode = 0;
+  wbt_msg.pelvis_trajectory_message.execution_mode = 0;
+  wbt_msg.left_foot_trajectory_message.execution_mode = 0;
   wbt_msg.right_foot_trajectory_message.execution_mode = 0;
+
+  wbt_msg.right_hand_trajectory_message.robot_side = 1;
   wbt_msg.right_foot_trajectory_message.robot_side = 1;
 
+  // end hacks
 
-  // 5. Actually send the message - either in parts or entirely
+
   if (outputTrajectoryMode_ == TrajectoryMode::wholeBody)
   {
     whole_body_trajectory_pub_.publish(wbt_msg);
@@ -406,5 +437,5 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     sendSingleArmPlan(msg, r_arm_strings, input_joint_names, true);
     ROS_ERROR("LCM2ROS sent right arm");
   }
- 
+  
 }
