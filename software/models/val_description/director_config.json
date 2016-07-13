@@ -1,5 +1,5 @@
 {
-  "modelName" : "valkyrie_v2",
+  "modelName" : "valkyrie",
   "urdfConfig": {
     "default": "./urdf/valkyrie_sim.urdf",
     "robotState": "./urdf/valkyrie_sim.urdf",
