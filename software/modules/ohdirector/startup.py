@@ -55,7 +55,8 @@ def startup(robotSystem, globalsDict=None):
     tableMappingTaskPanel = tablemapping.TableTaskPanel(tableMapping)
     tasklaunchpanel.panel.addTaskPanel("Table Mapping", tableMappingTaskPanel.widget)
     
-    trajectoryTrackingTest = trajectorytrackingtest.TrajectoryTrackingTest(rs.ikPlanner, rs.manipPlanner, rs.robotStateJointController)
+    trajectoryTrackingTest = trajectorytrackingtest.TrajectoryTrackingTest(rs.ikPlanner, rs.manipPlanner, rs.robotStateJointController,
+                    rs.footstepsDriver, rs.robotStateModel)
     trackingTestPanel = trajectorytrackingtest.TrackingTestPanel(trajectoryTrackingTest)
     tasklaunchpanel.panel.addTaskPanel('Tracking Test', trackingTestPanel.widget)
 

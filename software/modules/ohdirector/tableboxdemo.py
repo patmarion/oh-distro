@@ -19,6 +19,7 @@ from director import vtkAll as vtk
 from director.simpletimer import SimpleTimer
 from director import affordanceupdater
 from director import sceneloader
+from director.ikparameters import IkParameters
 
 from director.debugVis import DebugData
 from director import affordanceitems
@@ -397,44 +398,17 @@ class TableboxDemo(object):
 
 
     def planBoxLift(self):
-        ikplanner.getIkOptions().setProperty('Use pointwise', False)
+        ''' Move the robot back to a safe posture, 1m above its feet, w/o moving the hands
+        '''
+        # ikParameters = IkParameters(usePointwise=False) # was using False for a long time
         startPose = self.getPlanningStartPose()
+        footReferenceFrame = self.footstepPlanner.getFeetMidPoint(self.robotStateModel)
+        pelvisHeightAboveFeet = 1.0167
+        newPlan = self.ikPlanner.computeHomePlan(startPose, footReferenceFrame, pelvisHeightAboveFeet)
+        self.addPlan(newPlan)
 
-        # Basic Constraint set:
-        constraints = self.ikPlanner.createMovingBodyConstraints('reach_start', lockBase=self.lockBase, lockBack=self.lockBack, lockLeftArm=True, lockRightArm=True)
-        self.constraintSet = self.ikPlanner.makeConstraintSet(constraints, startPose)
 
 
-        # append a constraint to move the pelvis up to 10cm above ground
-        tf = transformUtils.copyFrame(self.footstepPlanner.getFeetMidPoint(self.robotStateModel))
-        tf.Concatenate( transformUtils.frameFromPositionAndRPY([0.0,0,1.0],[0,0,0]) )
-        vis.updateFrame(tf,'goal pelvis frame', visible=True)
-
-        # append a constraint to move the pelvis up by 10cm
-        #tf = transformUtils.copyFrame(self.robotStateModel.getLinkFrame('pelvis'))
-        #tf.Concatenate( transformUtils.frameFromPositionAndRPY([0,0,0.075],[0,0,0]) )
-        #vis.updateFrame(tf,'goal pelvis frame', visible=False)
-
-        p = ik.PositionConstraint(linkName="pelvis", referenceFrame=tf, lowerBound=-0.0001*np.ones(3), upperBound=0.0001*np.ones(3))
-        q = ik.QuatConstraint(linkName="pelvis", quaternion=tf)
-        p.tspan = [1.0,1.0]
-        q.tspan = [1.0,1.0]
-        self.constraintSet.constraints.extend([p, q])
-
-        backConstraint = self.ikPlanner.createPostureConstraint('q_zero', self.ikPlanner.backJoints)
-        backConstraint.tspan = [1.0,1.0]
-        self.constraintSet.constraints[3] = backConstraint
-
-        neckConstraint = self.ikPlanner.createPostureConstraint('q_zero', self.ikPlanner.neckJoints)
-        neckConstraint.tspan = [1.0,1.0]
-        self.constraintSet.constraints.append(neckConstraint)
-
-        self.constraintSet.runIk()
-        print 'planning lift'
-        plan = self.constraintSet.runIkTraj()
-        self.addPlan(plan)
-
-        ikplanner.getIkOptions().setProperty('Use pointwise', True)
 
 
     def planWalkToTable(self):

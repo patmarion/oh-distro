@@ -1,17 +1,25 @@
+from director import footstepsdriver
 import director.tasks.robottasks as rt
 from director.tasks.taskuserpanel import TaskUserPanel
 
 import functools
 
 class TrajectoryTrackingTest(object):
-    def __init__(self, ikPlanner, manipPlanner, robotStateJointController):
+    def __init__(self, ikPlanner, manipPlanner, robotStateJointController, footstepsDriver, robotStateModel):
         self.ikPlanner = ikPlanner
         self.manipPlanner = manipPlanner
         self.robotStateJointController = robotStateJointController
+        self.footstepsDriver = footstepsDriver
+        self.robotStateModel = robotStateModel
         self.plans = []
     
     def planNominalPose(self):
-        self.plans.append(self.ikPlanner.computeNominalPlan(self.robotStateJointController.q))
+        # previous method doesn't return to a repeatable posture
+        #self.plans.append(self.ikPlanner.computeNominalPlan(self.robotStateJointController.q))
+        # returns to a repeatable posture
+
+        plan = self.ikPlanner.computeHomeNominalPlan(self.robotStateJointController.q, self.footstepsDriver.getFeetMidPoint(self.robotStateModel), 1.0167)
+        self.plans.append(plan)
 
     def commitManipPlan(self):
         self.manipPlanner.commitManipPlan(self.plans[-1])
