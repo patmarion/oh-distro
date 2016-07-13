@@ -371,8 +371,8 @@ float state_sync_nasa::clampJointToJointLimits(std::string joint_name,
     double& lower_limit = joint_limit_min_[joint_name];
     double& upper_limit = joint_limit_max_[joint_name];
 
-    if ((joint_position + lower_limit) > tolerance ||
-        (joint_position - upper_limit) > tolerance) {
+    if (joint_position > (upper_limit + tolerance) ||
+        joint_position < (lower_limit - tolerance)) {
       std::cerr << "WARNING: " << joint_name << " deviates >"
                 << clamping_tolerance_in_degrees_
                 << "deg from joint limits, not clamping" << std::endl;
