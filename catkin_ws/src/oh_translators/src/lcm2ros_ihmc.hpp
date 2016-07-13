@@ -35,6 +35,7 @@
 #include <ihmc_msgs/PauseWalkingRosMessage.h>
 #include <ihmc_msgs/StopAllTrajectoryRosMessage.h>
 #include <ihmc_msgs/WholeBodyTrajectoryRosMessage.h>
+#include <ihmc_msgs/NeckTrajectoryRosMessage.h>
 //#include <ihmc_msgs/ArmTrajectoryRosMessage.h>
 //#include <ihmc_msgs/HeadTrajectoryRosMessage.h>
 //#include <ihmc_msgs/FootTrajectoryRosMessage.h>
@@ -95,7 +96,7 @@ const char * getTrajectoryName( int enumVal )
   // Whole Body and Arm Plan Messages
   void ihmcControlModeCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::int64_stamped_t* msg);
   void robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::robot_plan_t* msg);
-  ros::Publisher arm_joint_traj2_pub_, whole_body_trajectory_pub_;
+  ros::Publisher arm_joint_traj2_pub_, neck_joint_traj_pub_, whole_body_trajectory_pub_;
 
   double getPlanTimeAtWaypoint(int64_t planUtime);
   void sendSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
@@ -104,11 +105,18 @@ const char * getTrajectoryName( int enumVal )
                         std::vector<std::string> input_joint_names, bool is_right,
                         ihmc_msgs::ArmTrajectoryRosMessage &m);
   bool getChestTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::ChestTrajectoryRosMessage& m);
+  void sendNeckPlan(const bot_core::joint_angles_t* msg, std::vector<std::string> output_joint_names_neck,
+                                  std::vector<std::string> input_joint_names);
 
 
   void handPoseCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::pose_t* msg);
   ros::Publisher hand_pose_command_pub_;
 
+  std::vector<int> findJointIndices(std::vector<std::string>& input_joint_names, std::vector<std::string>& output_joint_names);
+  std::vector<ihmc_msgs::OneDoFJointTrajectoryRosMessage> getJointTrajectories(const bot_core::joint_angles_t* msg, std::vector<int>& indices);
+
+  bool getNeckPlan(const bot_core::joint_angles_t* msg, std::vector<std::string> output_joint_names_neck,
+                                 std::vector<std::string> input_joint_names, ihmc_msgs::NeckTrajectoryRosMessage &m);
 
   // Neck Control Messages
   void neckPitchHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::joint_angles_t* msg);
