@@ -139,8 +139,6 @@ double LCM2ROS::getPlanTimeAtWaypoint(int64_t planUtime)
   return time_at_waypoint;
 }
 
-
-
 bool LCM2ROS::getSingleArmPlan(const drc::robot_plan_t* msg, std::vector<std::string> output_joint_names_arm,
                                std::vector<std::string> input_joint_names, bool is_right,
                                ihmc_msgs::ArmTrajectoryRosMessage &m)
@@ -439,33 +437,5 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
     sendSingleArmPlan(msg, r_arm_strings, input_joint_names, true);
     ROS_ERROR("LCM2ROS sent right arm");
   }
-
-  /*
-  if (1==0){
-    if (robotName_.compare("valkyrie") == 0){
-
-      std::vector<std::string>::iterator it1 = find(input_joint_names.begin(),
-          input_joint_names.end(), "lowerNeckPitch");
-      int lowerNeckPitchIndex = std::distance(input_joint_names.begin(), it1);
-      float lowerNeckPitchAngle = msg->plan[ msg->num_states-1 ].joint_position[lowerNeckPitchIndex];
-
-      std::vector<std::string>::iterator it2 = find(input_joint_names.begin(),
-          input_joint_names.end(), "neckYaw");
-      int neckYawIndex = std::distance(input_joint_names.begin(), it2);
-      float neckYawAngle = msg->plan[ msg->num_states-1 ].joint_position[neckYawIndex];
-
-      Eigen::Quaterniond headOrientation = euler_to_quat(0, lowerNeckPitchAngle, neckYawAngle);
-      ihmc_msgs::HeadOrientationPacketMessage mout;
-      mout.trajectory_time = 1; // time doesn't seem to be tracked currently.
-      mout.orientation.w = headOrientation.w();
-      mout.orientation.x = headOrientation.x();
-      mout.orientation.y = headOrientation.y();
-      mout.orientation.z = headOrientation.z();
-      mout.unique_id = msg->utime;
-      neck_orientation_pub_.publish(mout);
-      ROS_ERROR("LCM2ROS sent desired head orientation");
-    }
-  }
-  */
   
 }

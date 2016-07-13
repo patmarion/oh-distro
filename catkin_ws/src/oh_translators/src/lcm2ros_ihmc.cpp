@@ -53,6 +53,8 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
       "/ihmc_ros/" + robotName_ + "/control/arm_trajectory", 10);
   whole_body_trajectory_pub_ = nh_.advertise<ihmc_msgs::WholeBodyTrajectoryRosMessage>(
       "/ihmc_ros/" + robotName_ + "/control/whole_body_trajectory", 10);
+  neck_joint_traj_pub_ = nh_.advertise<ihmc_msgs::NeckTrajectoryRosMessage>(
+              "/ihmc_ros/" + robotName_ + "/control/neck_trajectory", 10);
 
 
   // These messages work with new IHMC API, but are not recommended:
@@ -63,7 +65,7 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
 
 
 
-//  lcm_->subscribe("DESIRED_NECK_ANGLES", &LCM2ROS::neckPitchHandler, this);
+  lcm_->subscribe("DESIRED_NECK_ANGLES", &LCM2ROS::neckPitchHandler, this);
 //  lcm_->subscribe("DESIRED_HEAD_ORIENTATION", &LCM2ROS::headOrientationHandler, this);
 //  neck_orientation_pub_ = nh_.advertise<ihmc_msgs::HeadTrajectoryRosMessage>(
 //      "/ihmc_ros/" + robotName_ + "/control/head_orientation", 10);
