@@ -19,6 +19,7 @@ from director import vtkAll as vtk
 from director.simpletimer import SimpleTimer
 from director import affordanceupdater
 from director import sceneloader
+from director.ikparameters import IkParameters
 
 from director.debugVis import DebugData
 from director import affordanceitems
@@ -397,15 +398,24 @@ class TableboxDemo(object):
 
 
     def planBoxLift(self):
-        ikplanner.getIkOptions().setProperty('Use pointwise', False)
+        ''' Move the robot back to a safe posture, 1m above its feet, w/o moving the hands
+        '''
+        # ikParameters = IkParameters(usePointwise=False) # was using False for a long time
         startPose = self.getPlanningStartPose()
-        
-        self.computeNullPose(startPose)
+        footReferenceFrame = self.footstepPlanner.getFeetMidPoint(self.robotStateModel)
+        pelvisHeightAboveFeet = 1.0
+        newPlan = self.computeHomePlan(startPose, footReferenceFrame, pelvisHeightAboveFeet)
+        self.addPlan(newPlan)
 
-        ikplanner.getIkOptions().setProperty('Use pointwise', True)
 
+    def computeHomePose(self, startPose, footReferenceFrame, pelvisHeightAboveFeet=1.0, ikParameters=None):
+        ''' Compute a pose with the pelvis above the mid point of the feet with zero roll or pitch
+            and the back joints also zeroed. Don't move the arms.
+            This function originally required usePointwise=False, doesn't seem to be necessary
+        '''
 
-    def computeNullPose(self, startPose):
+        ikParameters = self.ikPlanner.mergeWithDefaultIkParameters(ikParameters)
+
         startPoseName = 'stand_start'
         self.ikPlanner.addPose(startPose, startPoseName)
 
@@ -414,28 +424,29 @@ class TableboxDemo(object):
         constraints.extend(self.ikPlanner.createFixedFootConstraints(startPoseName))
         constraints.append( self.ikPlanner.createPostureConstraint('q_zero', self.ikPlanner.backJoints) )
 
-        tf = transformUtils.copyFrame(self.footstepPlanner.getFeetMidPoint(self.robotStateModel))
-        tf.Concatenate( transformUtils.frameFromPositionAndRPY([0.0,0,1.0],[0,0,0]) )
-        vis.updateFrame(tf,'goal pelvis frame', visible=True)
-
-        p = ik.PositionConstraint(linkName="pelvis", referenceFrame=tf, lowerBound=-0.001*np.ones(3), upperBound=0.001*np.ones(3))
-        q = ik.QuatConstraint(linkName="pelvis", quaternion=tf, angleToleranceInDegrees=1.0)
-        p.tspan = [1.0,1.0]
-        q.tspan = [1.0,1.0]
+        pos = np.array(footReferenceFrame.GetPosition()) + np.array([0,0,pelvisHeightAboveFeet])
+        tf = transformUtils.frameFromPositionAndRPY( pos ,[0,0, footReferenceFrame.GetOrientation()[2] ])
+        #vis.updateFrame(tf,'goal pelvis frame', visible=True)
+        p, q = self.ikPlanner.createPositionOrientationConstraint("pelvis", tf, vtk.vtkTransform(), positionTolerance=0.0, angleToleranceInDegrees=0.0)
+        p.tspan = [1.0, 1.0]
+        q.tspan = [1.0, 1.0]
         constraints.extend([p, q])
 
         constraints.append(self.ikPlanner.createLockedLeftArmPostureConstraint(startPoseName))
         constraints.append(self.ikPlanner.createLockedRightArmPostureConstraint(startPoseName))
-
         constraints.append( self.ikPlanner.createPostureConstraint('q_zero', self.ikPlanner.neckJoints) )
 
-        self.constraintSet = self.ikPlanner.makeConstraintSet(constraints, startPose)
+        endPose, info = self.ikPlanner.ikServer.runIk(constraints, ikParameters, seedPostureName=startPoseName)
+        return endPose, info
 
-        self.constraintSet.runIk()
-        print 'planning lift'
-        plan = self.constraintSet.runIkTraj()
-        self.addPlan(plan)
 
+
+    def computeHomePlan(self, startPose, footReferenceFrame, pelvisHeightAboveFeet=1.0):
+
+        endPose, info = self.computeHomePose(startPose, footReferenceFrame, pelvisHeightAboveFeet)
+        print 'info:', info
+
+        return self.ikPlanner.computePostureGoal(startPose, endPose)
 
 
     def planWalkToTable(self):
