@@ -11,7 +11,10 @@ class TrajectoryTrackingTest(object):
         self.plans = []
     
     def planNominalPose(self):
-        self.plans.append(self.ikPlanner.computeNominalPlan(self.robotStateJointController.q))
+        # previous method doesn't return to a repeatable posture
+        #self.plans.append(self.ikPlanner.computeNominalPlan(self.robotStateJointController.q))
+        # returns to a repeatable posture
+        self.plans.append(self.ikPlanner.computeHomeNominalPlan(self.robotStateJointController.q))
 
     def commitManipPlan(self):
         self.manipPlanner.commitManipPlan(self.plans[-1])
