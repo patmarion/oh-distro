@@ -102,12 +102,12 @@ group "5.exotica" {
 }
 
 cmd "director" {
-    exec = "director -c $DRC_BASE/software/config/val_sim_scs/robot.cfg -val2 --startup $DRC_BASE/software/modules/ohdirector/runstartup.py";
+    exec = "director -c $DRC_BASE/software/config/val_sim_scs/robot.cfg -val --startup $DRC_BASE/software/modules/ohdirector/runstartup.py";
     host = "localhost";
 }
 
 cmd "director_exotica" {
-    exec = "director -c $DRC_BASE/software/config/val/robot.cfg -val2 -exo";
+    exec = "director -c $DRC_BASE/software/config/val/robot.cfg -val -exo";
     host = "localhost";
 }
 
