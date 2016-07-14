@@ -155,7 +155,7 @@ cmd "ros-multisense" {
 }
 
 script "start_ui" {
-    start cmd "ros_bridge";
+    start group "0.ros_bridge";
     start group "1.params_and_model_pub";
     wait ms 1000;
     start group "2.drivers";
@@ -166,7 +166,7 @@ script "start_ui" {
 }
 
 script "start_ui_exotica" {
-    start cmd "ros_bridge";
+    start group "0.ros_bridge";
     start group "1.params_and_model_pub";
     wait ms 1000;
     start group "2.drivers";
