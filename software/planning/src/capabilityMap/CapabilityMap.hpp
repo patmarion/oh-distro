@@ -98,6 +98,8 @@ public:
    * draw a random sample from a precomputed probability distribution and update the distribution by removing that sample
    */
   int drawCapabilityMapSample(std::vector<int> &sample);
+  Eigen::MatrixX2d getOrientationBounds(int orient);
+  Eigen::MatrixX2d getPositionBounds(Eigen::Vector3d position);
   std::ofstream log;
 
 private:
