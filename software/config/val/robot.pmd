@@ -67,7 +67,7 @@ group "4.plan_and_control" {
     }
 
     cmd "planner" {
-       exec = "matlab -nosplash -nodesktop -r \"addpath_control; p = BasePlanner.withValkyrie(2); p.run();\"";
+       exec = "matlab -nosplash -nodesktop -r \"addpath_control; p = BasePlanner.withValkyrie(); p.run();\"";
        host = "localhost";
        stop_signal = 15;
     }
