@@ -10,7 +10,7 @@ classdef SE3MotionPlanningTree < CompositeVertexArrayTree
       T_SO3 = SO3MotionPlanningTree();
       obj = obj@CompositeVertexArrayTree({T_R3, T_SO3},{'R3', 'SO3'});
       obj = obj.setLCMGL('SE3MotionPlanningTree',[0, 0, 0]);
-      urdf = fullfile(getDrakePath, '../../', 'control', 'matlab', 'planners', 'collision_free_solver', 'empty.urdf');
+      urdf = fullfile(getDrakePath, '../../', 'planning', 'matlab', 'empty.urdf');
       options.floating = true;
       obj.rbm = RigidBodyManipulator(urdf, options);
       obj.rbm = obj.rbm.addLink(end_effector_body);
