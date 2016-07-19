@@ -1,5 +1,5 @@
 import argparse
-from bdi_step.translator_ihmc import IHMCStepTranslator, Mode
+from ihmc_step.translator_ihmc import IHMCStepTranslator, Mode
 
 
 def run_translator():
