@@ -3029,6 +3029,12 @@
       </imu>
     </sensor>
   </gazebo>
+  <link name="head_xtion_link"/>
+  <joint name="head_xtion_joint" type="fixed">
+    <parent link="head"/>
+    <child link="head_xtion_link"/>
+    <origin rpy="1.082104136 0.0 1.570796327" xyz="0.02 -0.025 -0.05"/>
+  </joint>
   <!-- drake feet mods-->
   <frame link="leftFoot" name="l_foot_sole" rpy="0 0 0" xyz="0.067  0 -0.09"/>
   <frame link="rightFoot" name="r_foot_sole" rpy="0 0 0" xyz="0.067 0 -0.09"/>
