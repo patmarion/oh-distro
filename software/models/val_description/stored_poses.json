@@ -696,6 +696,24 @@
       },
       "name": "arm_front_torso_yaw",
       "nominal_handedness": "right"
+    },
+    {
+      "allow_mirror": true,
+      "description": "arm_opposite_side_torso_bent",
+      "joints": {
+        "rightElbowPitch": 1.0499399900436401,
+        "rightForearmYaw": 1.4220529794692993,
+        "rightShoulderPitch": -1.002150058746338,
+        "rightShoulderRoll": 1.3463300466537476,
+        "rightShoulderYaw": 0.2897599935531616,
+        "rightWristPitch": -0.089649997651577,
+        "rightWristRoll": -0.06101499870419502,
+        "torsoPitch": 0.4709799885749817,
+        "torsoRoll": 0.17303499579429626,
+        "torsoYaw": 0.9902399778366089
+      },
+      "name": "arm_opposite_side_torso_bent",
+      "nominal_handedness": "right"
     }
   ]
 }
