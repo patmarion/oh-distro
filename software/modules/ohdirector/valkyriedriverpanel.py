@@ -7,6 +7,8 @@ from director import lcmUtils
 
 import os
 import bot_core as lcmbotcore
+import drc as lcmdrc
+import ihmc as lcmihmc
 
 def addWidgetsToDict(widgets, d):
 
@@ -47,6 +49,18 @@ class ValkyrieDriverPanel(object):
         self.ui.rFootUpButton.connect('clicked()', self.moveRightFootUpButtonClicked)
         self.ui.rFootDownButton.connect('clicked()', self.moveRightFootDownButtonClicked)
 
+        # Neck Control
+        self.ui.parkNeckButton.connect('clicked()', self.driver.sendParkNeckCommand)
+        self.ui.setNeckPitchButton.connect('clicked()', self.setNeckPitchButtonClicked)
+
+        # Hand Control
+        self.ui.sendHandCommandButton.connect('clicked()', self.sendHandCommandButtonClicked)
+        self.ui.openHandButton.connect('clicked()', self.openHandButtonClicked)
+
+        # Hand Pose Message
+        self.ui.lHandPoseButton.connect('clicked()', self.moveLeftHandButtonClicked)
+        self.ui.rHandPoseButton.connect('clicked()', self.moveRightHandButtonClicked)
+        self.ui.sendPlanPauseButton.connect('clicked()', self.sendPlanPauseClicked)
 
 
     def getModeInt(self, inputStr):
@@ -101,6 +115,37 @@ class ValkyrieDriverPanel(object):
         else:
             msg.robot_side = 1
             lcmUtils.publish("DESIRED_RIGHT_FOOT_POSE", msg)
+
+    def moveLeftHandButtonClicked(self):
+        self.driver.sendHandPoseCommand('left')
+
+    def moveRightHandButtonClicked(self):
+        self.driver.sendHandPoseCommand('right')
+
+    def sendPlanPauseClicked(self):
+        msg = lcmdrc.plan_control_t()
+        msg.utime = getUtime()
+        msg.control = lcmdrc.plan_control_t.PAUSE
+        lcmUtils.publish('COMMITTED_PLAN_PAUSE', msg)
+
+
+    def setNeckPitchButtonClicked(self):
+        self.driver.setNeckPitch(self.ui.lowerNeckPitchSpinBox.value)
+
+    def sendHandCommandButtonClicked(self):
+        side = self.ui.handSelectorComboBox.currentText.lower()
+        thumbRoll = float(self.ui.thumbRollSlider.value) / 99.
+        thumbPitch1 = float(self.ui.thumbPitch1Slider.value) / 99.
+        thumbPitch2 = float(self.ui.thumbPitch2Slider.value) / 99.
+        indexFingerPitch = float(self.ui.indexFingerPitchSlider.value) / 99.
+        middleFingerPitch = float(self.ui.middleFingerPitchSlider.value) / 99.
+        pinkyPitch = float(self.ui.pinkyPitchSlider.value) / 99.
+        self.driver.sendHandCommand(side, thumbRoll, thumbPitch1, thumbPitch2, indexFingerPitch, middleFingerPitch, pinkyPitch)
+
+    def openHandButtonClicked(self):
+        side = self.ui.handSelectorComboBox.currentText.lower()
+        self.driver.openHand(side)
+
 
 def _getAction():
 

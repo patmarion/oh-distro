@@ -1,5 +1,5 @@
 {
-  "modelName" : "valkyrie_v2",
+  "modelName" : "valkyrie",
   "urdfConfig": {
     "default": "./urdf/valkyrie_sim.urdf",
     "robotState": "./urdf/valkyrie_sim.urdf",
@@ -172,7 +172,7 @@
   "rightFootMeshFiles" : ["model/meshes/legs/foot.obj"],
   "postureDatabaseFile" : "./stored_poses.json",
   "capabilityMapFile": "../../../../drc-testing-data/final_pose_planner/val_description/capabilityMap.mat",
-  "mirrorJointSignFlips" : ["WaistRotator", "leftShoulderRoll", "rightShoulderRoll", "leftElbowPitch", "rightElbowPitch"],
+  "mirrorJointSignFlips" : ["torsoYaw", "leftShoulderRoll", "rightShoulderRoll", "leftElbowPitch", "rightElbowPitch"],
 
   "pelvisLink" : "pelvis",
   "headLink" : "head",
@@ -205,6 +205,6 @@
       }
   ],
 
-  "userConfig" : []
-
+  "userConfig" : [],
+  "disableComponents" : ["notUseOpenniDepthImage"]
 }

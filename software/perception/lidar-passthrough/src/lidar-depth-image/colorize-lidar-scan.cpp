@@ -134,7 +134,7 @@ Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_):
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(2002,"Cloud - Camera Color"           ,1,reset, 2000,0, { 1.0, 1.0, 0.0} ));  
   
   // allocate space larger than largest image message:
-  imgutils_ = new image_io_utils( lcm_->getUnderlyingLCM(), 1500, 3*1500); 
+  imgutils_ = new image_io_utils( lcm_, 1500, 3*1500); 
   
   printf_counter_ =0;  
   verbose_=false;

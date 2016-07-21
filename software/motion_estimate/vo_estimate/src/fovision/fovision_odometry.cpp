@@ -1,6 +1,12 @@
 // A VO-based non-probablistic state estimator for the multisense
 // - occasionally uses IMU to avoid orientation drift
 // - when VO fails extrapolate using previous vision lin rate and imu rot rates
+
+// For IMU orientation integration:
+// Estimate is maintained in the body frame which is assumed to be
+// Forward-Left-Up such at roll and pitch can be isolated from yaw.
+
+
 #include <zlib.h>
 #include <lcm/lcm-cpp.hpp>
 #include <bot_param/param_client.h>
@@ -9,8 +15,6 @@
 
 #include <lcmtypes/bot_core.hpp>
 #include <lcmtypes/multisense.hpp>
-#include <lcmtypes/microstrain.hpp>
-//#include "lcmtypes/drc/atlas_state_t.hpp"
 
 #include "drcvision/voconfig.hpp"
 #include "drcvision/vofeatures.hpp"
@@ -27,6 +31,7 @@
 #include "kdl_parser/kdl_parser.hpp"
 #include "forward_kinematics/treefksolverposfull_recursive.hpp"
 #include <model-client/model-client.hpp>
+#include <path_util/path_util.h>
 
 #include <opencv/cv.h> // for disparity 
 
@@ -39,17 +44,25 @@ struct CommandLineConfig
   // 0 none, 1 at init, 2 rpy, 2 rp only
   int fusion_mode;
   bool feature_analysis;
+  int feature_analysis_publish_period; // number of frames between publishing the point features 
   std::string output_extension;
   std::string output_signal;
+  bool output_signal_at_10Hz;
   std::string input_channel;
   bool verbose;
   int correction_frequency;
   int atlas_version;
+  std::string imu_channel;
+  std::string in_log_fname;
+  std::string param_file;
+  bool draw_lcmgl;
 };
+
+std::ofstream fovision_output_file_;
 
 class StereoOdom{
   public:
-    StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_);
+    StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_recv_, boost::shared_ptr<lcm::LCM> &lcm_pub_, const CommandLineConfig& cl_cfg_);
     
     ~StereoOdom(){
       free (left_buf_);
@@ -69,7 +82,8 @@ class StereoOdom{
     
     int64_t utime_cur_, utime_prev_;
 
-    boost::shared_ptr<lcm::LCM> lcm_;
+    boost::shared_ptr<lcm::LCM> lcm_recv_;
+    boost::shared_ptr<lcm::LCM> lcm_pub_;
     BotParam* botparam_;
     BotFrames* botframes_;
     bot::frames* botframes_cpp_;
@@ -97,27 +111,39 @@ class StereoOdom{
     // IMU
     bool pose_initialized_; // initalized from VO
     int imu_counter_;
-    void microstrainHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  microstrain::ins_t* msg);
-    void fuseInterial(Eigen::Quaterniond imu_robotorientation, int64_t utime);
+    void microstrainHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::ins_t* msg);
+    Eigen::Quaterniond imuOrientationToRobotOrientation(const bot_core::ins_t *msg);
+    void fuseInterial(Eigen::Quaterniond local_to_body_orientation_from_imu, int64_t utime);
+    Eigen::Isometry3d body_to_imu_, imu_to_camera_;
     
     // previous successful vo estimates as rates:
     Eigen::Vector3d vo_velocity_linear_;
     Eigen::Vector3d vo_velocity_angular_;
-    Eigen::Vector3d imu_velocity_linear_; // in head frame (0,0,0)
-    Eigen::Vector3d imu_velocity_angular_; // in head frame
-    Eigen::Vector3d imu_velocity_angular_alpha_; // in head frame
+    Eigen::Vector3d camera_linear_velocity_from_imu_; // in camera frame
+    Eigen::Vector3d camera_angular_velocity_from_imu_; // in camera frame
+    Eigen::Vector3d camera_angular_velocity_from_imu_alpha_; // in camera frame
 };    
 
-StereoOdom::StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_) : 
-       lcm_(lcm_), cl_cfg_(cl_cfg_), utime_cur_(0), utime_prev_(0), 
-       ref_utime_(0), changed_ref_frames_(false){
-
+StereoOdom::StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_recv_, boost::shared_ptr<lcm::LCM> &lcm_pub_, const CommandLineConfig& cl_cfg_) : 
+       lcm_recv_(lcm_recv_), lcm_pub_(lcm_pub_), cl_cfg_(cl_cfg_), utime_cur_(0), utime_prev_(0), 
+       ref_utime_(0), changed_ref_frames_(false)
+{
   // Set up frames and config:
-  botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
-  botframes_= bot_frames_get_global(lcm_->getUnderlyingLCM(), botparam_);
+  if (cl_cfg_.param_file.empty()) {
+    std::cout << "Get param from LCM\n";
+    botparam_ = bot_param_get_global(lcm_recv_->getUnderlyingLCM(), 0);
+  } else {
+    std::cout << "Get param from file\n";
+    botparam_ = bot_param_new_from_file(cl_cfg_.param_file.c_str());
+  }
+  if (botparam_ == NULL) {
+    exit(1);
+  }
+  botframes_= bot_frames_get_global(lcm_recv_->getUnderlyingLCM(), botparam_);
   botframes_cpp_ = new bot::frames(botframes_);
 
-  model_ = boost::shared_ptr<ModelClient>(new ModelClient(lcm_->getUnderlyingLCM(), 0));
+  /*
+  model_ = boost::shared_ptr<ModelClient>(new ModelClient(lcm_recv_->getUnderlyingLCM(), 0));
   KDL::Tree tree;
   if (!kdl_parser::treeFromString( model_->getURDFString() ,tree)){
     cerr << "ERROR: Failed to extract kdl tree from xml robot description" << endl;
@@ -125,6 +151,7 @@ StereoOdom::StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfi
   }
   fksolver_ = boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive>(new KDL::TreeFkSolverPosFull_recursive(tree));
   //last_atlas_state_msg_.utime = 0;
+  */
 
   config_ = new voconfig::KmclConfiguration(botparam_, cl_cfg_.camera_config);
   boost::shared_ptr<fovis::StereoCalibration> stereo_calibration_;
@@ -137,23 +164,32 @@ StereoOdom::StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfi
   left_buf_ref_ = (uint8_t*) malloc(3*image_size_); // used of feature output 
   rgb_buf_ = (uint8_t*) malloc(10*image_size_ * sizeof(uint8_t)); 
   decompress_disparity_buf_ = (uint8_t*) malloc( 4*image_size_*sizeof(uint8_t));  // arbitary size chosen..
-  imgutils_ = new image_io_utils( lcm_->getUnderlyingLCM(), stereo_calibration_->getWidth(), 2*stereo_calibration_->getHeight()); // extra space for stereo tasks
+  imgutils_ = new image_io_utils( lcm_pub_, stereo_calibration_->getWidth(), 2*stereo_calibration_->getHeight()); // extra space for stereo tasks
 
-  vo_ = new FoVision(lcm_ , stereo_calibration_);
-  features_ = new VoFeatures(lcm_, stereo_calibration_->getWidth(), stereo_calibration_->getHeight() );
-  estimator_ = new VoEstimator(lcm_ , botframes_, cl_cfg_.output_extension );
+  vo_ = new FoVision(lcm_pub_ , stereo_calibration_, cl_cfg_.draw_lcmgl);
+  features_ = new VoFeatures(lcm_pub_, stereo_calibration_->getWidth(), stereo_calibration_->getHeight() );
+  estimator_ = new VoEstimator(lcm_pub_ , botframes_, cl_cfg_.output_extension );
 
   Eigen::Isometry3d init_pose;
   init_pose = Eigen::Isometry3d::Identity();
   init_pose.translation() = Eigen::Vector3d(0,0,1.65); // nominal head height
-  estimator_->setHeadPose(init_pose);
+  estimator_->setBodyPose(init_pose);
 
   // IMU:
   pose_initialized_=false;
   imu_counter_=0;
+  lcm_recv_->subscribe( cl_cfg_.input_channel, &StereoOdom::multisenseHandler,this);
+  lcm_recv_->subscribe( cl_cfg_.imu_channel, &StereoOdom::microstrainHandler,this);
+  // This assumes the imu to body frame is fixed, need to update if the neck is actuated
+  botframes_cpp_->get_trans_with_utime( botframes_ ,  "body", "imu", 0, body_to_imu_);
+  botframes_cpp_->get_trans_with_utime( botframes_ ,  "imu", "CAMERA_LEFT", 0, imu_to_camera_);
 
-  lcm_->subscribe( cl_cfg_.input_channel,&StereoOdom::multisenseHandler,this);
-  lcm_->subscribe("MICROSTRAIN_INS",&StereoOdom::microstrainHandler,this);
+  if( cl_cfg_.output_signal_at_10Hz ){
+    std::cout << "Opened fovision_pose_body.txt\n";
+    fovision_output_file_.open("fovision_pose_body.txt");
+    fovision_output_file_ << "# utime x y z qw qx qy qz roll pitch yaw\n";
+  }
+
   cout <<"StereoOdom Constructed\n";
 }
 
@@ -162,7 +198,7 @@ int counter =0;
 void StereoOdom::featureAnalysis(){
 
   /// Incremental Feature Output:
-  if (counter%5 == 0 ){
+  if (counter% cl_cfg_.feature_analysis_publish_period == 0 ){
     features_->setFeatures(vo_->getMatches(), vo_->getNumMatches() , utime_cur_);
     features_->setCurrentImage(left_buf_);
     //features_->setCurrentImages(left_buf_, right_buf_);
@@ -235,15 +271,10 @@ void StereoOdom::updateMotion(){
       // This orientation is not mathematically correct:
       std::cout << dt << " sec | "
                 << vo_velocity_linear_.transpose()   << " m/s | "
-                << imu_velocity_angular_.transpose() << " r/s to be extrapolated\n";
+                << camera_angular_velocity_from_imu_.transpose() << " r/s to be extrapolated\n";
 
-      // Original Extrapolation:
-      //Eigen::Quaterniond extrapolated_quat = euler_to_quat( vo_velocity_angular_[0]*dt, vo_velocity_angular_[1]*dt, vo_velocity_angular_[2]*dt);
-
-      // Use IMU rot_rates to extrapolate rotation: This is wrong except for y (yaw)
-      // since imu_velocity_angular_ is in head frame, it needs to be transformed into camera
-      // x becomes z, y becomes -x, z becomes -y
-      Eigen::Quaterniond extrapolated_quat = euler_to_quat( -imu_velocity_angular_[1]*dt, -imu_velocity_angular_[2]*dt, imu_velocity_angular_[0]*dt);
+      // Use IMU rot_rates to extrapolate rotation: This is mathematically incorrect:
+      Eigen::Quaterniond extrapolated_quat = euler_to_quat( camera_angular_velocity_from_imu_[0]*dt, camera_angular_velocity_from_imu_[1]*dt, camera_angular_velocity_from_imu_[2]*dt);
 
       delta_camera.setIdentity();
       delta_camera.translation().x() = vo_velocity_linear_[0] * dt;
@@ -293,6 +324,8 @@ void StereoOdom::multisenseHandler(const lcm::ReceiveBuffer* rbuf,
   utime_prev_ = utime_cur_;
   utime_cur_ = msg->utime;
 
+
+
   // Detect the image stream and process accordingly
   if ( (msg->image_types[0] ==  bot_core::images_t::LEFT) &&
        (msg->image_types[1] ==  bot_core::images_t::RIGHT) ) {
@@ -312,6 +345,24 @@ void StereoOdom::multisenseHandler(const lcm::ReceiveBuffer* rbuf,
 
   if(cl_cfg_.feature_analysis)
     featureAnalysis();
+
+
+  if (cl_cfg_.output_signal_at_10Hz){
+    // Publish the current estimate
+    Eigen::Isometry3d local_to_body = estimator_->getBodyPose();
+    estimator_->publishUpdate(utime_cur_, local_to_body, "POSE_BODY_10HZ", false);
+    //lcm_pub_->publish("CAMERA_REPUBLISH", msg);
+
+    double current_rpy[3];
+    Eigen::Quaterniond current_quat = Eigen::Quaterniond( local_to_body.rotation() );
+    quat_to_euler( current_quat, current_rpy[0], current_rpy[1], current_rpy[2]);
+    //# utime, x, y, z, qw, qx, qy, qz, roll, pitch, yaw
+    fovision_output_file_ << utime_cur_  << " "
+                    << local_to_body.translation().x() << " " << local_to_body.translation().y() << " " << local_to_body.translation().z() << " "
+                    << current_quat.w() << " " << current_quat.x() << " " << current_quat.y() << " " << current_quat.z() << " "
+                    << current_rpy[0] << " " << current_rpy[1] << " " << current_rpy[2] << "\n";
+    fovision_output_file_.flush();
+  }
 
 }
 
@@ -394,61 +445,45 @@ void StereoOdom::multisenseLRHandler(const lcm::ReceiveBuffer* rbuf,
 }
 
 
-
-
-
-// Transform the Microstrain IMU orientation into the head frame:
-// TODO: add an imu frame into the config
-Eigen::Quaterniond microstrainIMUToRobotOrientation(const microstrain::ins_t *msg){
+// Transform the Microstrain IMU orientation into the body frame:
+Eigen::Quaterniond StereoOdom::imuOrientationToRobotOrientation(const bot_core::ins_t *msg){
   Eigen::Quaterniond m(msg->quat[0],msg->quat[1],msg->quat[2],msg->quat[3]);
   Eigen::Isometry3d motion_estimate;
   motion_estimate.setIdentity();
   motion_estimate.translation() << 0,0,0;
   motion_estimate.rotate(m);
 
-  // rotate coordinate frame so that look vector is +X, and up is +Z
-  Eigen::Matrix3d M;
+  // rotate IMU orientation so that look vector is +X, and up is +Z
+  // TODO: do this with rotation matrices for efficiency:
+  Eigen::Isometry3d body_pose_from_imu = motion_estimate * body_to_imu_;
+  Eigen::Quaterniond body_orientation_from_imu(body_pose_from_imu.rotation());
+  // For debug:
+  //estimator_->publishPose(msg->utime, "POSE_BODY" , motion_estimate_out, Eigen::Vector3d::Identity() , Eigen::Vector3d::Identity());
+  //estimator_->publishPose(msg->utime, "POSE_BODY_ALT" , motion_estimate, Eigen::Vector3d::Identity() , Eigen::Vector3d::Identity());
 
-  // TODO: use bot frames to do this automatically
-  //convert imu  on drc rig from:
-  //x+ back, z+ down, y+ left
-  //to x+ forward, y+ left, z+ up (robotics)
-  M <<  -1, 0, 0,
-         0, 1, 0,
-         0, 0, -1;
-
-  motion_estimate= M * motion_estimate;
-  Eigen::Vector3d translation(motion_estimate.translation());
-  Eigen::Quaterniond rotation(motion_estimate.rotation());
-  rotation = rotation * M.transpose();
-
-  Eigen::Isometry3d motion_estimate_out;
-  motion_estimate_out.setIdentity();
-  motion_estimate_out.translation() << translation[0],translation[1],translation[2];
-  motion_estimate_out.rotate(rotation);
-  Eigen::Quaterniond r_x(motion_estimate_out.rotation());
-
-  return r_x;
+  return body_orientation_from_imu;
 }
 
-void StereoOdom::fuseInterial(Eigen::Quaterniond imu_robotorientation, int64_t utime){
+void StereoOdom::fuseInterial(Eigen::Quaterniond local_to_body_orientation_from_imu, int64_t utime){
 
   if (cl_cfg_.fusion_mode==0) // Got IMU measurement - not incorporating them.
     return;
   
   if (!pose_initialized_){
-    if((cl_cfg_.fusion_mode ==1) ||(cl_cfg_.fusion_mode ==2) ){
+    std::vector<int> init_modes = {1,2,3};
+    if(std::find(init_modes.begin(), init_modes.end(), cl_cfg_.fusion_mode) != init_modes.end()) {
+    //if((cl_cfg_.fusion_mode ==1) ||(cl_cfg_.fusion_mode ==2)  ){
       Eigen::Isometry3d init_pose;
       init_pose.setIdentity();
       init_pose.translation() << 0,0,0;
-      init_pose.rotate( imu_robotorientation );
-      estimator_->setHeadPose(init_pose);
+      init_pose.rotate( local_to_body_orientation_from_imu );
+      estimator_->setBodyPose(init_pose);
       pose_initialized_ = true;
       cout << "got first IMU measurement\n";
       return;
     }
   }
-  
+
   if((cl_cfg_.fusion_mode ==2) ||(cl_cfg_.fusion_mode ==3) ){
     if (imu_counter_== cl_cfg_.correction_frequency){
       // Every X frames: replace the pitch and roll with that from the IMU
@@ -458,19 +493,19 @@ void StereoOdom::fuseInterial(Eigen::Quaterniond imu_robotorientation, int64_t u
       // combine, convert to camera frame... set as pose
 
       // 1. Get the currently estimated head pose and its rpy
-      Eigen::Isometry3d local_to_head = estimator_->getHeadPose();// _local_to_camera *cam2head;
+      Eigen::Isometry3d local_to_body = estimator_->getBodyPose();
       std::stringstream ss2;
-      print_Isometry3d(local_to_head, ss2);
+      print_Isometry3d(local_to_body, ss2);
       double rpy[3];
-      quat_to_euler(  Eigen::Quaterniond(local_to_head.rotation()) , rpy[0], rpy[1], rpy[2]);
+      quat_to_euler(  Eigen::Quaterniond(local_to_body.rotation()) , rpy[0], rpy[1], rpy[2]);
       if (cl_cfg_.verbose){
-        std::cout << "local_to_head: " << ss2.str() << " | "<< 
+        std::cout << "local_to_body: " << ss2.str() << " | "<< 
           rpy[0]*180/M_PI << " " << rpy[1]*180/M_PI << " " << rpy[2]*180/M_PI << "\n";        
       }
         
       // 2. Get the IMU orientated RPY:
       double rpy_imu[3];
-      quat_to_euler( imu_robotorientation , 
+      quat_to_euler( local_to_body_orientation_from_imu , 
                       rpy_imu[0], rpy_imu[1], rpy_imu[2]);
       if (cl_cfg_.verbose){
         std::cout <<  rpy_imu[0]*180/M_PI << " " << rpy_imu[1]*180/M_PI << " " << rpy_imu[2]*180/M_PI << " rpy_imu\n";        
@@ -480,49 +515,32 @@ void StereoOdom::fuseInterial(Eigen::Quaterniond imu_robotorientation, int64_t u
       }
       
       // 3. Merge the two orientation estimates:
-      Eigen::Quaterniond revised_local_to_head_quat;
+      Eigen::Quaterniond revised_local_to_body_quat;
       if (cl_cfg_.fusion_mode==2){ // rpy:
-        revised_local_to_head_quat = imu_robotorientation;
+        revised_local_to_body_quat = local_to_body_orientation_from_imu;
       }else{  // pitch and roll from IMU, yaw from VO:
-        revised_local_to_head_quat = euler_to_quat( rpy_imu[0], rpy_imu[1], rpy[2]);
+        revised_local_to_body_quat = euler_to_quat( rpy_imu[0], rpy_imu[1], rpy[2]);
       }
       ///////////////////////////////////////
-      Eigen::Isometry3d revised_local_to_head;
-      revised_local_to_head.setIdentity();
-      revised_local_to_head.translation() = local_to_head.translation();
-      revised_local_to_head.rotate(revised_local_to_head_quat);
+      Eigen::Isometry3d revised_local_to_body;
+      revised_local_to_body.setIdentity();
+      revised_local_to_body.translation() = local_to_body.translation();
+      revised_local_to_body.rotate(revised_local_to_body_quat);
       
       // 4. Set the Head pose using the merged orientation:
       if (cl_cfg_.verbose){
         std::stringstream ss4;
-        print_Isometry3d(revised_local_to_head, ss4);
-        quat_to_euler(  Eigen::Quaterniond(revised_local_to_head.rotation()) , rpy[0], rpy[1], rpy[2]);
+        print_Isometry3d(revised_local_to_body, ss4);
+        quat_to_euler(  Eigen::Quaterniond(revised_local_to_body.rotation()) , rpy[0], rpy[1], rpy[2]);
         std::cout << "local_revhead: " << ss4.str() << " | "<< 
           rpy[0]*180/M_PI << " " << rpy[1]*180/M_PI << " " << rpy[2]*180/M_PI << "\n";        
       }
-      estimator_->setHeadPose(revised_local_to_head);
+      estimator_->setBodyPose(revised_local_to_body);
 
       // Publish the Position of the floating head:
-      estimator_->publishUpdate(utime, revised_local_to_head, cl_cfg_.output_signal, false);
-
-      // determine the position of the robot given the head, through kinematics:
-      /*
-      if (last_atlas_state_msg_.utime > 0){
-        Eigen::Isometry3d body_to_head;
-        bool status = getBodyToHead(&last_atlas_state_msg_, body_to_head);
-
-        std::stringstream ss2;
-        print_Isometry3d(body_to_head, ss2);
-        std::cout << "b2h: " << ss2.str() << " and "<< (int) status <<"\n";
-
-        Eigen::Isometry3d revised_local_to_body = revised_local_to_head * body_to_head.inverse();
-
-        estimator_->publishPose(utime, "POSE_BODY" , revised_local_to_body, Eigen::Vector3d::Identity() , Eigen::Vector3d::Identity());
+      estimator_->publishUpdate(utime, revised_local_to_body, cl_cfg_.output_signal, false);
 
 
-      }else{
-        std::cout << "no atlas state provided - refusing to publish\n";
-      }*/
 
     }
     if (imu_counter_ > cl_cfg_.correction_frequency) { imu_counter_ =0; }
@@ -545,45 +563,34 @@ Eigen::Isometry3d KDLToEigen(KDL::Frame tf){
 
 int temp_counter = 0;
 void StereoOdom::microstrainHandler(const lcm::ReceiveBuffer* rbuf, 
-     const std::string& channel, const  microstrain::ins_t* msg){
+     const std::string& channel, const  bot_core::ins_t* msg){
   temp_counter++;
   if (temp_counter > 5){
     //std::cout << msg->gyro[0] << ", " << msg->gyro[1] << ", " << msg->gyro[2] << " rotation rate, gyro frame\n";
     temp_counter=0;
   }
 
-  Eigen::Quaterniond imu_robotorientation;
-  imu_robotorientation =microstrainIMUToRobotOrientation(msg);
-  fuseInterial(imu_robotorientation, msg->utime);
+  Eigen::Quaterniond local_to_body_orientation_from_imu;
+  local_to_body_orientation_from_imu = imuOrientationToRobotOrientation(msg);
+  fuseInterial(local_to_body_orientation_from_imu, msg->utime);
 
-  /*
-  // Alternative Pose for the typical system to see:
-  double rpy[3];
-  quat_to_euler(  imu_robotorientation , rpy[0], rpy[1], rpy[2]);
-  Eigen::Quaterniond imu_robotorientation_less_yaw = euler_to_quat( rpy[0], rpy[1], 0);
-  bot_core_pose_t pose_msg;
-  memset(&pose_msg, 0, sizeof(pose_msg));
-  pose_msg.utime =   msg->utime;
-  pose_msg.pos[0] = 0;
-  pose_msg.pos[1] = 0;
-  pose_msg.pos[2] = 1.65; // nominal head height
-  pose_msg.orientation[0] = imu_robotorientation_less_yaw.w();
-  pose_msg.orientation[1] = imu_robotorientation_less_yaw.x();
-  pose_msg.orientation[2] = imu_robotorientation_less_yaw.y();
-  pose_msg.orientation[3] = imu_robotorientation_less_yaw.z();
-  bot_core_pose_t_publish(lcm_->getUnderlyingLCM(), "POSE_BODY", &pose_msg);
-  */
+  // Transform rotation Rates into body frame:
+  double camera_ang_vel_from_imu_[3];
+  Eigen::Quaterniond imu_to_camera_quat = Eigen::Quaterniond( imu_to_camera_.rotation() );
+  double imu_to_camera_quat_array[4];
+  imu_to_camera_quat_array[0] =imu_to_camera_quat.w(); imu_to_camera_quat_array[1] =imu_to_camera_quat.x();
+  imu_to_camera_quat_array[2] =imu_to_camera_quat.y(); imu_to_camera_quat_array[3] =imu_to_camera_quat.z();
+  bot_quat_rotate_to( imu_to_camera_quat_array, msg->gyro, camera_ang_vel_from_imu_);
+  camera_angular_velocity_from_imu_ = Eigen::Vector3d(camera_ang_vel_from_imu_[0], camera_ang_vel_from_imu_[1], camera_ang_vel_from_imu_[2]);
+  // Didn't find this necessary - for smooth motion
+  //camera_angular_velocity_from_imu_alpha_ = 0.8*camera_angular_velocity_from_imu_alpha_ + 0.2*camera_angular_velocity_from_imu_;
 
-  // TODO: use bot frames to transform this properly
-  imu_velocity_linear_  = Eigen::Vector3d(0,0,0);
-  imu_velocity_angular_ = Eigen::Vector3d(-msg->gyro[0], msg->gyro[1], -msg->gyro[2]);
-  // Didn't find this necessary:
-  //imu_velocity_angular_alpha_ = 0.8*imu_velocity_angular_alpha_ + 0.2*imu_velocity_angular_;
+  camera_linear_velocity_from_imu_  = Eigen::Vector3d(0,0,0);
 
   // experimentally correct for sensor timing offset:
   int64_t temp_utime = msg->utime;// + 120000;
-  estimator_->publishPose(temp_utime, "POSE_IMU_RATES", Eigen::Isometry3d::Identity(), imu_velocity_linear_, imu_velocity_angular_);
-  // estimator_->publishPose(temp_utime, "POSE_IMU_RATES", Eigen::Isometry3d::Identity(), imu_velocity_linear_, imu_velocity_angular_alpha_);
+  estimator_->publishPose(temp_utime, "POSE_IMU_RATES", Eigen::Isometry3d::Identity(), camera_linear_velocity_from_imu_, camera_angular_velocity_from_imu_);
+  // estimator_->publishPose(temp_utime, "POSE_IMU_RATES", Eigen::Isometry3d::Identity(), camera_linear_velocity_from_imu_, camera_angular_velocity_from_imu_alpha_);
 }
 
 
@@ -592,31 +599,66 @@ int main(int argc, char **argv){
   cl_cfg.camera_config = "CAMERA";
   cl_cfg.input_channel = "CAMERA";
   cl_cfg.output_signal = "POSE_BODY";
+  cl_cfg.output_signal_at_10Hz = FALSE;
   cl_cfg.feature_analysis = FALSE; 
   cl_cfg.fusion_mode = 0;
   cl_cfg.verbose = false;
   cl_cfg.output_extension = "";
   cl_cfg.correction_frequency = 1;//; was typicall unused at 100;
   cl_cfg.atlas_version = 5;
+  cl_cfg.feature_analysis_publish_period = 1; // 5
+  cl_cfg.imu_channel = "IMU_MICROSTRAIN";
+  std::string param_file = ""; // actual file
+  cl_cfg.param_file = ""; // full path to file
+  cl_cfg.draw_lcmgl = FALSE;  
+  double processing_rate = 1; // real time
 
   ConciseArgs parser(argc, argv, "simple-fusion");
   parser.add(cl_cfg.camera_config, "c", "camera_config", "Camera Config block to use: CAMERA, stereo, stereo_with_letterbox");
   parser.add(cl_cfg.output_signal, "p", "output_signal", "Output POSE_BODY and POSE_BODY_ALT signals");
+  parser.add(cl_cfg.output_signal_at_10Hz, "s", "output_signal_at_10Hz", "Output POSE_BODY_10HZ on the camera CB");
   parser.add(cl_cfg.feature_analysis, "f", "feature_analysis", "Publish Feature Analysis Data");
+  parser.add(cl_cfg.feature_analysis_publish_period, "fp", "feature_analysis_publish_period", "Publish features with this period");  
   parser.add(cl_cfg.fusion_mode, "m", "fusion_mode", "0 none, 1 at init, 2 rpy, 3 rp only, (both continuous)");
   parser.add(cl_cfg.input_channel, "i", "input_channel", "input_channel - CAMERA or CAMERA_BLACKENED");
   parser.add(cl_cfg.output_extension, "o", "output_extension", "Extension to pose channels (e.g. '_VO' ");
   parser.add(cl_cfg.correction_frequency, "y", "correction_frequency", "Correct the R/P every XX IMU measurements");
   parser.add(cl_cfg.verbose, "v", "verbose", "Verbose printf");
+  parser.add(cl_cfg.imu_channel, "imu", "imu_channel", "IMU channel to listen for");
   parser.add(cl_cfg.atlas_version, "a", "atlas_version", "Atlas version to use");
+  parser.add(cl_cfg.in_log_fname, "L", "in_log_fname", "Process this log file");
+  parser.add(param_file, "P", "param_file", "Pull params from this file instead of LCM");
+  parser.add(cl_cfg.draw_lcmgl, "g", "lcmgl", "Draw LCMGL visualization of features");
+  parser.add(processing_rate, "pr", "processing_rate", "Processing Rate from a log [0=ASAP, 1=realtime]");  
   parser.parse();
   cout << cl_cfg.fusion_mode << " is fusion_mode\n";
   cout << cl_cfg.camera_config << " is camera_config\n";
   
-  boost::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
-  if(!lcm->good()){
-    std::cerr <<"ERROR: lcm is not good()" <<std::endl;
+  cl_cfg.param_file = std::string(getConfigPath()) +'/' + std::string(param_file);
+  if (param_file.empty()) { // get param from lcm
+    cl_cfg.param_file = "";
   }
-  StereoOdom fo= StereoOdom(lcm, cl_cfg);
-  while(0 == lcm->handle());
+
+  //
+  bool running_from_log = !cl_cfg.in_log_fname.empty();
+  boost::shared_ptr<lcm::LCM> lcm_recv;
+  boost::shared_ptr<lcm::LCM> lcm_pub;
+  if (running_from_log) {
+    printf("running from log file: %s\n", cl_cfg.in_log_fname.c_str());
+    //std::string lcmurl = "file://" + in_log_fname + "?speed=0";
+    std::stringstream lcmurl;
+    lcmurl << "file://" << cl_cfg.in_log_fname << "?speed=" << processing_rate;
+    lcm_recv = boost::shared_ptr<lcm::LCM>(new lcm::LCM(lcmurl.str()));
+    if (!lcm_recv->good()) {
+      fprintf(stderr, "Error couldn't load log file %s\n", lcmurl.str().c_str());
+      exit(1);
+    }
+  }
+  else {
+    lcm_recv = boost::shared_ptr<lcm::LCM>(new lcm::LCM);
+  }
+  lcm_pub = boost::shared_ptr<lcm::LCM>(new lcm::LCM);
+
+  StereoOdom fo= StereoOdom(lcm_recv, lcm_pub, cl_cfg);
+  while(0 == lcm_recv->handle());
 }

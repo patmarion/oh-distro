@@ -393,9 +393,13 @@ classdef Scenes
       l_pos_const = WorldPositionConstraint(robot, l_foot, [0; 0; 0], l_pose(1:3) + lb.(options.feet_constraint), l_pose(1:3) + ub.(options.feet_constraint));
       l_euler_const = WorldEulerConstraint(robot, l_foot, orient_lb.(options.feet_constraint) + l_pose(4:6), orient_ub.(options.feet_constraint) + l_pose(4:6));
       r_pos_const = WorldPositionConstraint(robot, r_foot, [0; 0; 0], r_pose(1:3) + lb.(options.feet_constraint), r_pose(1:3) + ub.(options.feet_constraint));
-      r_euler_const = WorldEulerConstraint(robot, r_foot, orient_lb.(options.feet_constraint) + r_pose(4:6), orient_ub.(options.feet_constraint) + l_pose(4:6));
-      rel_const = RelativePositionConstraint(robot, [0;0;0], l_pose(1:3) - r_pose(1:3) - 0.001, l_pose(1:3) - r_pose(1:3) + 0.001, l_foot, r_foot);
-      constraints = {l_pos_const, l_euler_const, r_pos_const, r_euler_const, rel_const};
+      r_euler_const = WorldEulerConstraint(robot, r_foot, orient_lb.(options.feet_constraint) + r_pose(4:6), orient_ub.(options.feet_constraint) + r_pose(4:6));
+      rel_const = RelativePositionConstraint(robot, [0;0;0], [l_pose(1:2) - r_pose(1:2) - 0.001; -inf], [l_pose(1:2) - r_pose(1:2) + 0.001; inf], l_foot, r_foot);
+      if strcmp(options.feet_constraint, 'fixed')
+        constraints = {l_pos_const, l_euler_const, r_pos_const, r_euler_const};
+      else
+        constraints = {l_pos_const, l_euler_const, r_pos_const, r_euler_const, rel_const};
+      end
     end
     
     function constraint = graspingForearmAlignConstraint(options, robot)

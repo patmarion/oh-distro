@@ -5,8 +5,9 @@ add_definitions(-Wall )
 #add_definitions(-Wall -std=gnu99) # .... compiler warning
 
 
-add_library(fovision SHARED fovision.cpp )
-pods_use_pkg_config_packages(fovision eigen3 libfovis)
+add_library(fovision SHARED fovision.cpp 
+    visualization.cpp )
+pods_use_pkg_config_packages(fovision eigen3 libfovis bot2-lcmgl-client)
 
 target_link_libraries(fovision 
        lcmtypes_fovis-bot2   
@@ -16,7 +17,8 @@ target_link_libraries(fovision
 
 set_target_properties(fovision PROPERTIES SOVERSION 1)
 pods_install_libraries(fovision)
-pods_install_headers(fovision.hpp     DESTINATION drcvision)
+pods_install_headers(fovision.hpp   
+    visualization.hpp  DESTINATION drcvision)
 pods_install_pkg_config_file(fovision
     LIBS -lfovision
     REQUIRES 
@@ -37,6 +39,7 @@ pods_use_pkg_config_packages(se-simple-fusion eigen3
   voconfig   vofeatures   voestimator   fovision
   pronto_vis  
   opencv image_io_utils
+  path-util
   ${FK_PACKAGES})
 pods_install_executables(se-simple-fusion)
 

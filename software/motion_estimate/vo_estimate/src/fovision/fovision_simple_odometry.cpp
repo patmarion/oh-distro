@@ -41,13 +41,16 @@ struct CommandLineConfig
   std::string camera_config; // which block from the cfg to read
   int fusion_mode;
   bool feature_analysis;
+  int feature_analysis_publish_period; // number of frames between publishing the point features 
   std::string output_extension;
   bool output_signal;
+  std::string body_channel;
   bool vicon_init; // initializae off of vicon
   std::string input_channel;
   bool verbose;
   std::string in_log_fname;
   std::string param_file;
+  bool draw_lcmgl;
 };
 
 class StereoOdom{
@@ -139,7 +142,7 @@ StereoOdom::StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_recv_, boost::shared_ptr
   decompress_disparity_buf_ = (uint8_t*) malloc( 4*image_size_*sizeof(uint8_t));  // arbitary size chosen..
   
 
-  vo_ = new FoVision(lcm_pub_ , stereo_calibration_);
+  vo_ = new FoVision(lcm_pub_ , stereo_calibration_, cl_cfg_.draw_lcmgl);
   features_ = new VoFeatures(lcm_pub_, stereo_calibration_->getWidth(), stereo_calibration_->getHeight() );
   estimator_ = new VoEstimator(lcm_pub_ , botframes_, cl_cfg_.output_extension );
   lcm_recv_->subscribe( cl_cfg_.input_channel,&StereoOdom::multisenseHandler,this);
@@ -148,23 +151,37 @@ StereoOdom::StereoOdom(boost::shared_ptr<lcm::LCM> &lcm_recv_, boost::shared_ptr
   pose_initialized_ = false;
   if (!cl_cfg_.vicon_init){
     std::cout << "Init internal est using default\n";
-    // Initialise the nominal camera frame with the head pointing horizontally
+
+    // Useful for Atlas logs: initialise with nominal camera frame with the head pointing horizontally
+    /*
     Eigen::Matrix3d M;
     M <<  0,  0, 1,
         -1,  0, 0,
           0, -1, 0;
-
     world_to_camera_ = M * Eigen::Isometry3d::Identity();
     world_to_camera_.translation().x() = 0;
     world_to_camera_.translation().y() = 0;
     world_to_camera_.translation().z() = 1.65; // nominal head height
+    */
+
+    // Useful for Valkyrie logs: initialise with camera frame upside down but horizontal
+    Eigen::Matrix3d M;
+    M <<  0,  0, 1,
+        1,  0, 0,
+          0, 1, 0;
+    world_to_camera_ = M * Eigen::Isometry3d::Identity();
+    world_to_camera_.translation().x() = 0;
+    world_to_camera_.translation().y() = 0;
+    world_to_camera_.translation().z() = 1.65; // nominal head height
+
+
     pose_initialized_ = true;
   }else{
     lcm_recv_->subscribe("VICON_BODY|VICON_FRONTPLATE",&StereoOdom::viconHandler,this);
   }
   
   
-  imgutils_ = new image_io_utils( lcm_pub_->getUnderlyingLCM(), stereo_calibration_->getWidth(), 2*stereo_calibration_->getHeight()); // extra space for stereo tasks
+  imgutils_ = new image_io_utils( lcm_pub_, stereo_calibration_->getWidth(), 2*stereo_calibration_->getHeight()); // extra space for stereo tasks
   cout <<"StereoOdom Constructed\n";
 }
 
@@ -173,7 +190,7 @@ int counter =0;
 void StereoOdom::featureAnalysis(){
 
   /// Incremental Feature Output:
-  if (counter%5 == 0 ){
+  if (counter% cl_cfg_.feature_analysis_publish_period  == 0 ){
     features_->setFeatures(vo_->getMatches(), vo_->getNumMatches() , utime_cur_);
     features_->setCurrentImage(left_buf_);
     //features_->setCurrentImages(left_buf_, right_buf_);
@@ -234,7 +251,7 @@ void StereoOdom::updateMotion(int64_t utime){
 
   if (cl_cfg_.output_signal ){
     estimator_->publishPose(utime, "POSE_CAMERA_LEFT_ALT", world_to_camera_, Eigen::Vector3d::Identity(), Eigen::Vector3d::Identity());
-    estimator_->publishPose(utime, "POSE_BODY", new_world_to_body, Eigen::Vector3d::Identity(), Eigen::Vector3d::Identity());
+    estimator_->publishPose(utime, cl_cfg_.body_channel, new_world_to_body, Eigen::Vector3d::Identity(), Eigen::Vector3d::Identity());
   }
   
   // THIS IS NOT THE CORRECT COVARIANCE - ITS THE COVARIANCE IN THE CAMERA FRAME!!!!
@@ -418,11 +435,10 @@ void StereoOdom::viconHandler(const lcm::ReceiveBuffer* rbuf, const std::string&
 
     Eigen::Isometry3d worldvicon_to_camera = worldvicon_to_frontplate_vicon* frontplate_vicon_to_body_vicon * body_to_camera;
     
-    bot_core::pose_t pose_msg = getPoseAsBotPose(worldvicon_to_camera, msg->utime);
-    lcm_pub_->publish("POSE_BODY_ALT", &pose_msg );
+    //bot_core::pose_t pose_msg = getPoseAsBotPose(worldvicon_to_camera, msg->utime);
+    //lcm_pub_->publish("POSE_BODY_ALT", &pose_msg );
     
     world_to_camera_ =  worldvicon_to_camera;
-    // prev_vicon_utime_ = msg->utime;
     
     pose_initialized_ = TRUE;
   }
@@ -438,6 +454,7 @@ int main(int argc, char **argv){
   cl_cfg.camera_config = "CAMERA";
   cl_cfg.input_channel = "CAMERA";
   cl_cfg.output_signal = FALSE;
+  cl_cfg.body_channel = "POSE_BODY_USING_CAMERA";
   cl_cfg.feature_analysis = FALSE; 
   cl_cfg.vicon_init = FALSE;
   cl_cfg.fusion_mode = 0;
@@ -445,17 +462,22 @@ int main(int argc, char **argv){
   cl_cfg.in_log_fname = "";
   std::string param_file = ""; // actual file
   cl_cfg.param_file = ""; // full path to file
+  cl_cfg.feature_analysis_publish_period = 1; // 5
+  cl_cfg.draw_lcmgl = FALSE;
 
   ConciseArgs parser(argc, argv, "fovision-odometry");
   parser.add(cl_cfg.camera_config, "c", "camera_config", "Camera Config block to use: CAMERA, stereo, stereo_with_letterbox");
-  parser.add(cl_cfg.output_signal, "p", "output_signal", "Output POSE_BODY and POSE_BODY_ALT signals");
+  parser.add(cl_cfg.output_signal, "p", "output_signal", "Output POSE_CAMERA_LEFT_ALT and body estimates");
+  parser.add(cl_cfg.body_channel, "b", "body_channel", "body frame estimate (typically POSE_BODY)");
   parser.add(cl_cfg.feature_analysis, "f", "feature_analysis", "Publish Feature Analysis Data");
-  parser.add(cl_cfg.vicon_init, "g", "vicon_init", "Bootstrap internal estimate using VICON_FRONTPLATE");
+  parser.add(cl_cfg.feature_analysis_publish_period, "fp", "feature_analysis_publish_period", "Publish features with this period");    
+  parser.add(cl_cfg.vicon_init, "v", "vicon_init", "Bootstrap internal estimate using VICON_FRONTPLATE");
   parser.add(cl_cfg.fusion_mode, "m", "fusion_mode", "0 none, 1 at init, 2 every second, 3 init from gt, then every second");
   parser.add(cl_cfg.input_channel, "i", "input_channel", "input_channel - CAMERA or CAMERA_BLACKENED");
   parser.add(cl_cfg.output_extension, "o", "output_extension", "Extension to pose channels (e.g. '_VO' ");
   parser.add(cl_cfg.in_log_fname, "L", "in_log_fname", "Process this log file");
   parser.add(param_file, "P", "param_file", "Pull params from this file instead of LCM");
+  parser.add(cl_cfg.draw_lcmgl, "g", "lcmgl", "Draw LCMGL visualization of features");
   parser.parse();
   cout << cl_cfg.fusion_mode << " is fusion_mode\n";
   cout << cl_cfg.camera_config << " is camera_config\n";

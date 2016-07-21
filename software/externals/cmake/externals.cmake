@@ -16,7 +16,7 @@ set(bot_core_lcmtypes_revision c29cd6076d13ca2a3ecc23ffcbe28a0a1ab46314)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 
 set(libbot_url https://github.com/openhumanoids/libbot.git)
-set(libbot_revision ed4a76423f2a21594436490341f907710d3f78dd)
+set(libbot_revision a238668b8e2e7ef985517716bdd4ee96e774a445)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
@@ -166,7 +166,7 @@ set(pypolyhedron_revision 1f110addf89398f62644830bf69a69930db8c4d0)
 set(pypolyhedron_depends)
 
 set(kinematics-utils_url https://github.com/ipab-slmc/kinematics-utils.git)
-set(kinematics-utils_revision 1479da5c0386ee824b42520d08c4d23b03e92cda)
+set(kinematics-utils_revision 4c828062d6412f9b58278a5fa22cfbff4dff2ac6)
 set(kinematics-utils_depends Eigen_pod)
 
 set(libmultisense_url https://bitbucket.org/crl/libmultisense)
@@ -255,12 +255,13 @@ set(PointCloudLibraryPlugin_external_args
 
 
 set(isam_url https://github.com/ipab-slmc/isam.git)
-set(isam_revision a6795ce22a8a90cdf87e3d1306af93adbeec1aeb)
+set(isam_revision df3154d7b583a66bd2c3c04b6d519bcbd6c18eec)
 set(isam_depends)
 set(isam_external_args
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
     ${eigen_args}
+    -DUSE_LCM:BOOL=ON
   )
 
 set(yaml_cpp_url https://github.com/jbeder/yaml-cpp.git)
