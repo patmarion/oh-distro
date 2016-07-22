@@ -11,6 +11,8 @@ from director import tasklaunchpanel
 from director import applogic
 from director import teleoppanel
 
+import finger_test
+
 import tablemapping
 import manualwalkingdemo
 import calisthenicsdemo
@@ -64,6 +66,11 @@ def startup(robotSystem, globalsDict=None):
                     rs.footstepsDriver, rs.robotStateJointController, rs.ikPlanner, rs.manipPlanner)
     calisthenicsTaskPanel = calisthenicsdemo.CalisthenicsTaskPanel(calisthenicsDemo)
     tasklaunchpanel.panel.addTaskPanel('Calisthenics', calisthenicsTaskPanel.widget)
+
+    # testing fingers by opening/clsoing sequence
+    fingerTest = finger_test.FingerTest()
+    fingerTestTaskPanel = finger_test.FingerTestTaskPanel(fingerTest)
+    tasklaunchpanel.panel.addTaskPanel('Finger test', fingerTestTaskPanel.widget)
 
 
     if globalsDict is not None:
