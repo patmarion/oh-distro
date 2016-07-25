@@ -59,6 +59,8 @@ class App {
 
   void solveGazeProblem();
 
+  void solveGazeProblemIfWithinThresholdDistance();
+
   void robotStateHandler(const lcm::ReceiveBuffer *rbuf,
                          const std::string &channel,
                          const bot_core::robot_state_t *msg);
@@ -86,6 +88,8 @@ class App {
   BotFrames *botframes_;
 
   Eigen::Vector3d last_goal_pose_;
+
+  double thresholdDistance_;
 };
 
 App::App(std::shared_ptr<lcm::LCM> lcm_in, const CommandLineConfig &cl_cfg_in)
@@ -99,15 +103,21 @@ App::App(std::shared_ptr<lcm::LCM> lcm_in, const CommandLineConfig &cl_cfg_in)
   model_.compile();
   dofMap_ = model_.computePositionNameToIndexMap();
 
+  // Allocate rstate_ to prevent seg fault
+  rstate_ = bot_core::robot_state_t();
+
   // EST_ROBOT_STATE to update q_initial for planning
   lcm_->subscribe("EST_ROBOT_STATE", &App::robotStateHandler, this);
 
-  // position3d_t with gaze goal
+  // vector_3d_t with gaze goal
   lcm_->subscribe("GAZE_GOAL", &App::gazeGoalHandler, this);
 
   // Reads apriltag_to_car_beam frame on every update and sets it as gaze goal
   lcm_->subscribe("APRIL_TAG_TO_CAMERA_LEFT", &App::aprilTagTransformHandler,
                   this);
+
+  //  Sets the threshold distance above which to publish a new desired
+  thresholdDistance_ = 0.03;
 }
 
 int App::get_trans_with_utime(std::string from_frame, std::string to_frame,
@@ -291,6 +301,18 @@ int App::getConstraints(Eigen::VectorXd q_star, Eigen::VectorXd &q_sol) {
   return info;
 }
 
+void App::solveGazeProblemIfWithinThresholdDistance() {
+  double distance = std::sqrt(pow(last_goal_pose_(0) - cl_cfg_.gazeGoal(0), 2) +
+                              pow(last_goal_pose_(1) - cl_cfg_.gazeGoal(1), 2) +
+                              pow(last_goal_pose_(2) - cl_cfg_.gazeGoal(2), 2));
+
+  // Only solve problem and publish goal if distance was significant
+  if (distance > thresholdDistance_) {
+    std::cout << "New gaze goal: " << cl_cfg_.gazeGoal.transpose() << std::endl;
+    solveGazeProblem();
+  }
+}
+
 void App::solveGazeProblem() {
   tic();
 
@@ -359,7 +381,10 @@ void App::gazeGoalHandler(const lcm::ReceiveBuffer *rbuf,
   cl_cfg_.gazeGoal(0) = msg->x;
   cl_cfg_.gazeGoal(1) = msg->y;
   cl_cfg_.gazeGoal(2) = msg->z;
-  std::cout << "Updated gaze goal to " << cl_cfg_.gazeGoal << std::endl;
+  std::cout << "Updated gaze goal to " << cl_cfg_.gazeGoal.transpose()
+            << std::endl;
+
+  solveGazeProblem();
 }
 
 void App::aprilTagTransformHandler(const lcm::ReceiveBuffer *rbuf,
@@ -372,15 +397,7 @@ void App::aprilTagTransformHandler(const lcm::ReceiveBuffer *rbuf,
   cl_cfg_.gazeGoal(1) = aprilTagLocation.translation().y();
   cl_cfg_.gazeGoal(2) = aprilTagLocation.translation().z();
 
-  double distance = std::sqrt(pow(last_goal_pose_(0) - cl_cfg_.gazeGoal(0), 2) +
-                              pow(last_goal_pose_(1) - cl_cfg_.gazeGoal(1), 2) +
-                              pow(last_goal_pose_(2) - cl_cfg_.gazeGoal(2), 2));
-
-  // Only solve problem and publish goal if distance was significant
-  if (distance > 0.06) {
-    std::cout << "New gaze goal: " << cl_cfg_.gazeGoal.transpose() << std::endl;
-    solveGazeProblem();
-  }
+  solveGazeProblemIfWithinThresholdDistance();
 }
 
 int main(int argc, char *argv[]) {
