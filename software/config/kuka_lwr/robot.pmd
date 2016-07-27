@@ -65,7 +65,7 @@ group "4.mapping" {
 }
 
 cmd "director" {
-    exec = "director -lwr -c $DRC_BASE/software/config/kuka_lwr/robot.cfg";
+    exec = "director -c $DRC_BASE/software/config/kuka_lwr/robot.cfg -lwr --startup $DRC_BASE/software/modules/lwrdirector/runstartup.py";
     host = "localhost";
 }
 
