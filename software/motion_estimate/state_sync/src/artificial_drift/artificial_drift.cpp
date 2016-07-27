@@ -1,9 +1,8 @@
 // Script which generates artificial drift and subscribes to a correction.
 // To be used in simulation.
 
-// Input: POSE_BODY_ALT, POSE_BODY_CORRECTION, Output: POSE_BODY_ALT_WITH_DRIFT
+// Input: POSE_BODY_ALT Output: POSE_BODY_ALT_WITH_DRIFT
 // Applies incremental drift while the robot is walking
-// Also, it subscribes to a correction which estimates (ICP) and corrects the drift
 
 // Problem: to our system will appear to have drifted
 // but any goals we give to IHMC will be interpreted from their (true)
@@ -30,18 +29,15 @@
 App::App(std::shared_ptr<lcm::LCM> &lcm_,
                        std::shared_ptr<CommandLineConfig> &cl_cfg_):
                        lcm_(lcm_), cl_cfg_(cl_cfg_), driftingPose_(0,Eigen::Isometry3d::Identity()),
-                       currentCorrection_(0,Eigen::Isometry3d::Identity()), previousCorrection_(0,Eigen::Isometry3d::Identity()),
                        previousCorrectPose_(0,Eigen::Isometry3d::Identity()) {
 
   // Subscribe to required signals
   lcm_->subscribe("POSE_BODY_ALT",&App::poseIHMCHandler,this); // Always provided by the IHMC Driver
-  lcm_->subscribe("POSE_BODY_CORRECTION",&App::poseCorrHandler,this); // If a correction is published... identity otherwise
   lcm_->subscribe("ROBOT_BEHAVIOR", &App::behaviorHandler, this);
 
   last_behavior_ = -1; // uninitialised
 
-  correction_ = Eigen::Isometry3d::Identity();
-  updatedCorrection_ = false;
+  restart_corrupting_ = true;
 }
 
 
@@ -52,12 +48,13 @@ void App::behaviorHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
 
 
 void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg){
-  if (driftingPose_.utime == 0){
-    std::cout << "initializing drifting pose\n";
+  if (restart_corrupting_){
+    //std::cout << "initializing drifting pose\n";
     driftingPose_ = pronto::getPoseAsIsometry3dTime(msg);
 
     // TODO: publish inital pose to system unmodified
     previousCorrectPose_ = driftingPose_;
+    restart_corrupting_ = false;
     return;
   }
 
@@ -86,25 +83,7 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
     driftingPose_.pose = driftingPoseNew;
   }else{
     std::cout << msg->utime <<": standing, not corrupting.\n";
-  }
-
-  // If we got an updated correction: apply correction
-  if(cl_cfg_->apply_correction && updatedCorrection_)
-  {
-    // PROBLEM: the result of each correction depends on the previous corrections.
-    // Correction should be applied to the pose estimated using kin only.
-    updatedCorrection_ = false;
-    correction_ = currentCorrection_.pose;
-    driftingPose_.pose = correction_ * driftingPose_.pose;
-  }
-  else if(!(cl_cfg_->apply_correction))
-  {
-    // Apply correction if available (identity otherwise)
-    Eigen::Isometry3d corrected_pose;
-    corrected_pose = currentCorrection_.pose * driftingPose_.pose;
-    // To correct robot drift publish CORRECTED POSE
-    bot_core::pose_t corr_out = pronto::getIsometry3dAsBotPose(corrected_pose, driftingPose_.utime);
-    lcm_->publish("POSE_BODY_CORRECTED",&corr_out);
+    restart_corrupting_ = true;
   }
 
   bot_core::pose_t msg_out = pronto::getIsometry3dAsBotPose(driftingPose_.pose, driftingPose_.utime);
@@ -113,24 +92,11 @@ void App::poseIHMCHandler(const lcm::ReceiveBuffer* rbuf, const std::string& cha
   previousCorrectPose_ = currentCorrectPose;
 }
 
-void App::poseCorrHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t* msg){
-    previousCorrection_ = currentCorrection_;
-    currentCorrection_ = pronto::getPoseAsIsometry3dTime(msg);
-
-    // Did we get an updated correction?
-    if((currentCorrection_.pose.rotation() != previousCorrection_.pose.rotation())
-    && (currentCorrection_.pose.translation() != previousCorrection_.pose.translation()))
-    {
-      updatedCorrection_ = true;
-    }
-}
-
 int main(int argc, char ** argv)
 {
   std::shared_ptr<CommandLineConfig> cl_cfg(new CommandLineConfig());
   ConciseArgs opt(argc, (char**)argv);
   opt.add(cl_cfg->output_channel, "o", "output_channel","Output Channel for robot state msg");
-  opt.add(cl_cfg->apply_correction, "c", "apply_correction","Correct POSE_BODY_ALT_WITH_DRIFT?");
   opt.parse();
 
   std::shared_ptr<lcm::LCM> lcm(new lcm::LCM());
