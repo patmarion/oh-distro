@@ -74,8 +74,7 @@ def startup(robotSystem, globalsDict=None):
     tasklaunchpanel.panel.addTaskPanel('Finger test', fingerTestTaskPanel.widget)
 
     framegaze = framepositionpub.FramePosPublisher(robotSystem=robotSystem, rate_hz=1)
-    framegazePanel = framepositionpub.FrameGazePanel(framegaze)
-    tasklaunchpanel.panel.addTaskPanel('Frame Gaze', framegazePanel.widget)
+    valkyrieDriver.setFramePosPublisher(framegaze)
 
 
     if globalsDict is not None:

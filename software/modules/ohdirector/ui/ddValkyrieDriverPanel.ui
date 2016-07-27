@@ -221,6 +221,72 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="gazeFollower">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Gaze Follower</string>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="activateCheckBox">
+            <property name="text">
+             <string>Active</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="frameNameComboBox">
+            <item>
+             <property name="text">
+              <string>leftPalm</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>rightPalm</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>left_palm</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>right_palm</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>leftMiddleFingerPitch3Link</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>rightMiddleFingerPitch3Link</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="setFrameButton">
+            <property name="text">
+             <string>Set Frame</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="handControlBox">
          <property name="title">
           <string>Hand Control</string>

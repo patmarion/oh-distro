@@ -53,6 +53,10 @@ class ValkyrieDriverPanel(object):
         self.ui.parkNeckButton.connect('clicked()', self.driver.sendParkNeckCommand)
         self.ui.setNeckPitchButton.connect('clicked()', self.setNeckPitchButtonClicked)
 
+        # Gaze Follower
+        self.ui.activateCheckBox.connect('clicked()', self.onActivateFramePosPubClicked)
+        self.ui.setFrameButton.connect('clicked()', self.onSetFrameNameClicked)
+
         # Hand Control
         self.ui.sendHandCommandButton.connect('clicked()', self.sendHandCommandButtonClicked)
         self.ui.openHandButton.connect('clicked()', self.openHandButtonClicked)
@@ -145,6 +149,17 @@ class ValkyrieDriverPanel(object):
     def openHandButtonClicked(self):
         side = self.ui.handSelectorComboBox.currentText.lower()
         self.driver.openHand(side)
+
+    def onActivateFramePosPubClicked(self):
+        if self.driver.framePosPub is not None:
+            if self.ui.activateCheckBox.isChecked():
+                self.driver.framePosPub.setFrameName(self.ui.frameNameComboBox.currentText)
+                self.driver.framePosPub.start()
+            else:
+                self.driver.framePosPub.stop()
+
+    def onSetFrameNameClicked(self):
+        self.driver.framePosPub.setFrameName(self.ui.frameNameComboBox.currentText)
 
 
 def _getAction():
