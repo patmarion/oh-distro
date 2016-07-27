@@ -22,7 +22,6 @@ import director.objectmodel as om
 from director import robotstate
 from director import drcargs
 
-
 from director import ioUtils as io
 from director import vtkNumpy as vnp
 from director import segmentation
@@ -36,6 +35,7 @@ from director.tasks.taskuserpanel import ImageBasedAffordanceFit
 import director.tasks.robottasks as rt
 import functools
 
+
 class MappingPanel(object):
 
     def __init__(self, jointController, footstepDriver):
@@ -46,7 +46,6 @@ class MappingPanel(object):
         self.queue = PythonQt.dd.ddBotImageQueue(lcmUtils.getGlobalLCMThread())
         self.queue.init(lcmUtils.getGlobalLCMThread(), drcargs.args().config_file)
 
-
     def onStartMappingButton(self):
         msg = map_command_t()
         msg.timestamp = getUtime()
@@ -56,7 +55,7 @@ class MappingPanel(object):
         utime = self.queue.getCurrentImageTime('KINECT_RGB')
         self.cameraToLocalInit = vtk.vtkTransform()
         self.queue.getTransform('KINECT_RGB', 'local', utime, self.cameraToLocalInit)
-        vis.updateFrame(self.cameraToLocalInit, 'initial cam' )
+        vis.updateFrame(self.cameraToLocalInit, 'initial cam')
         print "starting mapping", utime
         print self.cameraToLocalInit.GetPosition()
         print self.cameraToLocalInit.GetOrientation()
@@ -77,7 +76,7 @@ class MappingPanel(object):
         try:
             pdi.setProperty('Color By', 'rgb_colors')
         except Exception, e:
-            print "Could not set color to RGB - not an element" #raise e
+            print "Could not set color to RGB - not an element"  # raise e
 
     def onShowMapButton(self):
         vis.updateFrame(self.cameraToLocalInit, 'initial cam')
@@ -94,10 +93,11 @@ def init(jointController, footstepDriver):
     panel = MappingPanel(jointController, footstepDriver)
     return panel
 
-
 '''
 Mapping Image Fit for live-stream of webcam
 '''
+
+
 class MappingImageFitter(ImageBasedAffordanceFit):
 
     def __init__(self, mappingDemo):
@@ -110,6 +110,8 @@ class MappingImageFitter(ImageBasedAffordanceFit):
 '''
 Mapping Task Panel
 '''
+
+
 class MappingTaskPanel(TaskUserPanel):
 
     def __init__(self, mappingDemo, mappingPanel):
@@ -143,7 +145,7 @@ class MappingTaskPanel(TaskUserPanel):
         self.addTasks()
 
     def loadFileAsMap(self):
-        fileFilters = "Map Files (*.obj *.pcd *.ply *.stl *.vtk *.vtp)";
+        fileFilters = "Map Files (*.obj *.pcd *.ply *.stl *.vtk *.vtp)"
         filename = QtGui.QFileDialog.getOpenFileName(app.getMainWindow(), "Open...", actionhandlers.getDefaultDirectory(), fileFilters)
         if not filename:
             return
@@ -176,7 +178,7 @@ class MappingTaskPanel(TaskUserPanel):
         self.taskTree.removeAllTasks()
 
         # graspingHand is 'left', side is 'Left'
-        side = 'left' #self.params.getPropertyEnumValue('Hand')
+        side = 'left'  # self.params.getPropertyEnumValue('Hand')
 
         if v.ikPlanner.fixedBaseArm:
             addManipulation(functools.partial(v.planPostureFromDatabase, 'General', 'arm up pregrasp', side=side), 'Arm up')
