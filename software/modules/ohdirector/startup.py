@@ -77,6 +77,7 @@ def startup(robotSystem, globalsDict=None):
     valkyrieDriver.setFramePosPublisher(framegaze)
 
 
+    # Export variables to globals so that they can be accessed from the console
     if globalsDict is not None:
         globalsDict['valkyrieDriver'] = valkyrieDriver
         globalsDict['valkyrieDriverPanel'] = valkyrieDriverPanel
