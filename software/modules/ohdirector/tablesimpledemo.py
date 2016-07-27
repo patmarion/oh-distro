@@ -270,9 +270,6 @@ class TableSimpleDemo(object):
 
         self.affordanceUpdater.ungraspAffordance(obj.getProperty('Name'))
 
-        if self.ikPlanner.fixedBaseArm: # if we're dealing with the real world, open hand
-            self.openHand(side)
-            return self.delay(5)
 #        elif self.planner == 'RRT*':
 #        self.ikPlanner.ikServer.removeAffordanceFromLink( self.ikPlanner.getHandLink(side) , obj.getProperty('Name'))
 
@@ -386,9 +383,6 @@ class TableSimpleDemo(object):
         newPlan = self.ikPlanner.computePostureGoal(startPose, endPose)
         self.addPlan(newPlan)
         
-    #def autoExtendJointLimits(self):
-    #    self.jointLimitChecker.automaticallyExtendLimits = True
-
     def planLowerArm(self, side = 'default'):
         startPose = self.getPlanningStartPose()
         if side == 'default':
@@ -465,37 +459,28 @@ class TableSimpleDemo(object):
         obj, frame = self.getNextTableObject(side)
         startPose = self.getPlanningStartPose()
 
-        if self.ikPlanner.fixedBaseArm: # includes reachDist hack instead of in ikPlanner (TODO!)
-            f = transformUtils.frameFromPositionAndRPY( np.array(frame.transform.GetPosition())-np.array([self.reachDist+.15,0,-.03]), [0,0,-90] )
-            f.PreMultiply()
-            f.RotateY(90)
-            f.Update()
-            self.constraintSet = self.ikPlanner.planEndEffectorGoal(startPose, side, f, lockBase=False, lockBack=True)
-            #newFrame = vis.FrameItem('reach_item', f, self.view)
-            #self.constraintSet = self.ikPlanner.planGraspOrbitReachPlan(startPose, side, newFrame, constraints=None, dist=self.reachDist, lockBase=self.lockBase, lockBack=self.lockBack, lockArm=False)
+        self.constraintSet = self.ikPlanner.planGraspOrbitReachPlan(startPose, side, frame, constraints=None, dist=self.reachDist, lockBase=self.lockBase, lockBack=self.lockBack, lockArm=False)
+        loweringSide = 'left' if side == 'right' else 'right'
+        armPose = self.getLoweredArmPose(startPose, loweringSide)
+        armPoseName = 'lowered_arm_pose'
+        self.ikPlanner.ikServer.sendPoseToServer(armPose, armPoseName)
+
+        loweringSideJoints = []
+        if (loweringSide == 'left'):
+          loweringSideJoints += self.ikPlanner.leftArmJoints
         else:
-            self.constraintSet = self.ikPlanner.planGraspOrbitReachPlan(startPose, side, frame, constraints=None, dist=self.reachDist, lockBase=self.lockBase, lockBack=self.lockBack, lockArm=False)
-            loweringSide = 'left' if side == 'right' else 'right'
-            armPose = self.getLoweredArmPose(startPose, loweringSide)
-            armPoseName = 'lowered_arm_pose'
-            self.ikPlanner.ikServer.sendPoseToServer(armPose, armPoseName)
+          loweringSideJoints += self.ikPlanner.rightArmJoints
 
-            loweringSideJoints = []
-            if (loweringSide == 'left'):
-              loweringSideJoints += self.ikPlanner.leftArmJoints
-            else:
-              loweringSideJoints += self.ikPlanner.rightArmJoints
-
-            reachingSideJoints = []
-            if (side == 'left'):
-                reachingSideJoints += self.ikPlanner.leftArmJoints
-            else:
-                reachingSideJoints += self.ikPlanner.rightArmJoints
+        reachingSideJoints = []
+        if (side == 'left'):
+            reachingSideJoints += self.ikPlanner.leftArmJoints
+        else:
+            reachingSideJoints += self.ikPlanner.rightArmJoints
 
 
-            armPostureConstraint = self.ikPlanner.createPostureConstraint(armPoseName, loweringSideJoints)
-            armPostureConstraint.tspan = np.array([1.0, 1.0])
-            self.constraintSet.constraints.append(armPostureConstraint)
+        armPostureConstraint = self.ikPlanner.createPostureConstraint(armPoseName, loweringSideJoints)
+        armPostureConstraint.tspan = np.array([1.0, 1.0])
+        self.constraintSet.constraints.append(armPostureConstraint)
         
         self.constraintSet.runIk()
 
@@ -600,17 +585,9 @@ class TableSimpleDemo(object):
         obj, frame = self.getNextTableObject(side)
         startPose = self.getPlanningStartPose()
 
-        if self.ikPlanner.fixedBaseArm: # includes distance hack and currently uses reachDist instead of touchDist (TODO!)
-            f = transformUtils.frameFromPositionAndRPY( np.array(frame.transform.GetPosition())-np.array([self.reachDist+.05,0,-0.03]), [0,0,-90] )
-            f.PreMultiply()
-            f.RotateY(90)
-            f.Update()
-            item = vis.FrameItem('reach_item', f, self.view)
-            self.constraintSet = self.ikPlanner.planEndEffectorGoal(startPose, side, f, lockBase=False, lockBack=True)
-        else:
-            self.constraintSet = self.ikPlanner.planGraspOrbitReachPlan(startPose, side, frame, dist=0.05, lockBase=self.lockBase, lockBack=self.lockBack)
-            self.constraintSet.constraints[-1].tspan = [-np.inf, np.inf]
-            self.constraintSet.constraints[-2].tspan = [-np.inf, np.inf]
+        self.constraintSet = self.ikPlanner.planGraspOrbitReachPlan(startPose, side, frame, dist=0.05, lockBase=self.lockBase, lockBack=self.lockBack)
+        self.constraintSet.constraints[-1].tspan = [-np.inf, np.inf]
+        self.constraintSet.constraints[-2].tspan = [-np.inf, np.inf]
         
         self.constraintSet.runIk()
 
@@ -627,26 +604,24 @@ class TableSimpleDemo(object):
         
         self.constraintSet = self.ikPlanner.planEndEffectorDelta(startPose, side, [0.0, 0.0, 0.15])
 
-        if not self.ikPlanner.fixedBaseArm:
-            self.constraintSet.constraints[-1].tspan[1] = 1.0
+        self.constraintSet.constraints[-1].tspan[1] = 1.0
 
         endPose, info = self.constraintSet.runIk()
         
-        if not self.ikPlanner.fixedBaseArm:
-            endPose = self.getRaisedArmPose(endPose, side)
+        endPose = self.getRaisedArmPose(endPose, side)
 
-            reachingSideJoints = []
-            if (side == 'left'):
-                reachingSideJoints += self.ikPlanner.leftArmJoints
-            else:
-                reachingSideJoints += self.ikPlanner.rightArmJoints
+        reachingSideJoints = []
+        if (side == 'left'):
+            reachingSideJoints += self.ikPlanner.leftArmJoints
+        else:
+            reachingSideJoints += self.ikPlanner.rightArmJoints
 
 
-            endPoseName = 'raised_arm_end_pose'
-            self.ikPlanner.ikServer.sendPoseToServer(endPose, endPoseName)
-            postureConstraint = self.ikPlanner.createPostureConstraint(endPoseName, reachingSideJoints)
-            postureConstraint.tspan = np.array([2.0, 2.0])
-            self.constraintSet.constraints.append(postureConstraint)
+        endPoseName = 'raised_arm_end_pose'
+        self.ikPlanner.ikServer.sendPoseToServer(endPose, endPoseName)
+        postureConstraint = self.ikPlanner.createPostureConstraint(endPoseName, reachingSideJoints)
+        postureConstraint.tspan = np.array([2.0, 2.0])
+        self.constraintSet.constraints.append(postureConstraint)
 
         #postureConstraint = self.ikPlanner.createPostureConstraint('q_nom', robotstate.matchJoints('.*_leg_kny'))
         #postureConstraint.tspan = np.array([2.0, 2.0])
@@ -1384,12 +1359,6 @@ class TableSimpleTaskPanel(TaskUserPanel):
         ###############
         # add the tasks
 
-        # pre-prep
-        if v.ikPlanner.fixedBaseArm:
-            if not v.useDevelopment:
-                addManipulation(functools.partial(v.planPostureFromDatabase, 'roomMapping', 'p3_down', side='left'), 'go to pre-mapping pose')
-        # TODO(wxm): mapping
-
         # prep
         prep = self.taskTree.addGroup('Preparation')
         if v.ikPlanner.fixedBaseArm:
@@ -1411,13 +1380,12 @@ class TableSimpleTaskPanel(TaskUserPanel):
                 addManipulation(v.planLowerArm, name='set arms down')
 
         # walk
-        if not v.ikPlanner.fixedBaseArm:
-            walk = self.taskTree.addGroup('Approach Table')
-            addTask(rt.RequestFootstepPlan(name='plan walk to table', stanceFrameName='table stance frame'), parent=walk)
-            addTask(rt.UserPromptTask(name='approve footsteps', message='Please approve footstep plan.'), parent=walk)
-            addTask(rt.CommitFootstepPlan(name='walk to table', planName='table grasp stance footstep plan'), parent=walk)
-            addTask(rt.WaitForWalkExecution(name='wait for walking'), parent=walk)
-            addTask(rt.SetNeckPitch(name='set neck position', angle=35), parent=walk)
+        walk = self.taskTree.addGroup('Approach Table')
+        addTask(rt.RequestFootstepPlan(name='plan walk to table', stanceFrameName='table stance frame'), parent=walk)
+        addTask(rt.UserPromptTask(name='approve footsteps', message='Please approve footstep plan.'), parent=walk)
+        addTask(rt.CommitFootstepPlan(name='walk to table', planName='table grasp stance footstep plan'), parent=walk)
+        addTask(rt.WaitForWalkExecution(name='wait for walking'), parent=walk)
+        addTask(rt.SetNeckPitch(name='set neck position', angle=35), parent=walk)
 
         # lift object
         #if v.ikPlanner.fixedBaseArm:
@@ -1435,14 +1403,13 @@ class TableSimpleTaskPanel(TaskUserPanel):
         #    addManipulation(functools.partial(v.planLiftTableObject, v.graspingHand), name='lift object')
 
         # walk to start
-        if not v.ikPlanner.fixedBaseArm and v.planner != 'RRT*':
-            walkToStart = self.taskTree.addGroup('Walk to Start')
-            addTask(rt.RequestFootstepPlan(name='plan walk to start', stanceFrameName='start stance frame'), parent=walkToStart)
-            addTask(rt.UserPromptTask(name='approve footsteps',
-                                      message='Please approve footstep plan.'), parent=walkToStart)
-            addTask(rt.CommitFootstepPlan(name='walk to start',
-                                          planName='start stance footstep plan'), parent=walkToStart)
-            addTask(rt.WaitForWalkExecution(name='wait for walking'), parent=walkToStart)
+        walkToStart = self.taskTree.addGroup('Walk to Start')
+        addTask(rt.RequestFootstepPlan(name='plan walk to start', stanceFrameName='start stance frame'), parent=walkToStart)
+        addTask(rt.UserPromptTask(name='approve footsteps',
+                                  message='Please approve footstep plan.'), parent=walkToStart)
+        addTask(rt.CommitFootstepPlan(name='walk to start',
+                                      planName='start stance footstep plan'), parent=walkToStart)
+        addTask(rt.WaitForWalkExecution(name='wait for walking'), parent=walkToStart)
 
         # walk to bin
         '''
