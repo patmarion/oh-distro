@@ -602,6 +602,98 @@
       "nominal_handedness": "none"
     }
   ],
+  "Hand tracking": [
+    {
+      "allow_mirror": true,
+      "description": "start below camera, neck straight",
+      "joints": {
+        "leftElbowPitch": -1.4241349697113037,
+        "leftForearmYaw": -0.12473946064710617,
+        "leftShoulderPitch": -1.7166796922683716,
+        "leftShoulderRoll": -1.2511543035507202,
+        "leftShoulderYaw": 1.9837490320205688,
+        "leftWristPitch": -0.121053546667099,
+        "leftWristRoll": -0.12113695591688156
+      },
+      "name": "start below camera, neck straight",
+      "nominal_handedness": "left"
+    },
+    {
+      "allow_mirror": true,
+      "description": "hand is close to straight camera centre",
+      "joints": {
+        "leftElbowPitch": -1.424742341041565,
+        "leftForearmYaw": -0.12701129913330078,
+        "leftShoulderPitch": -1.716828465461731,
+        "leftShoulderRoll": -1.2510466575622559,
+        "leftShoulderYaw": 1.080154538154602,
+        "leftWristPitch": -0.1151721403002739,
+        "leftWristRoll": -0.09716945886611938
+      },
+      "name": "hand centre of camera",
+      "nominal_handedness": "left"
+    },
+    {
+      "allow_mirror": true,
+      "description": "start above camera, neck straight",
+      "joints": {
+        "leftElbowPitch": -1.4234832525253296,
+        "leftForearmYaw": -0.12181220948696136,
+        "leftShoulderPitch": -1.7160578966140747,
+        "leftShoulderRoll": -1.2515770196914673,
+        "leftShoulderYaw": -0.004566154442727566,
+        "leftWristPitch": -0.1218976378440857,
+        "leftWristRoll": -0.16394439339637756
+      },
+      "name": "start above camera, neck straight",
+      "nominal_handedness": "left"
+    },
+    {
+      "allow_mirror": true,
+      "description": "above camera, LowerPitch=36",
+      "joints": {
+        "leftElbowPitch": -1.4404240846633911,
+        "leftForearmYaw": -0.006166348233819008,
+        "leftShoulderPitch": -1.066544771194458,
+        "leftShoulderRoll": -1.2504966259002686,
+        "leftShoulderYaw": 0.002615652745589614,
+        "leftWristPitch": -0.04633277654647827,
+        "leftWristRoll": 0.013066817075014114
+      },
+      "name": "start above head, neck down",
+      "nominal_handedness": "left"
+    },
+    {
+      "allow_mirror": true,
+      "description": "below camera, LowerPitch=36",
+      "joints": {
+        "leftElbowPitch": -1.4272609949111938,
+        "leftForearmYaw": 0.02542300708591938,
+        "leftShoulderPitch": -1.0681031942367554,
+        "leftShoulderRoll": -1.2516018152236938,
+        "leftShoulderYaw": 1.7501507997512817,
+        "leftWristPitch": -0.33529698848724365,
+        "leftWristRoll": -0.0006807296886108816
+      },
+      "name": "start below head, neck down",
+      "nominal_handedness": "left"
+    },
+    {
+      "allow_mirror": true,
+      "description": "centered, LowerPitch=36",
+      "joints": {
+        "leftElbowPitch": -1.4341503381729126,
+        "leftForearmYaw": 0.03292914107441902,
+        "leftShoulderPitch": -1.0677028894424438,
+        "leftShoulderRoll": -1.2509196996688843,
+        "leftShoulderYaw": 1.0233333110809326,
+        "leftWristPitch": -0.36000001430511475,
+        "leftWristRoll": -0.006775617599487305
+      },
+      "name": "hand centre of camera, neck down",
+      "nominal_handedness": "left"
+    }
+  ],
   "Table Box Pick": [
     {
       "allow_mirror": true,
