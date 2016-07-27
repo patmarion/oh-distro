@@ -30,7 +30,7 @@ class FramePosPublisher(object):
     # callback for timer
     def sendGazeGoal(self):
         frame = self.robotModel.getLinkFrame(self.target_frame)
-        vis.updateFrame(frame, self.target_frame+"GazeGoal")
+        vis.updateFrame(frame, self.target_frame+"GazeGoal", parent="planning" ,visible=False)
         msg = bot_core.vector_3d_t()
         [msg.x, msg.y, msg.z] = frame.GetPosition()
         lcmUtils.publish("GAZE_GOAL", msg)
