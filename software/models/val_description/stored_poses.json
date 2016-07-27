@@ -600,6 +600,36 @@
       },
       "name": "stand prep",
       "nominal_handedness": "none"
+    },
+    {
+      "allow_mirror": true,
+      "description": "hand up avoid table 2",
+      "joints": {
+        "leftElbowPitch": -2.03616352862137,
+        "leftForearmYaw": 1.082902196355455,
+        "leftShoulderPitch": 0.2452870197981347,
+        "leftShoulderRoll": -1.161646199775331,
+        "leftShoulderYaw": -0.3461999136392575,
+        "leftWristPitch": -0.1052145480006583,
+        "leftWristRoll": -0.317270048101886
+      },
+      "name": "hand up avoid table 2",
+      "nominal_handedness": "left"
+    },
+    {
+      "allow_mirror": true,
+      "description": "hand up avoid table 1",
+      "joints": {
+        "leftElbowPitch": -0.7853981852531433,
+        "leftForearmYaw": 1.5709999799728394,
+        "leftShoulderPitch": 0.3001966178417206,
+        "leftShoulderRoll": -1.25,
+        "leftShoulderYaw": -1.13584,
+        "leftWristPitch": -1.0842021724855044e-19,
+        "leftWristRoll": 0.0
+      },
+      "name": "hand up avoid table 1",
+      "nominal_handedness": "left"
     }
   ],
   "Table Box Pick": [

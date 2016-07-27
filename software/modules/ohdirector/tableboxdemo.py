@@ -127,7 +127,7 @@ class TableboxDemo(object):
             om.removeFromObjectModel(self.picker.annotationObj)
             self.picker = None
 
-        tableData = segmentation.segmentTableAndFrame(self.getInputPointCloud(), p1)
+        tableData, _ = segmentation.segmentTableAndFrame(self.getInputPointCloud(), p1)
 
         pose = transformUtils.poseFromTransform(tableData.frame)
         desc = dict(classname='MeshAffordanceItem', Name='table', Color=[0,1,0], pose=pose)

@@ -35,18 +35,13 @@ def startup(robotSystem, globalsDict=None):
     tasklaunchpanel.panel.addTaskPanel('Box Pick', tableboxTaskPanel.widget)
 
 
-
+    # Simple non-collision free sequence to grasp an object off of a table
     tablesimpleDemo = tablesimpledemo.TableSimpleDemo(rs.robotStateModel, rs.playbackRobotModel,
-                   rs.ikPlanner, rs.manipPlanner, rs.footstepsDriver, rs.lHandDriver, rs.rHandDriver,
-                   rs.view, rs.robotStateJointController)#, teleopPanel, playbackPanel, jointLimitChecker)
+                    rs.ikPlanner, rs.manipPlanner, rs.footstepsDriver,
+                    rs.view, rs.robotStateJointController, rs.teleopRobotModel, rs.teleopJointController, rs.footstepsDriver, valkyrieDriver)
     tablesimpleTaskPanel = tablesimpledemo.TableSimpleTaskPanel(tablesimpleDemo)
-    tasklaunchpanel.panel.addTaskPanel('Table Simple', tablesimpleTaskPanel.widget)
+    tasklaunchpanel.panel.addTaskPanel('Table Simple Planning', tablesimpleTaskPanel.widget)
 
-
-    #tableDemo = tabledemo.TableDemo(robotStateModel, playbackRobotModel,
-    #               ikPlanner, manipPlanner, footstepsDriver, atlasdriver.driver, lHandDriver, rHandDriver,
-    #                perception.multisenseDriver, view, robotStateJointController, playPlans, teleopPanel, playbackPanel, jointLimitChecker)
-    #tableTaskPanel = tabledemo.TableTaskPanel(tableDemo)
 
     tableplanningDemo = tableplanningdemo.TableplanningDemo(rs.robotStateModel, rs.playbackRobotModel,
                     rs.ikPlanner, rs.manipPlanner, rs.footstepsDriver, rs.lHandDriver, rs.rHandDriver,
