@@ -19,6 +19,8 @@ class ValkyrieDriver(object):
         self.leftHandJoints = ["leftIndexFingerMotorPitch1", "leftMiddleFingerMotorPitch1", "leftPinkyMotorPitch1", "leftThumbMotorPitch1", "leftThumbMotorPitch2", "leftThumbMotorRoll"]
         self.rightHandJoints = ["rightIndexFingerMotorPitch1", "rightMiddleFingerMotorPitch1", "rightPinkyMotorPitch1", "rightThumbMotorPitch1", "rightThumbMotorPitch2", "rightThumbMotorRoll"]
 
+        self.framePosPub = None
+
     def sendWholeBodyCommand(self, wholeBodyMode):
         msg = lcmdrc.int64_stamped_t()
         msg.utime = getUtime()
@@ -69,6 +71,12 @@ class ValkyrieDriver(object):
             msg.joint_position = [indexFingerPitch, middleFingerPitch, pinkyPitch, thumbPitch1, thumbPitch2, thumbRoll]
 
         lcmUtils.publish("DESIRED_HAND_ANGLES", msg)
+
+    def setFramePosPublisher(self,fpp):
+        self.framePosPub = fpp
+
+    def getFramePosPublisher(self):
+        return self.framePosPub
 
 
     def openHand(self, side):

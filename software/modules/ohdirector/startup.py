@@ -12,6 +12,7 @@ from director import applogic
 from director import teleoppanel
 
 import finger_test
+import framepositionpub
 
 import tablemapping
 import manualwalkingdemo
@@ -71,6 +72,9 @@ def startup(robotSystem, globalsDict=None):
     fingerTest = finger_test.FingerTest()
     fingerTestTaskPanel = finger_test.FingerTestTaskPanel(fingerTest)
     tasklaunchpanel.panel.addTaskPanel('Finger test', fingerTestTaskPanel.widget)
+
+    framegaze = framepositionpub.FramePosPublisher(robotSystem=robotSystem, rate_hz=1)
+    valkyrieDriver.setFramePosPublisher(framegaze)
 
 
     if globalsDict is not None:
