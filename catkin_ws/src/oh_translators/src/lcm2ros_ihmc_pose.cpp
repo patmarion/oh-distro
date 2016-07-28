@@ -5,10 +5,11 @@ void LCM2ROS::robotPoseCorrectionHandler(const lcm::ReceiveBuffer* rbuf, const s
 {
   nav_msgs::Odometry mout;
 
-  float secs = msg->utime/1000000.0;
-  mout.header.stamp = ros::Time(secs);
+  mout.header.stamp = ros::Time().fromSec(msg->utime * 1E-6);
+
   //mout.header.frame_id = "world";
   //mout.child_frame_id = "pelvis";
+
   mout.pose.pose.position.x = msg->pos[0];
   mout.pose.pose.position.y = msg->pos[1];
   mout.pose.pose.position.z = msg->pos[2];
@@ -16,5 +17,13 @@ void LCM2ROS::robotPoseCorrectionHandler(const lcm::ReceiveBuffer* rbuf, const s
   mout.pose.pose.orientation.x = msg->orientation[1];
   mout.pose.pose.orientation.y = msg->orientation[2];
   mout.pose.pose.orientation.z = msg->orientation[3];
+
+  mout.twist.twist.linear.x = 0.0;
+  mout.twist.twist.linear.y = 0.0;
+  mout.twist.twist.linear.z = 0.0;
+  mout.twist.twist.angular.x = 0.0;
+  mout.twist.twist.angular.y = 0.0;
+  mout.twist.twist.angular.z = 0.0;
+
   correction_pub_.publish(mout);
 }
