@@ -2,6 +2,7 @@ import valkyriedriver
 import valkyriedriverpanel
 import exampletaskpanel
 import tableboxdemo
+import tablesimpledemo
 import tableplanningdemo
 import manualwalkingdemo
 import stairsdemo
@@ -28,45 +29,54 @@ def startup(robotSystem, globalsDict=None):
     atlasPanelAction = applogic.getToolBarActions()['ActionAtlasDriverPanel']
     applogic.getMainWindow().panelToolBar().removeAction(atlasPanelAction)
 
-    # add a new task panel
-    #exampleTaskPanel = exampletaskpanel.ExampleTaskPanel(robotSystem)
-    #tasklaunchpanel.panel.addTaskPanel('Example Task', exampleTaskPanel.widget)
-
     tableboxDemo = tableboxdemo.TableboxDemo(rs.robotStateModel, rs.playbackRobotModel,
                     rs.ikPlanner, rs.manipPlanner, rs.footstepsDriver, rs.lHandDriver, rs.rHandDriver,
                     rs.view, rs.robotStateJointController)
     tableboxTaskPanel = tableboxdemo.TableboxTaskPanel(tableboxDemo)
-    tasklaunchpanel.panel.addTaskPanel('Tablebox', tableboxTaskPanel.widget)
+    tasklaunchpanel.panel.addTaskPanel('Box Pick', tableboxTaskPanel.widget)
+
+
+    # Simple non-collision free sequence to grasp an object off of a table
+    tablesimpleDemo = tablesimpledemo.TableSimpleDemo(rs.robotStateModel, rs.playbackRobotModel,
+                    rs.ikPlanner, rs.manipPlanner, rs.footstepsDriver,
+                    rs.view, rs.robotStateJointController, rs.teleopRobotModel, rs.teleopJointController, rs.footstepsDriver, valkyrieDriver)
+    tablesimpleTaskPanel = tablesimpledemo.TableSimpleTaskPanel(tablesimpleDemo)
+    tasklaunchpanel.panel.addTaskPanel('Table Simple Planning', tablesimpleTaskPanel.widget)
+
 
     tableplanningDemo = tableplanningdemo.TableplanningDemo(rs.robotStateModel, rs.playbackRobotModel,
                     rs.ikPlanner, rs.manipPlanner, rs.footstepsDriver, rs.lHandDriver, rs.rHandDriver,
                     rs.view, rs.robotStateJointController, rs.teleopRobotModel, rs.teleopJointController, rs.footstepsDriver, valkyrieDriver)
     tableplanningTaskPanel = tableplanningdemo.TableplanningTaskPanel(tableplanningDemo)
     tasklaunchpanel.panel.addTaskPanel('Table Planning', tableplanningTaskPanel.widget)
-    
-    manualWalkingDemo = manualwalkingdemo.ManualWalkingDemo(rs.robotStateModel,
-                    rs.footstepsDriver, rs.robotStateJointController, rs.ikPlanner)
-    manualWalkingTaskPanel = manualwalkingdemo.ManualWalkingTaskPanel(manualWalkingDemo)
-    tasklaunchpanel.panel.addTaskPanel('Manual Walking', manualWalkingTaskPanel.widget)
-
-    stairsDemo = stairsdemo.StairsDemo(rs.robotStateModel, rs.footstepsDriver, rs.robotStateJointController, rs.ikPlanner, rs.manipPlanner)
-    stairsTaskPanel = stairsdemo.StairsTaskPanel(stairsDemo)
-
-    tasklaunchpanel.panel.addTaskPanel('Stairs', stairsTaskPanel.widget)
 
     tableMapping = tablemapping.TableMapping(rs.robotStateModel, rs.manipPlanner, rs.view,  rs.ikPlanner, rs.robotStateJointController)
     tableMappingTaskPanel = tablemapping.TableTaskPanel(tableMapping)
     tasklaunchpanel.panel.addTaskPanel("Table Mapping", tableMappingTaskPanel.widget)
     
-    trajectoryTrackingTest = trajectorytrackingtest.TrajectoryTrackingTest(rs.ikPlanner, rs.manipPlanner, rs.robotStateJointController,
-                    rs.footstepsDriver, rs.robotStateModel)
-    trackingTestPanel = trajectorytrackingtest.TrackingTestPanel(trajectoryTrackingTest)
-    tasklaunchpanel.panel.addTaskPanel('Tracking Test', trackingTestPanel.widget)
+    stairsDemo = stairsdemo.StairsDemo(rs.robotStateModel, rs.footstepsDriver, rs.robotStateJointController, rs.ikPlanner, rs.manipPlanner)
+    stairsTaskPanel = stairsdemo.StairsTaskPanel(stairsDemo)
+    tasklaunchpanel.panel.addTaskPanel('Stairs', stairsTaskPanel.widget)
 
+    
+    # Standing on one leg and doing some postures
     calisthenicsDemo = calisthenicsdemo.CalisthenicsDemo(rs.robotStateModel,
                     rs.footstepsDriver, rs.robotStateJointController, rs.ikPlanner, rs.manipPlanner)
     calisthenicsTaskPanel = calisthenicsdemo.CalisthenicsTaskPanel(calisthenicsDemo)
     tasklaunchpanel.panel.addTaskPanel('Calisthenics', calisthenicsTaskPanel.widget)
+
+    ############## Module Specifically for testing performance
+    # Test Walking Performance
+    manualWalkingDemo = manualwalkingdemo.ManualWalkingDemo(rs.robotStateModel,
+                    rs.footstepsDriver, rs.robotStateJointController, rs.ikPlanner)
+    manualWalkingTaskPanel = manualwalkingdemo.ManualWalkingTaskPanel(manualWalkingDemo)
+    tasklaunchpanel.panel.addTaskPanel('Walking Test', manualWalkingTaskPanel.widget)
+
+    # Test Arm Tracking
+    trajectoryTrackingTest = trajectorytrackingtest.TrajectoryTrackingTest(rs.ikPlanner, rs.manipPlanner, rs.robotStateJointController,
+                    rs.footstepsDriver, rs.robotStateModel)
+    trackingTestPanel = trajectorytrackingtest.TrackingTestPanel(trajectoryTrackingTest)
+    tasklaunchpanel.panel.addTaskPanel('Tracking Test', trackingTestPanel.widget)
 
     # testing fingers by opening/clsoing sequence
     fingerTest = finger_test.FingerTest()
@@ -83,7 +93,11 @@ def startup(robotSystem, globalsDict=None):
         globalsDict['valkyrieDriverPanel'] = valkyrieDriverPanel
 
         globalsDict['tableboxDemo'] = tableboxDemo
+
+        globalsDict['tablesimpleDemo'] = tablesimpleDemo
         globalsDict['tableplanningDemo'] = tableplanningDemo
+
+
         globalsDict['manualWalkingDemo'] = manualWalkingDemo
         globalsDict['manualWalkingTaskPanel'] = manualWalkingTaskPanel
 

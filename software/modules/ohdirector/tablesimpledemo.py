@@ -19,42 +19,38 @@ from director import vtkAll as vtk
 from director.simpletimer import SimpleTimer
 from director import affordanceupdater
 from director import sceneloader
-from director.ikparameters import IkParameters
 
 from director.debugVis import DebugData
 from director import affordanceitems
 from director import ikplanner
-from director import ik
 from director import vtkNumpy
 from numpy import array
 from director.uuidutil import newUUID
 from director import lcmUtils
-from director.utime import getUtime
 import ioUtils
 import drc as lcmdrc
-import bot_core as lcmbotcore
 
 from director.tasks.taskuserpanel import TaskUserPanel
 from director.tasks.taskuserpanel import ImageBasedAffordanceFit
 
 import director.tasks.robottasks as rt
 
-import headsurveypattern
+from director.roboturdf import HandFactory
+from numpy import linalg as npla
+from director import ik
+import director.applogic as app
 
-class TableboxDemo(object):
+
+class TableSimpleDemo(object):
 
     def __init__(self, robotStateModel, playbackRobotModel, ikPlanner, manipPlanner, footstepPlanner,
-                 lhandDriver, rhandDriver, view, sensorJointController):
-        # TODO self.planPlaybackFunction = planPlaybackFunction
+                 view, sensorJointController, teleopRobotModel, teleopJointController, footstepsDriver, valkyrieDriver):
         self.robotStateModel = robotStateModel
         self.playbackRobotModel = playbackRobotModel
         self.ikPlanner = ikPlanner
         self.manipPlanner = manipPlanner
         self.footstepPlanner = footstepPlanner
-        # TODO self.atlasDriver = atlasDriver
-        self.lhandDriver = lhandDriver
-        self.rhandDriver = rhandDriver
-        # TODO self.multisenseDriver = multisenseDriver
+        self.valkyrieDriver = valkyrieDriver
         self.sensorJointController = sensorJointController
         self.view = view
         self.affordanceManager = segmentation.affordanceManager
@@ -84,12 +80,14 @@ class TableboxDemo(object):
         self.constraintSet = []
 
         self.picker = None
-
-        # Angle of for grasping box
-        self.wristAngleBox = 0
-
-
-
+        
+        self.teleopRobotModel = teleopRobotModel
+        self.teleopJointController = teleopJointController
+        self.footstepsDriver = footstepsDriver
+        self.feetConstraint = 'Fixed'
+        self.reachingHand = 'left'
+        
+        self.grasp_plan = None
     def planPlaybackFunction(plans):
         planPlayback.stopAnimation()
         playbackRobotModel.setProperty('Visible', True)
@@ -104,8 +102,13 @@ class TableboxDemo(object):
         self.tableData = None
         self.picker = PointPicker(self.view, numberOfPoints=1, drawLines=False, callback=self.onSegmentTable)
         self.picker.start()
-
-
+    
+    def userReFitTable(self):
+        om.removeFromObjectModel(om.findObjectByName('segmentation'))
+        om.removeFromObjectModel(om.findObjectByName('cont debug'))
+        om.removeFromObjectModel(om.findObjectByName('affordances'))
+        self.userFitTable()
+        
     def waitForTableFit(self):
         while not self.tableData:
             yield
@@ -127,7 +130,15 @@ class TableboxDemo(object):
             om.removeFromObjectModel(self.picker.annotationObj)
             self.picker = None
 
-        tableData, _ = segmentation.segmentTableAndFrame(self.getInputPointCloud(), p1)
+        data = segmentation.segmentTableScene(self.getInputPointCloud(), p1)
+        vis.showClusterObjects(data.clusters, parent='segmentation')
+        #segmentation.showTable(data.table, parent='segmentation')
+
+        self.data = data
+
+        tableData = data.table
+
+        #tableData, _ = segmentation.segmentTableAndFrame(self.getInputPointCloud(), p1)
 
         pose = transformUtils.poseFromTransform(tableData.frame)
         desc = dict(classname='MeshAffordanceItem', Name='table', Color=[0,1,0], pose=pose)
@@ -145,17 +156,14 @@ class TableboxDemo(object):
         self.computeTableStanceFrame(relativeStance)
 
         # automatically add the box on the table (skip user segmentation)
-        boxFrame = transformUtils.copyFrame(tableData.frame)
-        boxFrame.PreMultiply()
-        tableToBoxFrame = transformUtils.frameFromPositionAndRPY([-0.05, 0, 0.15], [0,0, 0])
-        boxFrame.Concatenate(tableToBoxFrame)
-        self.spawnBlockAffordanceAtFrame(boxFrame)
+        #boxFrame = transformUtils.copyFrame(tableData.frame)
+        #boxFrame.PreMultiply()
+        #tableToBoxFrame = transformUtils.frameFromPositionAndRPY([-0.05, 0, 0.15], [0,0, 0])
+        #boxFrame.Concatenate(tableToBoxFrame)
+        #self.spawnBlockAffordanceAtFrame(boxFrame)
 
         safeStance = transformUtils.frameFromPositionAndRPY([-1, 0, 0],[0,0,0])
         self.computeTableStanceFrame(safeStance, 'safe stance frame')
-
-        facingStance = transformUtils.frameFromPositionAndRPY([-1, 0, 0],[0,0,-60.0])
-        self.computeTableStanceFrame(facingStance, 'facing stance frame')
 
 
     def computeTableStanceFrame(self, relativeStance, relativeStanceFrameName='table stance frame'):
@@ -170,11 +178,6 @@ class TableboxDemo(object):
         t.Concatenate(tableToStance)
 
         vis.showFrame(t, relativeStanceFrameName, parent=om.findObjectByName('table'), scale=0.2)
-
-
-    # TODO: deprecate this function: (to end of section):
-    def moveRobotToTableStanceFrame(self):
-        self.teleportRobotToStanceFrame(om.findObjectByName('table stance frame').transform)
 
     ### End Object Focused Functions ###############################################################
     ### Planning Functions ########################################################################
@@ -201,17 +204,41 @@ class TableboxDemo(object):
         endPose = self.ikPlanner.getMergedPostureFromDatabase(startPose, groupName, postureName, side=side)
         newPlan = self.ikPlanner.computePostureGoal(startPose, endPose)
         self.addPlan(newPlan)
-        # TODO: integrate this function with the ones below
+        # TODO: integrate this function with the ones below       
 
-    def planPreGrasp(self, side='left'):
+    def planSafeRaise1(self):
+        self.planPostureFromDatabase('General', 'hand up avoid table 1', self.reachingHand)
+
+    def planSafeRaise2(self):
+        self.planPostureFromDatabase('General', 'hand up avoid table 2', self.reachingHand)
+
+    def planArmsDown(self):
         startPose = self.getPlanningStartPose()
-        endPose = self.ikPlanner.getMergedPostureFromDatabase(startPose, 'General', 'arm up pregrasp', side=side)
+        endPose = self.ikPlanner.getMergedPostureFromDatabase(startPose, 'General', 'handsdown incl back')
         newPlan = self.ikPlanner.computePostureGoal(startPose, endPose)
         self.addPlan(newPlan)
-        
+
+    def planReachToGoal(self):
+        side = self.reachingHand
+        startPose = self.getPlanningStartPose()
+        goalFrame = self.getGoalFrame()
+        #vis.showFrame(goalFrame.transform,'goalFrame')
+        constraintSet = self.ikPlanner.planEndEffectorGoal(startPose, side, goalFrame, lockBase=self.lockBase, lockBack=self.lockBack)
+        endPose, info = constraintSet.runIk()
+        plan = constraintSet.runIkTraj()
+        self.addPlan(plan)
 
     ### End Planning Functions ####################################################################
     ########## Glue Functions #####################################################################
+    def startSimulator(self):
+        filename= os.environ['DRC_BASE'] + '/software/models/worlds/directorAffordances.sdf'
+        msg=lcmdrc.scs_api_command_t()
+        msg.command="loadSDF "+filename+"\nsimulate"
+        lcmUtils.publish('SCS_API_CONTROL', msg)
+
+    def moveRobotToTableStanceFrame(self):
+        self.teleportRobotToStanceFrame(om.findObjectByName('table stance frame').transform)
+
     def teleportRobotToStanceFrame(self, frame):
         stancePosition = frame.GetPosition()
         stanceOrientation = frame.GetOrientation()
@@ -220,32 +247,6 @@ class TableboxDemo(object):
         q[:2] = [stancePosition[0], stancePosition[1]]
         q[5] = math.radians(stanceOrientation[2])
         self.sensorJointController.setPose('EST_ROBOT_STATE', q)
-
-
-    def getHandDriver(self, side):
-        assert side in ('left', 'right')
-        return self.lhandDriver if side == 'left' else self.rhandDriver
-
-    def openHand(self, side):
-        #self.getHandDriver(side).sendOpen()
-        self.getHandDriver(side).sendCustom(0.0, 100.0, 100.0, 0)
-
-    def closeHand(self, side):
-        self.getHandDriver(side).sendCustom(100.0, 100.0, 100.0, 0)
-
-    # TODO: re-enable
-    #def sendNeckPitchLookDown(self):
-    #    self.multisenseDriver.setNeckPitch(40)
-
-    # TODO: re-enable
-    #def sendNeckPitchLookForward(self):
-    #    self.multisenseDriver.setNeckPitch(15)
-
-    # TODO: re-enable
-    #def waitForAtlasBehaviorAsync(self, behaviorName):
-    #    assert behaviorName in self.atlasDriver.getBehaviorMap().values()
-    #    while self.atlasDriver.getCurrentBehaviorName() != behaviorName:
-    #        yield
 
     def printAsync(self, s):
         yield
@@ -299,10 +300,6 @@ class TableboxDemo(object):
         om.removeFromObjectModel(om.findObjectByName('footstep plan'))
         self.footstepPlan = None
 
-    def playSequenceNominal(self):
-        assert None not in self.plans
-        self.planPlaybackFunction(self.plans)
-
     def commitManipPlan(self):
         self.manipPlanner.commitManipPlan(self.plans[-1])
 
@@ -329,110 +326,72 @@ class TableboxDemo(object):
 
 
     #################################
-    def loadSDFFileAndRunSim(self):
-        filename= os.environ['DRC_BASE'] + '/software/models/worlds/tablebox_demo.sdf'  
-        sc=sceneloader.SceneLoader()
-        sc.loadSDF(filename)
-        msg=lcmdrc.scs_api_command_t()
-        msg.command="loadSDF "+filename+"\nsimulate"
-        lcmUtils.publish('SCS_API_CONTROL', msg)
-
     def loadTestPointCloud(self):
-        filename = os.environ['DRC_BASE'] +  '/../drc-testing-data/tabletop/table-box-uoe.vtp'
+        filename = os.environ['DRC_BASE'] + '/../drc-testing-data/ihmc_table/ihmc_table.vtp'
+        #filename = os.environ['DRC_BASE'] +  '/../drc-testing-data/tabletop/table-box-uoe.vtp'
         polyData = ioUtils.readPolyData( filename )
         vis.showPolyData(polyData,'scene')
 
+        #stanceFrame = transformUtils.frameFromPositionAndRPY([0.0, 0, 0.0], [0,0,0])
+        #self.teleportRobotToStanceFrame(stanceFrame)
 
-        stanceFrame = transformUtils.frameFromPositionAndRPY([0.0, 0, 0.0], [0,0,-135])
-        self.teleportRobotToStanceFrame(stanceFrame)
+                
+    def placeHandModel(self):
+        if not om.findObjectByName('end effector goal'):
+            side = self.reachingHand
+            handFrame = self.footstepPlanner.getFeetMidPoint(self.robotStateModel)
+            handFrame.PreMultiply()
+            if side == 'left':
+                handFrame.Translate([0.4, 0.2, 1.02])
+                rotation = [0, 90, -90]
+            else:
+                handFrame.Translate([0.4, -0.2, 1.02])
+                rotation = [0, -90, -90]
+            handFrame.Concatenate(transformUtils.frameFromPositionAndRPY([0,0,0], rotation))
+            handFactory = HandFactory(self.robotStateModel)
+            handFactory.placeHandModelWithTransform(handFrame, self.robotStateModel.views[0],
+                                                    side, 'end effector goal', 'planning')
+            handObj = om.findObjectByName('end effector goal frame')
 
+            
+    def changeHand(self, handName):
+        self.reachingHand = handName
+        if om.findObjectByName('end effector goal'):
+            om.removeFromObjectModel(om.findObjectByName('end effector goal'))
+            self.placeHandModel()
 
-    def spawnBlockAffordance(self):
-        boxFrame = self.footstepPlanner.getFeetMidPoint(self.robotStateModel)
-        boxFrame.PreMultiply()
-        boxFrame.Translate([0.49, 0.0, 1.02])
-        #vis.updateFrame(boxFrame, 'boxFrame')
-        self.spawnBlockAffordanceAtFrame(boxFrame)
-
-
-    def spawnBlockAffordanceAtFrame(self, boxFrame):
-        boxLength = 0.3
-        boxWidth = 0.25
-        boxHeight = 0.3
-
-        xAxis,yAxis, zAxis = transformUtils.getAxesFromTransform(boxFrame)
-        segmentation.createBlockAffordance(boxFrame.GetPosition(), xAxis,yAxis, zAxis, boxLength, boxWidth, boxHeight, 'box', parent='affordances')
-
-
-    def planSimpleBoxGrasp(self):
-        ikplanner.getIkOptions().setProperty('Use pointwise', False)
-
-        deliveryAffordance = om.findObjectByName('box')
-        boxFrame = deliveryAffordance.getChildFrame().transform
-        dim = deliveryAffordance.getProperty('Dimensions')
-        palmSeperation = (dim[1] - 0.14)/2.0
-        print palmSeperation
-
-        leftFrame = transformUtils.frameFromPositionAndRPY([0.0, palmSeperation, 0.0], [90, 90+self.wristAngleBox,0])
-        leftFrame = transformUtils.concatenateTransforms([leftFrame, boxFrame])
-        vis.updateFrame(leftFrame, 'reach left')
-
-        rightFrame = transformUtils.frameFromPositionAndRPY([0.0, -palmSeperation, 0.0], [0,-90,-90])
-        rightFrame = transformUtils.concatenateTransforms([rightFrame, boxFrame])
-        wristRotationFrame = transformUtils.frameFromPositionAndRPY([0.0, 0, 0.0], [0, 0, self.wristAngleBox])
-        rightFrame = transformUtils.concatenateTransforms([wristRotationFrame, rightFrame])
-        vis.updateFrame(rightFrame, 'reach right')
-
-        startPose = self.getPlanningStartPose()
-        self.constraintSet = self.ikPlanner.planEndEffectorGoal(startPose, 'left', leftFrame, lockBase=self.lockBase, lockBack=self.lockBack, lockArm=False)
-
-        startPoseName = 'reach_start'
-        self.constraintSet = self.ikPlanner.newReachGoal(startPoseName, 'right', rightFrame, self.constraintSet.constraints, None)
-
-        self.constraintSet.runIk()
-        print 'planning bihanded reach'
-        plan = self.constraintSet.runIkTraj()
-        self.addPlan(plan)
-
-        ikplanner.getIkOptions().setProperty('Use pointwise', True)
-
-
-    def planBoxLift(self):
-        ''' Move the robot back to a safe posture, 1m above its feet, w/o moving the hands
-        '''
-        # ikParameters = IkParameters(usePointwise=False) # was using False for a long time
-        startPose = self.getPlanningStartPose()
-        footReferenceFrame = self.footstepPlanner.getFeetMidPoint(self.robotStateModel)
-        pelvisHeightAboveFeet = 1.0167
-        newPlan = self.ikPlanner.computeHomePlan(startPose, footReferenceFrame, pelvisHeightAboveFeet)
-        self.addPlan(newPlan)
-
-
-
-
+    def showPose(self, pose):
+        self.hidePlan()
+        self.teleopJointController.setPose('reach_end', pose)
+        self.showTeleoModel()
+        
+    def hideTeleopModel(self):
+        self.teleopRobotModel.setProperty('Visible', False)
+        
+    def showTeleoModel(self):
+        self.teleopRobotModel.setProperty('Visible', True)
+        self.teleopRobotModel.setProperty('Alpha', 1)
+        
+    def showPlan(self, plan):
+        self.hideTeleopModel()
+        self.playbackRobotModel.setProperty('Visible', True)
+        
+    def hidePlan(self):
+        self.playbackRobotModel.setProperty('Visible', False)
+        
+    def getGoalFrame(self):
+        return om.findObjectByName('end effector goal frame')
 
     def planWalkToTable(self):
         self.planWalkToStance(om.findObjectByName('table stance frame').transform)
 
-
-    def planArmsSpread(self):
-        startPose = self.getPlanningStartPose()
-        endPose = self.ikPlanner.getMergedPostureFromDatabase(startPose, 'Table Box Pick', 'spread hands')
-        newPlan = self.ikPlanner.computePostureGoal(startPose, endPose)
-        self.addPlan(newPlan)
-
-    def planArmsRaise(self):
-        startPose = self.getPlanningStartPose()
-        endPose = self.ikPlanner.getMergedPostureFromDatabase(startPose, 'Table Box Pick', 'hands goalie')
-        newPlan = self.ikPlanner.computePostureGoal(startPose, endPose)
-        self.addPlan(newPlan)
-
-    def planArmsDown(self):
-        startPose = self.getPlanningStartPose()
-        endPose = self.ikPlanner.getMergedPostureFromDatabase(startPose, 'General', 'handsdown incl back')
-        newPlan = self.ikPlanner.computePostureGoal(startPose, endPose)
-        self.addPlan(newPlan)
-
+           
+    def handClose(self):        
+        self.valkyrieDriver.sendHandCommand(side=self.reachingHand, thumbRoll=0.0, thumbPitch1=0.6, thumbPitch2=0.6, indexFingerPitch=0.6, middleFingerPitch=0.6, pinkyPitch=0.6)
+        
+    def handOpen(self):
+        self.valkyrieDriver.openHand(side=self.reachingHand)
+        
     def planNominal(self):
         self.ikPlanner.computeNominalPlan(self.sensorJointController.q)
 
@@ -442,9 +401,9 @@ Tableboxdemo Image Fit for live-stream of webcam
 '''
 class TableImageFitter(ImageBasedAffordanceFit):
 
-    def __init__(self, tableboxDemo):
+    def __init__(self, tablesimpleDemo):
         ImageBasedAffordanceFit.__init__(self, numberOfPoints=1)
-        self.tableboxDemo = tableboxDemo
+        self.tablesimpleDemo = tablesimpleDemo
 
     def fit(self, polyData, points):
         pass
@@ -452,37 +411,35 @@ class TableImageFitter(ImageBasedAffordanceFit):
 '''
 Tablebox Task Panel
 '''
-class TableboxTaskPanel(TaskUserPanel):
+class TableSimpleTaskPanel(TaskUserPanel):
 
-    def __init__(self, tableboxDemo):
+    def __init__(self, tablesimpleDemo):
 
         TaskUserPanel.__init__(self, windowTitle='Table Task')
 
-        self.tableboxDemo = tableboxDemo
-        self.tableboxDemo.planFromCurrentRobotState = True
+        self.tablesimpleDemo = tablesimpleDemo
+        self.tablesimpleDemo.planFromCurrentRobotState = True
 
         self.addDefaultProperties()
         self.addButtons()
         self.addTasks()
 
-        self.fitter = TableImageFitter(self.tableboxDemo)
+        self.fitter = TableImageFitter(self.tablesimpleDemo)
         self.initImageView(self.fitter.imageView, activateAffordanceUpdater=False)
 
     def addButtons(self):
 
         self.addManualSpacer()
-        self.addManualButton('Load Test Cloud', self.tableboxDemo.loadTestPointCloud)
-        self.addManualSpacer()
+        self.addManualButton('Start Test Sim', self.tablesimpleDemo.startSimulator)
+        self.addManualButton('Load Test Cloud', self.tablesimpleDemo.loadTestPointCloud)
 
-        p1 = np.array([-0.58354658, -0.98459125, 0.75729603])
-        self.addManualButton('User Table', functools.partial(self.tableboxDemo.onSegmentTable, p1) )
-        self.addManualButton('Move to Stance',self.tableboxDemo.moveRobotToTableStanceFrame)
-        self.addManualButton('Spread Arms',self.tableboxDemo.planArmsSpread)
+        p1 = np.array([ 1.12926447, 0.09924124, 0.84685922])
+        self.addManualButton('User Table', functools.partial(self.tablesimpleDemo.onSegmentTable, p1) )        
+        self.addManualButton('Move to Stance',self.tablesimpleDemo.moveRobotToTableStanceFrame)
 
         self.addManualSpacer()
-        self.addManualButton('Load Scenario', self.tableboxDemo.loadSDFFileAndRunSim)
-        self.addManualSpacer()
-        self.addManualButton('Spawn Box', self.tableboxDemo.spawnBlockAffordance)
+        self.addManualButton('Close Hand', self.tablesimpleDemo.handClose)
+        self.addManualButton('Open Hand', self.tablesimpleDemo.handOpen)
 
 
     def addDefaultProperties(self):
@@ -491,20 +448,21 @@ class TableboxTaskPanel(TaskUserPanel):
         self.params.addProperty('Back', 1,
                                     attributes=om.PropertyAttributes(enumNames=['Fixed', 'Free']))
 
-        self.params.addProperty('Scene', 0, attributes=om.PropertyAttributes(enumNames=['Objects on table','Object below table','Object through slot','Object at depth','Objects on table (fit)']))
+        self.params.addProperty('Reaching Hand', 0,
+                                    attributes=om.PropertyAttributes(enumNames=['left', 'right']))
 
         # Init values as above
-        self.tableboxDemo.lockBase = self.getLockBase()
-        self.tableboxDemo.lockBack = self.getLockBack()
+        self.tablesimpleDemo.lockBase = self.getLockBase()
+        self.tablesimpleDemo.lockBack = self.getLockBack()
 
     def getLockBase(self):
         return True if self.params.getPropertyEnumValue('Base') == 'Fixed' else False
 
     def getLockBack(self):
         return True if self.params.getPropertyEnumValue('Back') == 'Fixed' else False
-
-    def getHandEngaged(self):
-        return self.params.getProperty('Hand Engaged (Powered)')
+    
+    def getReachingHand(self):
+        return self.params.getPropertyEnumValue('Reaching Hand')
 
     def getPlanner(self):
         return self.params.getPropertyEnumValue('Planner') if self.params.hasProperty('Planner') else None
@@ -513,13 +471,15 @@ class TableboxTaskPanel(TaskUserPanel):
         propertyName = str(propertyName)
 
         if propertyName == 'Base':
-            self.tableboxDemo.lockBase = self.getLockBase()
+            self.tablesimpleDemo.lockBase = self.getLockBase()
 
         elif propertyName == 'Back':
-            self.tableboxDemo.lockBack = self.getLockBack()
-
+            self.tablesimpleDemo.lockBack = self.getLockBack()
+        elif propertyName == 'Reaching Hand':
+            self.tablesimpleDemo.changeHand(self.getReachingHand())
+            
     def pickupMoreObjects(self):
-        if len(self.tableboxDemo.clusterObjects) > 0: # There is still sth on the table, let's do it again!
+        if len(self.tablesimpleDemo.clusterObjects) > 0: # There is still sth on the table, let's do it again!
             print "There are more objects on the table, going at it again!"
             self.taskTree.selectTaskByName('reach')
             self.onPause()
@@ -556,58 +516,46 @@ class TableboxTaskPanel(TaskUserPanel):
                 addTask(rt.CheckPlanInfo(name='check manip plan info'))
             else:
                 addTask(rt.UserPromptTask(name='approve manip plan', message='Please approve manipulation plan.'))
-            addFunc('execute manip plan', self.tableboxDemo.commitManipPlan)
+            addFunc('execute manip plan', self.tablesimpleDemo.commitManipPlan)
             addTask(rt.WaitForManipulationPlanExecution(name='wait for manip execution'))
             self.folder = prevFolder
 
-        v = self.tableboxDemo
+        v = self.tablesimpleDemo
+
         self.taskTree.removeAllTasks()
 
         ###############
-        # find the table
-        addFolder('approach')
+        # preparation
+        addFolder('prepare')
         addManipTask('move hands down', v.planArmsDown, userPrompt=True)
-        addFunc('activate table fit', self.tableboxDemo.userFitTable)
+        addTask(rt.SetNeckPitch(name='set neck position to 35', angle=35))
+        addFunc('activate table fit', v.userFitTable)
         addTask(rt.UserPromptTask(name='approve table fit', message='Please approve the table fit.'))
-        addTask(rt.SetNeckPitch(name='set neck position', angle=25)) # was 35
-
-        # walk to table
-        addFolder('walk')
+        
+        # walk to table (end-pose planning)
+        addFolder('walk to table')
         addTask(rt.RequestFootstepPlan(name='plan walk to table', stanceFrameName='table stance frame'))
         addTask(rt.UserPromptTask(name='approve footsteps', message='Please approve footstep plan.'))
         addTask(rt.CommitFootstepPlan(name='walk to table', planName='table stance frame footstep plan'))
         addTask(rt.WaitForWalkExecution(name='wait for walking'))
 
-        #survey table
-        addFolder("Survey Table 1")
-        addTask(headsurveypattern.HeadSurveyPattern(name='survey neck'))
+        addFolder('safely raise arm')
+        addManipTask('action 1', v.planSafeRaise1, userPrompt=True)
+        addManipTask('action 2', v.planSafeRaise2, userPrompt=True)
 
-        #- raise arms
-        addFolder('prep')
-        addManipTask('spread arms', v.planArmsSpread, userPrompt=True)
-        addManipTask('raise arms', v.planArmsRaise, userPrompt=True)
+        # refit box
+        addFolder('refit table')
+        addFunc('re-activate table fit', v.userReFitTable)
+        addTask(rt.UserPromptTask(name='approve table fit', message='Please approve the table fit again.'))
 
-        #- fit box
-        #- grasp box
-        addFolder('grasp')
-        #addFunc('spawn block affordance', v.spawnBlockAffordance)
-        addManipTask('Box grasp', v.planSimpleBoxGrasp, userPrompt=True)
-        addManipTask('Lift box', v.planBoxLift, userPrompt=True)
+        addFolder('reach')
+        addFunc('place hand goal', v.placeHandModel)
+        addTask(rt.UserPromptTask(name='approve reach goal', message='Please approve the reach goal.'))
+        addManipTask('reach to goal', v.planReachToGoal, userPrompt=True)
 
-        # walk back
-        addFolder('walk back')
-        addTask(rt.RequestFootstepPlan(name='plan walk back', stanceFrameName='safe stance frame'))
-        addTask(rt.UserPromptTask(name='approve footsteps', message='Please approve footstep plan.'))
-        addTask(rt.CommitFootstepPlan(name='walk back', planName='table stance frame footstep plan'))
-        addTask(rt.WaitForWalkExecution(name='wait for walking'))
 
-        addTask(rt.SetNeckPitch(name='set neck position', angle=0))
-
-        # Prepare to hand off
-        addFolder('turn to handoff')
-        addTask(rt.RequestFootstepPlan(name='plan walk to handoff', stanceFrameName='facing stance frame'))
-        addTask(rt.UserPromptTask(name='approve footsteps', message='Please approve footstep plan.'))
-        addTask(rt.CommitFootstepPlan(name='walk to handoff', planName='facing stance frame footstep plan'))
-        addTask(rt.WaitForWalkExecution(name='wait for walking'))
-
-        addManipTask('Plan Nominal', v.planNominal, userPrompt=True)
+        # finish up
+        addFolder('safely lower arm')
+        addManipTask('action 2', v.planSafeRaise2, userPrompt=True)
+        addManipTask('action 1', v.planSafeRaise1, userPrompt=True)
+        addManipTask('move hands down', v.planArmsDown, userPrompt=True)
