@@ -40,6 +40,11 @@ LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in, st
   walking_plan_pub_ = nh_.advertise<ihmc_msgs::FootstepDataListRosMessage>(
       "/ihmc_ros/" + robotName_ + "/control/footstep_list", 10);
 
+  // Subscribe correction from localization module
+  lcm_->subscribe("POSE_BODY_CORRECTED", &LCM2ROS::robotPoseCorrectionHandler, this);
+  correction_pub_ = nh_.advertise<nav_msgs::Odometry>(
+      "/ihmc_ros/localization/pelvis_odom_pose_correction", 10);
+
   lcm_->subscribe("STOP_WALKING", &LCM2ROS::stopHandler, this);  // from Director
   pause_pub_ = nh_.advertise<ihmc_msgs::PauseWalkingRosMessage>("/ihmc_ros/" + robotName_ + "/control/pause_walking",
                                                              10);

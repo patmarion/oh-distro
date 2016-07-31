@@ -31,6 +31,7 @@
 
 
 #include <std_msgs/String.h>
+#include <nav_msgs/Odometry.h>
 #include <ihmc_msgs/FootstepDataListRosMessage.h>
 #include <ihmc_msgs/PauseWalkingRosMessage.h>
 #include <ihmc_msgs/StopAllTrajectoryRosMessage.h>
@@ -136,6 +137,11 @@ const char * getTrajectoryName( int enumVal )
 
   void scsAPIHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::scs_api_command_t* msg);
   ros::Publisher scs_api_pub_;
+
+  // Pose Messages
+  void robotPoseCorrectionHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
+                                  const bot_core::pose_t* msg);
+  ros::Publisher correction_pub_;
 
 };
 
