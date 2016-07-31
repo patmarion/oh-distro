@@ -206,5 +206,6 @@
   ],
 
   "userConfig" : [],
-  "disableComponents" : ["notUseOpenniDepthImage"]
+  "disableComponents": ["notUseOpenniDepthImage"],
+  "enableComponents": ["useLimitJointsSentToPlanner"]
 }

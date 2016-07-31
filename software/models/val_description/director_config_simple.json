@@ -205,6 +205,6 @@
       }
   ],
 
-  "userConfig" : []
-
+  "userConfig" : [],
+  "enableComponents": ["useLimitJointsSentToPlanner"]
 }
