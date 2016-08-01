@@ -17,8 +17,13 @@ class multisense_image_utils {
     bool removeSmall(cv::Mat& ioImage, const uint16_t iValueThresh,
                      const int iSizeThresh);
 
-  private:
+    float computeIntensity(unsigned char * rgb, int row, int col, int width);
 
+    void filterLowTexture(unsigned short * disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold, bool removeHorizontalEdges);
+
+    void sobelEdgeFilter(unsigned short * disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold, bool removeHorizontalEdges);
+
+  private:
 };
 
 #endif

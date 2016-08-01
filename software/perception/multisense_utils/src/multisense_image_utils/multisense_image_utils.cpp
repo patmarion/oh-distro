@@ -93,3 +93,80 @@ removeSmall(cv::Mat& ioImage, const uint16_t iValueThresh,
 
   return true;
 }
+
+float multisense_image_utils::computeIntensity(unsigned char * rgb, int row, int col, int width) {
+
+  return 0.2126 * rgb[3 * (row * width + col) + 0] + 0.7152 * rgb[3 * (row * width + col) + 1] + 0.0722 * rgb[3 * (row * width + col) + 2];
+}
+
+void multisense_image_utils::filterLowTexture(unsigned short * disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold, bool removeHorizontalEdges) {
+
+  for (int i=windowSize; i<height-windowSize; i++) {
+    for (int j=windowSize; j<width-windowSize; j++) {
+
+      float tl = computeIntensity(rgb, i-windowSize, j-windowSize, width);
+      float br = computeIntensity(rgb, i+windowSize, j+windowSize, width);
+
+      float tr = computeIntensity(rgb, i-windowSize, j+windowSize, width);
+      float bl = computeIntensity(rgb, i+windowSize, j-windowSize, width);
+
+      float tv = computeIntensity(rgb, i-windowSize, j, width);
+      float bv = computeIntensity(rgb, i+windowSize, j, width);
+
+      float lh = computeIntensity(rgb, i, j-windowSize, width);
+      float rh = computeIntensity(rgb, i, j+windowSize, width);
+
+      float d1 = fabs(tl - br);
+      float d2 = fabs(tr - bl);
+      float d3 = fabs(tv - bv);
+      float d4 = fabs(lh - rh);
+
+      if (d1 < threshold && d2 < threshold && d3 < threshold && d4 < threshold) {
+        disparity[i * width + j] = 0;
+      }
+
+      float cos = d3 / sqrt(d4*d4 + d3*d3);
+
+      if (removeHorizontalEdges && cos >= 0.99) {
+        disparity[i * width + j] = 0;
+      }
+    }
+  }
+}
+
+void multisense_image_utils::sobelEdgeFilter(unsigned short *  disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold, bool removeHorizontalEdges) {
+
+  for (int i=windowSize; i<height-windowSize; i++) {
+    for (int j=windowSize; j<width-windowSize; j++) {
+
+      float tl = computeIntensity(rgb, i-windowSize, j-windowSize, width);
+      float br = computeIntensity(rgb, i+windowSize, j+windowSize, width);
+
+      float tr = computeIntensity(rgb, i-windowSize, j+windowSize, width);
+      float bl = computeIntensity(rgb, i+windowSize, j-windowSize, width);
+
+      float tv = computeIntensity(rgb, i-windowSize, j, width);
+      float bv = computeIntensity(rgb, i+windowSize, j, width);
+
+      float lh = computeIntensity(rgb, i, j-windowSize, width);
+      float rh = computeIntensity(rgb, i, j+windowSize, width);
+
+      float gx = -1 * tl + 1 * tr - 2 * lh + 2 * rh - 1 * bl + 1 * br;
+      float gy = -1 * tl + 1 * bl - 2 * tv + 2 * bv - 1 * tr + 1 * br;
+
+      float g = sqrt(gx*gx + gy*gy);
+
+      if (g<threshold) {
+        disparity[i * width + j] = 0;
+      }
+
+      float d3 = fabs(tv - bv);
+      float d4 = fabs(lh - rh);
+      float cos = d3 / sqrt(d4*d4 + d3*d3);
+
+      if (removeHorizontalEdges && cos >= 0.99) {
+        disparity[i * width + j] = 0;
+      }
+    }
+  }
+}
