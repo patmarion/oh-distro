@@ -2,13 +2,14 @@
 #include <iostream>
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/RigidBodyManipulator.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "lcmtypes/drc/fall_detector_status_t.hpp"
-#include "lcmtypes/drc/utime_t.hpp"
+#include "lcmtypes/bot_core/utime_t.hpp"
 #include "lcmtypes/drc/foot_contact_estimate_t.hpp"
 #include "lcmtypes/drc/controller_status_t.hpp"
-#include "lcmtypes/drc/atlas_status_t.hpp"
+#include "lcmtypes/drc/behavior_t.hpp"
 #include "drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/atlas/status_t.hpp"
 #include "RobotStateDriver.hpp"
 
 enum FootID {RIGHT, LEFT};
@@ -86,15 +87,15 @@ class AtlasFallDetector {
 public:
   ~AtlasFallDetector() {}
 
-  AtlasFallDetector(std::shared_ptr<RigidBodyManipulator> model, bool sim_override = false);
+  AtlasFallDetector(std::shared_ptr<RigidBodyTree> model, bool sim_override = false);
   void run() {
     while(0 == this->lcm.handle());
   }
 
 private:
-  std::shared_ptr<RigidBodyManipulator> model;
+  std::shared_ptr<RigidBodyTree> model;
   std::shared_ptr<RobotStateDriver> state_driver;
-  std::shared_ptr<KinematicsCache<double>> kinematics_cache;
+  KinematicsCache<double> kinematics_cache;
   std::unique_ptr<Debounce> icp_is_ok_debounce;
   std::unique_ptr<Debounce> icp_is_capturable_debounce;
   std::map<FootID, int> foot_body_ids;
@@ -129,11 +130,11 @@ private:
                          const drc::foot_contact_estimate_t* msg);
   void handleRobotState(const lcm::ReceiveBuffer* rbuf,
                          const std::string& chan,
-                         const drc::robot_state_t* msg);
+                         const bot_core::robot_state_t* msg);
   void handleControllerStatus(const lcm::ReceiveBuffer* rbuf,
                          const std::string& chan,
                          const drc::controller_status_t* msg);
   void handleAtlasStatus(const lcm::ReceiveBuffer* rbuf,
                          const std::string& chan,
-                         const drc::atlas_status_t* msg);
+                         const atlas::status_t* msg);
 };

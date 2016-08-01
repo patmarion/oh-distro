@@ -1,8 +1,8 @@
-#include <drake/RigidBodyIK.h>
-#include <drake/RigidBodyManipulator.h>
-#include <drake/RigidBodyConstraint.h>
+#include <drake/systems/plants/RigidBodyIK.h>
+#include <drake/systems/plants/RigidBodyTree.h>
+#include <drake/systems/plants/constraint/RigidBodyConstraint.h>
 
-#include <drake/IKoptions.h>
+#include <drake/systems/plants/IKoptions.h>
 #include <iostream>
 #include <cstdlib>
 #include <limits>
@@ -12,7 +12,7 @@
 using namespace std;
 using namespace Eigen;
 
-#include "lcmtypes/drc/robot_state_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
 #include "lcmtypes/bot_core/pose_t.hpp"
 #include <lcm/lcm-cpp.hpp>
 
@@ -29,20 +29,20 @@ class App{
     ~App(){
     }
 
-    void getRobotState(drc::robot_state_t& robot_state_msg, int64_t utime_in, Eigen::VectorXd q, std::vector<std::string> jointNames);
+    void getRobotState(bot_core::robot_state_t& robot_state_msg, int64_t utime_in, Eigen::VectorXd q, std::vector<std::string> jointNames);
 
     int getConstraints(Eigen::VectorXd q_star, Eigen::VectorXd &q_sol);
 
     void solveGazeProblem();
 
-    void robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::robot_state_t* msg);   
+    void robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::robot_state_t* msg);   
 
   private:
     boost::shared_ptr<lcm::LCM> lcm_;
     const CommandLineConfig cl_cfg_;    
-    RigidBodyManipulator model_;
+    RigidBodyTree model_;
 
-    drc::robot_state_t rstate_;
+    bot_core::robot_state_t rstate_;
     map<string, int> dofMap_;
 
 };
@@ -60,7 +60,7 @@ App::App(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_):
 
 
 // Find the joint position indices corresponding to 'name'
-vector<int> getJointPositionVectorIndices(const RigidBodyManipulator &model, const std::string &name) {
+vector<int> getJointPositionVectorIndices(const RigidBodyTree &model, const std::string &name) {
   shared_ptr<RigidBody> joint_parent_body = model.findJoint(name);
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
@@ -70,7 +70,7 @@ vector<int> getJointPositionVectorIndices(const RigidBodyManipulator &model, con
   return ret;
 }
 
-void findJointAndInsert(const RigidBodyManipulator &model, const std::string &name, vector<int> &position_list) {
+void findJointAndInsert(const RigidBodyTree &model, const std::string &name, vector<int> &position_list) {
   auto position_indices = getJointPositionVectorIndices(model, name);
 
   position_list.insert(position_list.end(), position_indices.begin(), position_indices.end());
@@ -113,7 +113,7 @@ void quat_to_euler(Eigen::Quaterniond q, double& roll, double& pitch, double& ya
   yaw = atan2(2*(q0*q3+q1*q2), 1-2*(q2*q2+q3*q3));
 }
 
-VectorXd robotStateToDrakePosition(const drc::robot_state_t& rstate,
+VectorXd robotStateToDrakePosition(const bot_core::robot_state_t& rstate,
                                    const map<string, int>& dofMap, 
                                    int num_positions)
 {
@@ -173,7 +173,7 @@ VectorXd robotStateToDrakePosition(const drc::robot_state_t& rstate,
 
 
 /////////////////////////////////////////////////
-void App::getRobotState(drc::robot_state_t& robot_state_msg, int64_t utime_in, Eigen::VectorXd q, std::vector<std::string> jointNames){
+void App::getRobotState(bot_core::robot_state_t& robot_state_msg, int64_t utime_in, Eigen::VectorXd q, std::vector<std::string> jointNames){
   robot_state_msg.utime = utime_in;
 
   // Pelvis Pose:
@@ -273,16 +273,6 @@ int App::getConstraints(Eigen::VectorXd q_star, Eigen::VectorXd &q_sol){
   return info;
 }
 
-
-Eigen::Isometry3d matrixdToIsometry3d(Matrix<double,7,1>  input){
-  Eigen::Isometry3d output;
-  output.setIdentity();
-  output.translation() = Eigen::Vector3d( input[0], input[1], input[2] );
-  Eigen::Quaterniond quat = Eigen::Quaterniond(input[3], input[4], input[5], input[6]);
-  output.rotate(quat); 
-  return output;
-}
-
 static inline bot_core::pose_t getPoseAsBotPose(Eigen::Isometry3d pose, int64_t utime){
   bot_core::pose_t pose_msg;
   pose_msg.utime =   utime;
@@ -325,15 +315,11 @@ void App::solveGazeProblem(){
   bool mode = 0;
   if (mode==0){ // publish utorso-to-head as orientation, not properly tracking but works with different orientations
     // Get the utorso to head frame:
-    int pelvis_link = model_.findLinkId("pelvis");
     int head_link = model_.findLinkId("head");
     int utorso_link = model_.findLinkId("torso");
-    KinematicsCache<double> cache = model_.doKinematics(q_sol,0);
-    Eigen::Isometry3d world_to_pelvis = matrixdToIsometry3d( model_.forwardKin(cache, Vector3d::Zero().eval(), pelvis_link, 0, 2, 0).value() );
-    Eigen::Isometry3d world_to_head = matrixdToIsometry3d( model_.forwardKin(cache, Vector3d::Zero().eval(), head_link, 0, 2, 0).value() );
-    Eigen::Isometry3d pelvis_to_head = world_to_head.inverse()*world_to_pelvis;
-    Eigen::Isometry3d pelvis_to_utorso  = matrixdToIsometry3d( model_.forwardKin(cache, Vector3d::Zero().eval(), utorso_link, 0, 2, 0).value() ).inverse()*world_to_pelvis;
-    Eigen::Isometry3d utorso_to_head =  pelvis_to_utorso.inverse()*pelvis_to_head;
+    KinematicsCache<double> cache = model_.doKinematics(q_sol);
+    Eigen::Isometry3d world_to_head = model_.relativeTransform(cache, head_link, 0);
+    Eigen::Isometry3d utorso_to_head = model_.relativeTransform(cache, head_link, utorso_link);
 
     // Apply 180 roll as head orientation control seems to be in z-up frame
     Eigen::Isometry3d rotation_frame;
@@ -353,7 +339,7 @@ void App::solveGazeProblem(){
       // std::cout << model.getPositionName(i) << " " << i << "\n";
       jointNames.push_back( model_.getPositionName(i) ) ;
     }
-    drc::robot_state_t robot_state_msg;
+    bot_core::robot_state_t robot_state_msg;
     getRobotState(robot_state_msg, 0*1E6, q_sol , jointNames);
     lcm_->publish("CANDIDATE_ROBOT_ENDPOSE",&robot_state_msg);
 
@@ -389,7 +375,7 @@ void App::solveGazeProblem(){
 }
 
 int counter=0;
-void App::robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::robot_state_t* msg){
+void App::robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::robot_state_t* msg){
   rstate_= *msg;
   if (counter%400 == 0 ){
     solveGazeProblem();

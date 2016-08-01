@@ -27,9 +27,8 @@
 #include <pronto_utils/pronto_vis.hpp>
 
 #include <lcmtypes/bot_core.hpp>
-#include "lcmtypes/drc/atlas_foot_pos_est_t.hpp"
-#include "lcmtypes/drc/robot_state_t.hpp"
-#include "lcmtypes/drc/robot_urdf_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "lcmtypes/bot_core/robot_urdf_t.hpp"
 #include "lcmtypes/microstrain/ins_t.hpp"
 
 ///////////////////////////////////////////////////////////////

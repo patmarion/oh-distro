@@ -6,15 +6,12 @@
 
 #include <lcm/lcm-cpp.hpp>
 #include "lcmtypes/bot_core.hpp"
-#include "lcmtypes/drc/atlas_state_t.hpp"
-#include "lcmtypes/drc/atlas_command_t.hpp"
-#include "lcmtypes/drc/robot_state_t.hpp"
-#include "lcmtypes/drc/utime_two_t.hpp"
-#include "lcmtypes/drc/atlas_raw_imu_batch_t.hpp"
-#include "lcmtypes/drc/double_array_t.hpp"
-#include "lcmtypes/bot_core/pose_t.hpp"
 
-#include "lcmtypes/mav_estimator.hpp"
+#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "lcmtypes/drc/utime_two_t.hpp"
+#include "lcmtypes/drc/double_array_t.hpp"
+
+#include "lcmtypes/pronto.hpp"
 
 #include <latency/latency.hpp>
 
@@ -27,16 +24,16 @@ public:
   App(boost::shared_ptr<lcm::LCM> &_lcm, int period_);
   ~App() {}
   boost::shared_ptr<lcm::LCM> _lcm;
-  void handleAtlasStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const drc::atlas_state_t * msg);
-  void handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const drc::robot_state_t * msg);
-  void handleCommandMsg(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::atlas_command_t * msg);
+  void handleAtlasStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const bot_core::joint_state_t * msg);
+  void handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const bot_core::robot_state_t * msg);
+  void handleCommandMsg(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::atlas_command_t * msg);
 
-  void handleIMUBatch(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::atlas_raw_imu_batch_t * msg);
+  void handleIMUBatch(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::kvh_raw_imu_batch_t * msg);
   void handlePoseBody(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t * msg);
 
   // GPF:
-  void handleSES(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  mav::filter_state_t * msg);
-  void handleGPF(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  mav::indexed_measurement_t * msg);
+  void handleSES(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  pronto::filter_state_t * msg);
+  void handleGPF(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  pronto::indexed_measurement_t * msg);
   void handleLidar(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const bot_core::planar_lidar_t * msg);
 
   int period_;
@@ -105,7 +102,7 @@ int64_t _timestamp_now(){
     return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-void App::handleAtlasStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const drc::atlas_state_t * msg){
+void App::handleAtlasStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const bot_core::joint_state_t * msg){
   int64_t utime_now = _timestamp_now();
   lats_[0]->add_from(msg->utime,  utime_now);
   lats_[3]->add_from(msg->utime,  utime_now);
@@ -116,7 +113,7 @@ void App::handleAtlasStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string&
   }
 }
 
-void App::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const drc::robot_state_t * msg){
+void App::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const bot_core::robot_state_t * msg){
   int64_t utime_now = _timestamp_now();
   bool new_data = lats_[0]->add_to(msg->utime, utime_now, "SYNC", lat_time_[0], lat_msgs_[0] );
   lats_[2]->add_from(msg->utime, utime_now );
@@ -146,12 +143,12 @@ void App::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf, const std::string&
   }
 }
 
-void App::handleCommandMsg(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::atlas_command_t * msg)  {
+void App::handleCommandMsg(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::atlas_command_t * msg)  {
   lats_[2]->add_to(msg->utime, _timestamp_now(), "CTRL", lat_time_[2], lat_msgs_[2] );
   lats_[3]->add_to(msg->utime, _timestamp_now(), "FULL", lat_time_[3], lat_msgs_[3] );
 }
 
-void App::handleIMUBatch(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const drc::atlas_raw_imu_batch_t * msg){
+void App::handleIMUBatch(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const bot_core::kvh_raw_imu_batch_t * msg){
   lats_[1]->add_from(msg->utime, _timestamp_now() );
 }
 void App::handlePoseBody(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::pose_t * msg)  {
@@ -161,10 +158,10 @@ void App::handlePoseBody(const lcm::ReceiveBuffer* rbuf, const std::string& chan
 
 
 /// Measure GPF:
-void App::handleSES(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  mav::filter_state_t * msg)  {
+void App::handleSES(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  pronto::filter_state_t * msg)  {
   lats_[4]->add_to(msg->utime, _timestamp_now(),  "GPFI" , lat_time_[4], lat_msgs_[4]);
 }
-void App::handleGPF(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  mav::indexed_measurement_t * msg)  {
+void App::handleGPF(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  pronto::indexed_measurement_t * msg)  {
   // utime is paired with lidar i.e. SCAN
   // state_utime is paired with STATE_ESTIMATE_STATE
   lats_[5]->add_to(msg->state_utime, _timestamp_now(),  "GPFO" , lat_time_[5], lat_msgs_[5]);
@@ -175,10 +172,10 @@ void App::handleLidar(const lcm::ReceiveBuffer* rbuf, const std::string& chan, c
 }
 
 int main (int argc, char ** argv){
-  std::cout << "0:      ATLAS_STATE <-> EST_ROBOT_STATE\n";
+  std::cout << "0: CORE_ROBOT_STATE <-> EST_ROBOT_STATE\n";
   std::cout << "1:  ATLAS_IMU_BATCH <-> POSE_BODY\n";
   std::cout << "2:  EST_ROBOT_STATE <-> ATLAS_COMMAND\n";  
-  std::cout << "3:      ATLAS_STATE <-> ATLAS_COMMAND\n";
+  std::cout << "3: CORE_ROBOT_STATE <-> ATLAS_COMMAND\n";
   ConciseArgs parser(argc, argv, "latency-app");
   int period=200;
   parser.add(period, "p", "period", "Counting Period in samples");

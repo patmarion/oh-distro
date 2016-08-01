@@ -79,10 +79,10 @@ setup_drc()
   export CFLAGS="$CFLAGS -Wreturn-type -Wuninitialized"
 
   # required by Atlas API runtime
-  export ATLAS_ROBOT_INTERFACE=$DRC_BASE/software/drivers/atlas/AtlasRobotInterface_3.3.0
+  export ATLAS_ROBOT_INTERFACE=$DRC_BASE/software/atlas-collection/atlas/AtlasRobotInterface_3.3.0
 }
 
-setup_robot_computers()
+setup_atlas_computers()
 {
   # field computer
   if [ "paladin-12" = $(hostname) ]
@@ -111,6 +111,28 @@ setup_robot_computers()
   elif [ "atlas2" = $(hostname) ]
   then
       export LCM_DEFAULT_URL=${LCM_URL_DRC_CONTROL}
+  fi
+}
+
+setup_valkyrie_computers()
+{
+  # Edinburgh operator workstations
+  if [ "gondolin" = $(hostname) ] || [ "vis04" = $(hostname) ]; then
+    echo "Setting up Valkyrie Unit D for Edinburgh"
+    export VAL_LINK_IP=10.185.0.40
+    export VAL_ZELDA_IP=10.185.0.41
+    export VAL_MULTISENSE_IP=10.185.0.42
+    export VAL_UNIT=D
+  fi
+
+  # MIT Valkyrie Workstations
+  # TODO: MIT Valkyrie workstations
+  if [ "vis03" = $(hostname) ]; then
+    echo "Setting up Valkyrie Unit C for MIT"
+    export VAL_LINK_IP=10.185.0.30
+    export VAL_ZELDA_IP=10.185.0.31
+    export VAL_MULTISENSE_IP=10.185.0.32
+    export VAL_UNIT=C
   fi
 }
 
@@ -159,8 +181,10 @@ set_drc_base
 setup_drc
 setup_network_sim
 setup_lcm_communities
-setup_robot_computers
+setup_atlas_computers
+setup_valkyrie_computers
 
 # aliases
 alias cddrc='cd $DRC_BASE/software'
 alias rundrc='bot-procman-sheriff -l $DRC_BASE/software/config/atlas/robot.pmd'
+alias runval='bot-procman-sheriff -l $DRC_BASE/software/config/val/robot.pmd'

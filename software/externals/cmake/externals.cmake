@@ -11,24 +11,30 @@ if(NOT USE_SYSTEM_LCM)
     )
 endif()
 
+set(bot_core_lcmtypes_url https://github.com/iamwolf/bot_core_lcmtypes.git)
+set(bot_core_lcmtypes_revision c29cd6076d13ca2a3ecc23ffcbe28a0a1ab46314)
+set(bot_core_lcmtypes_depends ${lcm_proj})
+
 set(libbot_url https://github.com/openhumanoids/libbot.git)
-#set(libbot_revision 92cf3eaef17659990104da40866c5d466a453b17) # this revision needs a few more fixes
-set(libbot_revision eb61f9bed5df654ffb0ce47ce44ca3d379a6e6e8)
-set(libbot_depends ${lcm_proj})
+set(libbot_revision ed4a76423f2a21594436490341f907710d3f78dd)
+set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
-set(Eigen_pod_revision 9061e9d5481fe0fdf55d5de322dfb1ed9d380a1c)
+set(Eigen_pod_revision ceba39500b89a77a8649b3e8b421b10a3d74d42b)
 set(Eigen_pod_depends)
 
-set(opencv_url https://github.com/Itseez/opencv.git)
-set(opencv_revision 2.4.12.3)
-set(opencv_depends Eigen_pod)
-set(opencv_external_args
-  CMAKE_CACHE_ARGS
-    ${default_cmake_args}
-    ${python_args}
-    -DWITH_CUDA:BOOL=OFF
-  )
+if(NOT USE_SYSTEM_OPENCV)
+  set(opencv_proj opencv)
+  set(opencv_url https://github.com/Itseez/opencv.git)
+  set(opencv_revision 2.4.12.3)
+  set(opencv_depends Eigen_pod)
+  set(opencv_external_args
+    CMAKE_CACHE_ARGS
+      ${default_cmake_args}
+      ${python_args}
+      -DWITH_CUDA:BOOL=OFF
+    )
+endif()
 
 set(flann_url https://github.com/mariusmuja/flann.git)
 set(flann_revision 4969acc) # master from march 2015
@@ -42,17 +48,20 @@ set(flann_external_args
     -DBUILD_EXAMPLES:BOOL=OFF
   )
 
-set(pcl_url http://github.com/pointcloudlibrary/pcl.git)
-#set(pcl_revision pcl-1.7.2) # this version introduces some missing openni pkg-config file bug
-set(pcl_revision pcl-1.7.1)
-set(pcl_depends flann Eigen_pod)
-set(pcl_external_args
-  CMAKE_CACHE_ARGS
-    ${default_cmake_args}
-  )
+if(NOT USE_SYSTEM_PCL)
+  set(pcl_proj pcl)
+  set(pcl_url http://github.com/pointcloudlibrary/pcl.git)
+  #set(pcl_revision pcl-1.7.2) # this version introduces some missing openni pkg-config file bug
+  set(pcl_revision pcl-1.7.1)
+  set(pcl_depends flann Eigen_pod)
+  set(pcl_external_args
+    CMAKE_CACHE_ARGS
+      ${default_cmake_args}
+    )
+endif()
 
 set(octomap_url https://github.com/OctoMap/octomap.git)
-set(octomap_revision 5ba840e58a35e2d14c40d0af807da879a1a2fd83)
+set(octomap_revision 5b11e4c6bfd6dba54dd5bd1eea63354b6e18d835)
 set(octomap_depends)
 set(octomap_external_args
   CMAKE_CACHE_ARGS
@@ -61,13 +70,13 @@ set(octomap_external_args
 
 set(occ-map_url https://github.com/openhumanoids/occ-map.git)
 set(occ-map_revision 34ab71fa693216d2c0508f0f2680b9a68994f473)
-set(occ-map_depends libbot opencv)
+set(occ-map_depends libbot ${opencv_proj})
 
 set(common_utils_url https://github.com/openhumanoids/common_utils.git)
-set(common_utils_revision 90df348c8acb7fde57920f4bd3edeb903ac42667)
+set(common_utils_revision bf0c9223e02a193a3cfef4034ef82a94219f116a)
 set(common_utils_depends Eigen_pod libbot occ-map octomap)
 
-set(frsm_url ssh://git@github.com/openhumanoids/frsm.git)
+set(frsm_url https://github.com/openhumanoids/frsm.git)
 set(frsm_revision 0fb51ac1580a7f6ce3b5f4d7afc302caa976246f)
 set(frsm_depends libbot)
 
@@ -80,10 +89,10 @@ set(microstrain_revision 93f4582491f0cfec1c658ed3fb84ae84a13bc6c2)
 set(microstrain_depends common_utils)
 
 set(bullet_url https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_revision 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
+set(bullet_revision 24b0a184e177c793a1b2f37f55d3544f2a7c33ae)
 set(bullet_depends)
 
-set(fovis_url ssh://git@github.com/fovis/fovis.git)
+set(fovis_url https://github.com/fovis/fovis.git)
 #set(fovis_revision 2862e080dee2519932585b46cc301a38d8cad1f4) # this is the newer version, but removes fovis-bot2
 set(fovis_revision ee2fe6593ed9e7e5ce2b2f6f1c64b627da119090)
 set(fovis_depends libbot)
@@ -100,7 +109,7 @@ set(apriltags_url https://github.com/psiorx/apriltags-pod.git)
 set(apriltags_revision ed2972f01e00d9b5a4afa2612b018374d889641f)
 set(apriltags_depends)
 
-set(spotless_url ssh://git@github.com/RobotLocomotion/spotless-pod.git)
+set(spotless_url https://github.com/RobotLocomotion/spotless-pod.git)
 set(spotless_revision 91e1e3970e62b8dd8d74bbc4446504b11990f598)
 set(spotless_depends)
 
@@ -113,7 +122,7 @@ set(gurobi-private_revision cfeea24766ea1a11d5fc6eeff193ab520c3e58d2)
 set(gurobi-private_depends)
 set(gurobi-private_external_args ${download_only_args})
 
-set(gurobi_url ssh://git@github.com/RobotLocomotion/gurobi.git)
+set(gurobi_url https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_revision b95a186b4d988db00ada55bd8efb08c651a83fe7)
 if(APPLE)
   set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi5.6.2_mac64.pkg)
@@ -124,11 +133,11 @@ set(gurobi_environment_args GUROBI_DISTRO=${gurobi_distro_file})
 set(gurobi_depends gurobi-private)
 
 set(atlas-driver_url ssh://git@github.com/openhumanoids/atlas-drivers.git)
-set(atlas-driver_revision 59955966eda449b4ca8bd9f4fd09afcf3d9d20cf)
+set(atlas-driver_revision 04c805efae5913cc2dc9da0734dc4ec585e8d5d4)
 set(atlas-driver_depends)
 set(atlas-driver_external_args
   ${download_only_args}
-  SOURCE_DIR ${source_prefix}/../drivers/atlas
+  SOURCE_DIR ${source_prefix}/../atlas-collection/atlas
   )
 
 set(flycapture_url ssh://git@github.com/openhumanoids/flycapture-pod.git)
@@ -136,11 +145,15 @@ set(flycapture_revision be27acc7effd83b0cb5648742b915eb4a6181f49)
 set(flycapture_depends)
 set(flycapture_external_args
   ${download_only_args}
-  SOURCE_DIR ${source_prefix}/../drivers/flycapture
+  SOURCE_DIR ${source_prefix}/../atlas-collection/flycapture
   )
 
-set(iris_url ssh://git@github.com/openhumanoids/iris-distro.git)
-set(iris_revision b278a85ba4b3b3da3af41feb39c13e4150d12d98)
+set(swigmake_url https://github.com/rdeits/swigmake.git)
+set(swigmake_revision ab03741a0627e99589ecbc1c088a4db05755e3c2)
+set(swigmake_depends )
+
+set(iris_url https://github.com/rdeits/iris-distro.git)
+set(iris_revision 7442fbca7a456f5564296902d8e2130a751bf3e3)
 set(iris_depends Eigen_pod)
 set(iris_external_args
   CMAKE_CACHE_ARGS
@@ -148,17 +161,17 @@ set(iris_external_args
     -DIRIS_WITH_EIGEN:BOOL=OFF
   )
 
-set(pypolyhedron_url ssh://git@github.com/rdeits/pypolyhedron.git)
+set(pypolyhedron_url https://github.com/rdeits/pypolyhedron.git)
 set(pypolyhedron_revision 1f110addf89398f62644830bf69a69930db8c4d0)
 set(pypolyhedron_depends)
 
-set(kinematics-utils_url ssh://git@github.com/ipab-slmc/kinematics-utils.git)
-set(kinematics-utils_revision 062e36b056eaa0b5ddc38ed7c738999b9bb5831b)
+set(kinematics-utils_url https://github.com/ipab-slmc/kinematics-utils.git)
+set(kinematics-utils_revision 123169c091d0160e80de31ddc31efcefbb413fd6)
 set(kinematics-utils_depends Eigen_pod)
 
 set(libmultisense_url https://bitbucket.org/crl/libmultisense)
 set(libmultisense_hg_tag a57026c)
-set(libmultisense_depends opencv)
+set(libmultisense_depends ${opencv_proj})
 set(libmultisense_external_args
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
@@ -187,12 +200,12 @@ set(libpointmatcher_external_args
     ${eigen_args}
   )
 
-set(hokuyo_url ssh://git@github.com/openhumanoids/hokuyo.git)
+set(hokuyo_url https://github.com/openhumanoids/hokuyo.git)
 set(hokuyo_revision 6fc1b804d80838ae314d162929bb0a25a231ca35)
 set(hokuyo_depends libbot)
 
 set(cmake_scripts_url https://github.com/RobotLocomotion/cmake.git)
-set(cmake_scripts_revision 2c4ee11aa719ad548df7eaf3c7047a98c6e3e01c)
+set(cmake_scripts_revision be0915b23c81d4dce8a6f62e4e74214c7047558a)
 set(cmake_scripts_external_args
   ${download_only_args}
   SOURCE_DIR ${source_prefix}/../drake/drake/cmake
@@ -232,7 +245,7 @@ set(QtPropertyBrowser_external_args
 
 set(PointCloudLibraryPlugin_url https://github.com/patmarion/PointCloudLibraryPlugin.git)
 set(PointCloudLibraryPlugin_revision cb119b0)
-set(PointCloudLibraryPlugin_depends pcl)
+set(PointCloudLibraryPlugin_depends ${pcl_proj})
 set(PointCloudLibraryPlugin_external_args
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
@@ -241,22 +254,33 @@ set(PointCloudLibraryPlugin_external_args
   )
 
 
+set(isam_url https://github.com/ipab-slmc/isam.git)
+set(isam_revision a6795ce22a8a90cdf87e3d1306af93adbeec1aeb)
+set(isam_depends)
+set(isam_external_args
+  CMAKE_CACHE_ARGS
+    ${default_cmake_args}
+    ${eigen_args}
+  )
 
 set(externals
   Eigen_pod
   ${lcm_proj}
+  bot_core_lcmtypes
   libbot
-  opencv
+  ${opencv_proj}
   flann
-  pcl
+  ${pcl_proj}
   octomap
   occ-map
+  common_utils
   frsm
   fovis
   estimate-pose
   apriltags
   bullet
   spotless
+  swigmake
   iris
   pypolyhedron
   libnabo
@@ -267,6 +291,7 @@ set(externals
   ctkPythonConsole
   QtPropertyBrowser
   PointCloudLibraryPlugin
+  isam
   )
 
 if(BUILD_PRIVATE_EXTERNALS)
@@ -287,7 +312,6 @@ if(NOT APPLE)
   # These modules only compile on linux. Some have strict requirements on
   # linux, others could be fixed up to support mac osx builds.
   list(APPEND externals
-    common_utils
     libmultisense
     multisense-lcm
     microstrain
@@ -299,6 +323,16 @@ if(NOT APPLE)
   list(INSERT externals ${fovis_index} kinect)
   list(APPEND fovis_depends kinect)
 
+endif()
+
+
+# Checks whether Matlab is installed, else remove dependent packages
+find_program(matlab matlab)
+if (NOT matlab)
+  message(WARNING "Could not find matlab executable - not building spotless")
+  list(REMOVE_ITEM externals
+    spotless
+  )
 endif()
 
 

@@ -5,16 +5,16 @@
 #include <sys/select.h>
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "drc/controller_status_t.hpp"
-#include "lcmtypes/drc/recovery_trigger_t.hpp"
-#include "drc/robot_state_t.hpp"
-#include "drc/atlas_behavior_command_t.hpp"
+#include "drc/recovery_trigger_t.hpp"
+#include "bot_core/robot_state_t.hpp"
+#include "drc/behavior_command_t.hpp"
 #include <lcm/lcm-cpp.hpp>
-#include "drake/QPCommon.h"
+#include "drake/systems/controllers/QPCommon.h"
 #include "RobotStateDriver.hpp"
 #include "AtlasCommandDriver.hpp"
 #include "FootContactDriver.hpp"
-#include "drake/ForceTorqueMeasurement.h"
-#include "drake/Side.h"
+#include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/systems/robotInterfaces/Side.h"
 
 using namespace Eigen;
 
@@ -22,7 +22,7 @@ namespace {
 
 struct ThreadedControllerOptions {
   std::string atlas_command_channel;
-  std::string atlas_behavior_channel;
+  std::string robot_behavior_channel;
   int max_infocount; // If we see info < 0 more than max_infocount times, freeze Atlas. Set to -1 to disable freezing.
 };
 
@@ -56,7 +56,7 @@ public:
 
 SolveArgs solveArgs;
 
-drc::atlas_behavior_command_t atlas_behavior_msg;
+drc::behavior_command_t robot_behavior_msg;
 
 int infocount = 0;
 
@@ -211,7 +211,7 @@ public:
     newInputAvailable = true;
   }
 
-  void onRobotState(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const drc::robot_state_t* msg)
+  void onRobotState(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const bot_core::robot_state_t* msg)
   {
     //std::cout << "received robotstate on lcm thread " << std::this_thread::get_id() << std::endl;
 
@@ -229,7 +229,7 @@ public:
     pointerMutex.lock();
     solveArgs.robot_state = state;
 
-    const drc::force_torque_t& force_torque = msg->force_torque;
+    const bot_core::force_torque_t& force_torque = msg->force_torque;
 
     solveArgs.foot_force_torque_measurements[Side::LEFT].frame_idx = solveArgs.pdata->rpc.body_ids.l_foot; // TODO: make sure that this is right
     solveArgs.foot_force_torque_measurements[Side::LEFT].wrench << force_torque.l_foot_torque_x, force_torque.l_foot_torque_y, 0.0, 0.0, 0.0, force_torque.l_foot_force_z;
@@ -341,9 +341,9 @@ void threadLoop(std::shared_ptr<ThreadedControllerOptions> ctrl_opts)
 
       if (!isOutputSafe(qp_output)) {
         // First priority is to halt unsafe behavior
-        atlas_behavior_msg.utime = 0;
-        atlas_behavior_msg.command = "freeze";
-        lcmHandler.LCMHandle->publish(ctrl_opts->atlas_behavior_channel, &atlas_behavior_msg);
+        robot_behavior_msg.utime = 0;
+        robot_behavior_msg.command = "freeze";
+        lcmHandler.LCMHandle->publish(ctrl_opts->robot_behavior_channel, &robot_behavior_msg);
       }
 
       if (info < 0 && ctrl_opts->max_infocount > 0) {
@@ -354,9 +354,9 @@ void threadLoop(std::shared_ptr<ThreadedControllerOptions> ctrl_opts)
             std::cout << "Infocount exceeded. Freezing Atlas!" << std::endl;
           }
           /*
-          atlas_behavior_msg.utime = 0;
-          atlas_behavior_msg.command = "freeze";
-          lcmHandler.LCMHandle->publish(ctrl_opts->atlas_behavior_channel, &atlas_behavior_msg);
+          robot_behavior_msg.utime = 0;
+          robot_behavior_msg.command = "freeze";
+          lcmHandler.LCMHandle->publish(ctrl_opts->robot_behavior_channel, &robot_behavior_msg);
           */
           // we've lost control and are probably falling. cross fingers...
           drc::recovery_trigger_t trigger_msg;
@@ -373,8 +373,8 @@ void threadLoop(std::shared_ptr<ThreadedControllerOptions> ctrl_opts)
       // std::cout << "qd: " << qp_output.qd_ref << std::endl;
       // std::cout << "qdd: " << qp_output.qdd << std::endl;
 
-      AtlasParams *params; 
-      std::map<string,AtlasParams>::iterator it;
+      QPControllerParams *params;
+      std::map<string,QPControllerParams>::iterator it;
       it = solveArgs.pdata->param_sets.find(qp_input->param_set_name);
       if (it == solveArgs.pdata->param_sets.end()) {
         mexWarnMsgTxt("Got a param set I don't recognize! Using standing params instead");
@@ -387,7 +387,7 @@ void threadLoop(std::shared_ptr<ThreadedControllerOptions> ctrl_opts)
       params = &(it->second);
 
       // publish ATLAS_COMMAND
-      drc::atlas_command_t* command_msg = command_driver->encode(robot_state->t, &qp_output, params->hardware);
+      bot_core::atlas_command_t* command_msg = command_driver->encode(robot_state->t, &qp_output, params->hardware);
       lcmHandler.LCMHandle->publish(ctrl_opts->atlas_command_channel, command_msg);
     }
 
