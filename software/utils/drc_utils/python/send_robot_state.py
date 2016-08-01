@@ -8,7 +8,7 @@ sys.path.append(home_dir + "/drc/software/build/lib/python2.7/site-packages")
 sys.path.append(home_dir + "/drc/software/build/lib/python2.7/dist-packages")
 
 import lcm
-from drc.robot_state_t import robot_state_t
+from bot_core.robot_state_t import robot_state_t
 from bot_core.pose_t import pose_t
 import time
 import numpy as np
@@ -18,7 +18,7 @@ import multisense as lcmmultisense
 
 def timestamp_now (): return int (time.time () * 1000000)
 
-print "drc-send-robot-state [v5|val1|val2|multisense]"
+print "drc-send-robot-state [v5|val1|val2|multisense|husky]"
 
 if len(sys.argv) > 1:
   robot_name = sys.argv[1]
@@ -81,6 +81,9 @@ elif robot_name == "val2":
     "leftAnkleRoll",    "rightHipYaw",    "rightHipRoll",    "rightHipPitch",    "rightKneePitch",    "rightAnklePitch",    "rightAnkleRoll"]
 elif robot_name == "multisense":
   print "Multisense"
+  joint_names = ["hokuyo_joint"]
+elif robot_name == "husky":
+  print "Husky"
   joint_names = ["hokuyo_joint"]
 
 lc = lcm.LCM()

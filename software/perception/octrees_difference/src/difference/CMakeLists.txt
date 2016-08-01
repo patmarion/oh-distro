@@ -3,6 +3,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated-declarations"
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(octrees_difference)
 
+find_package(VTK REQUIRED)
+include(${VTK_USE_FILE})
+
 ##############################################
 add_executable (icp-octrees-diff octrees_diff_app.cpp convert_octomap.cpp)
 target_link_libraries(icp-octrees-diff pointmatcher lcm boost_system
@@ -30,6 +33,7 @@ pods_use_pkg_config_packages(testing_colortree eigen3
   octomap-util
   ${FK_PACKAGES})
 pods_install_executables(testing_colortree)
+
 
 
 

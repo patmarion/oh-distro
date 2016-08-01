@@ -27,6 +27,14 @@ which are much better supported:
 OpenHumanoids
 =============
 
+**Private:**
+
+.. image:: https://travis-ci.com/openhumanoids/oh-distro-private.svg?token=r3Tk8EVmRT74kcFqh9rX&branch=master
+    :target: https://travis-ci.com/openhumanoids/oh-distro-private
+
+
+**Public:**
+
 .. image:: https://travis-ci.org/openhumanoids/oh-distro.svg?branch=master
     :target: https://travis-ci.org/openhumanoids/oh-distro
 
@@ -133,18 +141,17 @@ installing packages on Ubuntu. Install with the following commands:
 LCM Dependency
 --------------
 
-LCM (v1.1.0) is a required dependency which must be installed from source. It can be retrieved from http://lcm-proj.github.io/
+LCM (v1.3.1) is a required dependency which must be installed from source. It can be retrieved from http://lcm-proj.github.io/
 
 ::
 
-    wget https://github.com/lcm-proj/lcm/releases/download/v1.1.0/lcm-1.1.0.zip
-    unzip lcm-1.1.0.zip
-    cd lcm-1.1.0
+    wget https://github.com/lcm-proj/lcm/releases/download/v1.3.1/lcm-1.3.1.zip
+    unzip lcm-1.3.1.zip
+    cd lcm-1.3.1
     ./configure
     make
     sudo make install
 
-LCM v1.1.1 is known to be bad. Do not try to use it.
 
 
 Install Matlab

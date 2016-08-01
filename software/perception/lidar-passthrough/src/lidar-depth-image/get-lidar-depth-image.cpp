@@ -40,21 +40,31 @@
 using namespace std;
 using namespace maps;
 
+// These conversions between boost and std shared_ptr are sloppy. Probably best to just use std shared_ptr entirely
+template<class T> std::shared_ptr<T> to_std(const boost::shared_ptr<T> &p) {
+    return std::shared_ptr<T>(p.get(), [p](...) mutable { p.reset(); });
+}
+
+template<class T> boost::shared_ptr<T> to_boost(const std::shared_ptr<T> &p) {
+    return boost::shared_ptr<T>(p.get(), [p](...) mutable { p.reset(); });
+}
+
 class State {
 public:
-  std::shared_ptr<lcm::LCM> mLcm;
+  boost::shared_ptr<lcm::LCM> mLcm;
   BotWrapper::Ptr mBotWrapper;
   std::shared_ptr<Collector> mCollector;
   int mActiveMapId;
   bot_lcmgl_t* mLcmGl;
   
-  State( std::shared_ptr<lcm::LCM> &mLcm ): mLcm(mLcm) {
-    mBotWrapper.reset(new BotWrapper(mLcm));
+  State( boost::shared_ptr<lcm::LCM> &mLcm ): mLcm(mLcm) {
+    std::shared_ptr<lcm::LCM> mLcmStd = to_std(mLcm);
+    mBotWrapper.reset(new BotWrapper(mLcmStd));
     mCollector.reset(new Collector());
     mCollector->setBotWrapper(mBotWrapper);
     mActiveMapId = 0;
     mLcmGl = bot_lcmgl_init(mLcm->getUnderlyingLCM(), "test-points");
-    drc::Clock::instance()->setLcm(mLcm);
+    drc::Clock::instance()->setLcm(mLcmStd);
   }
   
   ~State() {
@@ -65,12 +75,12 @@ public:
 
 class Pass{
   public:
-    Pass(std::shared_ptr<lcm::LCM> &lcm_, State* iState);
+    Pass(boost::shared_ptr<lcm::LCM> &lcm_, State* iState);
     
     ~Pass(){
     }    
   private:
-    std::shared_ptr<lcm::LCM> lcm_;
+    boost::shared_ptr<lcm::LCM> lcm_;
     void imageHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::image_t* msg);   
     void multisenseHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::images_t* msg);   
     void maskHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::image_t* msg);   
@@ -120,20 +130,16 @@ class Pass{
     State* mState;
 };
 
-Pass::Pass(std::shared_ptr<lcm::LCM> &lcm_,  State* iState): lcm_(lcm_), 
+Pass::Pass(boost::shared_ptr<lcm::LCM> &lcm_,  State* iState): lcm_(lcm_), 
     mState(iState){
 
   botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
   botframes_= bot_frames_get_global(lcm_->getUnderlyingLCM(), botparam_);
   camera_params_ = CameraParams();
 
-  //lcm_->subscribe( "CAMERA" ,&Pass::multisenseHandler,this);
-  //camera_params_.setParams(botparam_, "cameras.CAMERA_LEFT");
-
-  // Previous:
-  lcm_->subscribe( "CAMERA_LEFT" ,&Pass::imageHandler,this);
   camera_params_.setParams(botparam_, "cameras.CAMERA_LEFT");
-  
+  lcm_->subscribe( "CAMERA" ,&Pass::multisenseHandler,this);
+ 
   string mask_channel="CAMERALEFT_MASKZIPPED";
   lcm_->subscribe( mask_channel ,&Pass::maskHandler,this);
 
@@ -145,7 +151,7 @@ Pass::Pass(std::shared_ptr<lcm::LCM> &lcm_,  State* iState): lcm_(lcm_),
   
   std::cout << camera_calib_ << " cam calib\n";
 
-  imgutils_ = new image_io_utils( lcm_->getUnderlyingLCM(), camera_params_.width, 
+  imgutils_ = new image_io_utils( lcm_, camera_params_.width, 
                                   camera_params_.height );
   disparity_data_ = (uint16_t*) malloc(camera_params_.width * camera_params_.height * 2);
   
@@ -225,9 +231,9 @@ void Pass::getSweepDepthImage(LocalMap::SpaceTimeBounds bounds){
 
 // Publish Various Representations of the Depth Image:
 void Pass::sendSweepDepthImage(){
-  bool write_raw = false;
+  bool write_raw = true;
   bool publish_raw = true;
-  bool publish_range_image = false;
+  bool publish_range_image = true;
   
   // a. Write raw depths to file
   if (write_raw){
@@ -393,7 +399,6 @@ void Pass::queryNewSweep(){
   // 3. Create a depth image object:
   botframes_cpp_->get_trans_with_utime( botframes_ ,  "CAMERA_LEFT", "local", current_utime_, camera_pose_);   // ...? not sure what to use
 
-
   LocalMap::SpaceTimeBounds bounds;
   if (getSweep(bounds, head_to_local.cast<float>().translation() ,  Eigen::Vector3f( 1.3, 1.3, 1.3)) ){ 
     std::cout << "getSweep\n";
@@ -402,8 +407,8 @@ void Pass::queryNewSweep(){
     sendSweepCloud();
 
     // use the time and space bounds to get a new depth image
-    //getSweepDepthImage(bounds);
-    //sendSweepDepthImage();
+    getSweepDepthImage(bounds);
+    sendSweepDepthImage();
   }
 }
 
@@ -423,7 +428,7 @@ int main(int argc, char ** argv) {
   opt.parse();
   std::cout << "lidar_channel: " << lidar_channel << "\n"; 
 
-  std::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
+  boost::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
   if(!lcm->good()){
     std::cerr <<"ERROR: lcm is not good()" <<std::endl;
   }
@@ -447,6 +452,7 @@ int main(int argc, char ** argv) {
     addChannel(laserChannel,
                SensorDataReceiver::SensorTypePlanarLidar,
                laserChannel, "local");
+  state.mCollector->bind(lidar_channel, 1);
   state.mCollector->start();  
   
   

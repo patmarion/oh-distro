@@ -16,11 +16,11 @@ set(bot_core_lcmtypes_revision c29cd6076d13ca2a3ecc23ffcbe28a0a1ab46314)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 
 set(libbot_url https://github.com/openhumanoids/libbot.git)
-set(libbot_revision ed4a76423f2a21594436490341f907710d3f78dd)
+set(libbot_revision a238668b8e2e7ef985517716bdd4ee96e774a445)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
-set(Eigen_pod_revision ceba39500b89a77a8649b3e8b421b10a3d74d42b)
+set(Eigen_pod_revision 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(Eigen_pod_depends)
 
 if(NOT USE_SYSTEM_OPENCV)
@@ -73,7 +73,7 @@ set(occ-map_revision 34ab71fa693216d2c0508f0f2680b9a68994f473)
 set(occ-map_depends libbot ${opencv_proj})
 
 set(common_utils_url https://github.com/openhumanoids/common_utils.git)
-set(common_utils_revision bf0c9223e02a193a3cfef4034ef82a94219f116a)
+set(common_utils_revision d887653f8e565f2b94ae96b7b411af134212ebfd)
 set(common_utils_depends Eigen_pod libbot occ-map octomap)
 
 set(frsm_url https://github.com/openhumanoids/frsm.git)
@@ -133,7 +133,7 @@ set(gurobi_environment_args GUROBI_DISTRO=${gurobi_distro_file})
 set(gurobi_depends gurobi-private)
 
 set(atlas-driver_url ssh://git@github.com/openhumanoids/atlas-drivers.git)
-set(atlas-driver_revision 04c805efae5913cc2dc9da0734dc4ec585e8d5d4)
+set(atlas-driver_revision 00dcdc0b247f7a4fece9b28ed10ca38fd2e92ee2)
 set(atlas-driver_depends)
 set(atlas-driver_external_args
   ${download_only_args}
@@ -149,11 +149,11 @@ set(flycapture_external_args
   )
 
 set(swigmake_url https://github.com/rdeits/swigmake.git)
-set(swigmake_revision ab03741a0627e99589ecbc1c088a4db05755e3c2)
+set(swigmake_revision 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_depends )
 
 set(iris_url https://github.com/rdeits/iris-distro.git)
-set(iris_revision 7442fbca7a456f5564296902d8e2130a751bf3e3)
+set(iris_revision e3efbc67369e948080a9a1913188874fc31838f5)
 set(iris_depends Eigen_pod)
 set(iris_external_args
   CMAKE_CACHE_ARGS
@@ -166,7 +166,7 @@ set(pypolyhedron_revision 1f110addf89398f62644830bf69a69930db8c4d0)
 set(pypolyhedron_depends)
 
 set(kinematics-utils_url https://github.com/ipab-slmc/kinematics-utils.git)
-set(kinematics-utils_revision 123169c091d0160e80de31ddc31efcefbb413fd6)
+set(kinematics-utils_revision 4c828062d6412f9b58278a5fa22cfbff4dff2ac6)
 set(kinematics-utils_depends Eigen_pod)
 
 set(libmultisense_url https://bitbucket.org/crl/libmultisense)
@@ -205,7 +205,7 @@ set(hokuyo_revision 6fc1b804d80838ae314d162929bb0a25a231ca35)
 set(hokuyo_depends libbot)
 
 set(cmake_scripts_url https://github.com/RobotLocomotion/cmake.git)
-set(cmake_scripts_revision be0915b23c81d4dce8a6f62e4e74214c7047558a)
+set(cmake_scripts_revision 54f5a4c0734015695334970ecedac79e12c3116f)
 set(cmake_scripts_external_args
   ${download_only_args}
   SOURCE_DIR ${source_prefix}/../drake/drake/cmake
@@ -255,12 +255,21 @@ set(PointCloudLibraryPlugin_external_args
 
 
 set(isam_url https://github.com/ipab-slmc/isam.git)
-set(isam_revision a6795ce22a8a90cdf87e3d1306af93adbeec1aeb)
+set(isam_revision df3154d7b583a66bd2c3c04b6d519bcbd6c18eec)
 set(isam_depends)
 set(isam_external_args
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
     ${eigen_args}
+    -DUSE_LCM:BOOL=ON
+  )
+
+set(yaml_cpp_url https://github.com/jbeder/yaml-cpp.git)
+set(yaml_cpp_revision 57805dfd6a741e55477ea8d4d5b3b6f0272d1f0e)
+set(yaml_cpp_external_args
+  CMAKE_CACHE_ARGS
+    ${default_cmake_args}
+    -DBUILD_SHARED_LIBS:BOOL=ON
   )
 
 set(externals
@@ -292,6 +301,7 @@ set(externals
   QtPropertyBrowser
   PointCloudLibraryPlugin
   isam
+  yaml_cpp
   )
 
 if(BUILD_PRIVATE_EXTERNALS)

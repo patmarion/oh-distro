@@ -6,25 +6,29 @@
 #include <algorithm>
 
 #include <image_utils/jpeg.h>
-#include <lcm/lcm.h>
-#include <lcmtypes/bot_core.h>
+#include <lcm/lcm-cpp.hpp>
 #include <lcmtypes/bot_core.hpp>
+#include <boost/shared_ptr.hpp>
 
 class image_io_utils {
   public:
-    image_io_utils (lcm_t* publish_lcm_, int width_, int height_);
+    image_io_utils (boost::shared_ptr<lcm::LCM> &lcm_, int width_, int height_);
     
     void decodeStereoImageToGray(const  bot_core::image_t* msg, uint8_t* left_buf, uint8_t* right_buf);
     void decodeImageToGray(const  bot_core::image_t* msg, uint8_t* img_buf);
 
     void decodeImageToRGB(const  bot_core::image_t* msg, uint8_t* img_buf);
     
-    void unzipImageThenSend(const bot_core_image_t *msg, std::string channel);
-    void unzipImageThenSend(const bot_core::image_t *msg, std::string channel);
-    uint8_t* unzipImage(const bot_core_image_t *msg);
+    void sendImageUnzipped(const bot_core::image_t *msg, std::string channel);
     uint8_t* unzipImage(const bot_core::image_t *msg);
+
     
-    void jpegImageThenSend(uint8_t* buffer, int64_t utime, int width, int height, 
+    bot_core::image_t jpegImage(uint8_t* buffer, int64_t utime, int width, int height,
+         int jpeg_quality, int n_colors);
+    bot_core::image_t  zipImage(uint8_t* buffer, int64_t utime, int width, int height, int n_colors);
+
+
+    void sendImageJpeg(uint8_t* buffer, int64_t utime, int width, int height, 
 			   int jpeg_quality, std::string channel, int n_colors);
 
     
@@ -36,7 +40,8 @@ class image_io_utils {
                    int width, int height, 
                    int n_colors, std::string channel);
   private:
-    lcm_t *publish_lcm_; 
+    boost::shared_ptr<lcm::LCM> publish_lcm_;
+
     int width_, height_;
 
     int local_img_buffer_size_;

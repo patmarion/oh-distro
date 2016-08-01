@@ -121,7 +121,6 @@ setup_valkyrie_computers()
     echo "Setting up Valkyrie Unit D for Edinburgh"
     export VAL_LINK_IP=10.185.0.40
     export VAL_ZELDA_IP=10.185.0.41
-    export VAL_MULTISENSE_IP=10.185.0.42
     export VAL_UNIT=D
   fi
 

@@ -1,5 +1,5 @@
 {
-  "modelName" : "valkyrie_v2",
+  "modelName" : "valkyrie",
   "urdfConfig": {
     "default": "./urdf/valkyrie_sim_simple.urdf",
     "robotState": "./urdf/valkyrie_sim_simple.urdf",
@@ -205,6 +205,6 @@
       }
   ],
 
-  "userConfig" : []
-
+  "userConfig" : [],
+  "enableComponents": ["useLimitJointsSentToPlanner"]
 }

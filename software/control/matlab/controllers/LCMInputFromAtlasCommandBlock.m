@@ -64,9 +64,9 @@ classdef LCMInputFromAtlasCommandBlock < MIMODrakeSystem
       
       obj.lc = lcm.lcm.LCM.getSingleton();
       obj.lcmonitor_cmd = drake.util.MessageMonitor(bot_core.atlas_command_t,'utime');
-      obj.lcmonitor_neck = drake.util.MessageMonitor(drc.neck_pitch_t,'utime');
+      obj.lcmonitor_neck = drake.util.MessageMonitor(bot_core.joint_angles_t,'utime');
       obj.lc.subscribe('ATLAS_COMMAND',obj.lcmonitor_cmd);
-      obj.lc.subscribe('DESIRED_NECK_PITCH',obj.lcmonitor_neck);
+      obj.lc.subscribe('DESIRED_NECK_ANGLES',obj.lcmonitor_neck);
       
       % Setup ATLAS_COMMAND_T lcm type
       lcmtype_cmd = bot_core.atlas_command_t;
@@ -97,7 +97,7 @@ classdef LCMInputFromAtlasCommandBlock < MIMODrakeSystem
       end
       
       % Setup NECK_PITCH_T lcm type
-      lcmtype_neck = drc.neck_pitch_t;
+      lcmtype_neck = bot_core.joint_angles_t;
       lcmtype_neck = lcmtype_neck.getClass();
       constructors_neck = lcmtype_neck.getConstructors();
       for i=1:length(constructors_neck)
@@ -165,7 +165,8 @@ classdef LCMInputFromAtlasCommandBlock < MIMODrakeSystem
       standing_plan = QPLocomotionPlanCPPWrapper(QPLocomotionPlanSettings.fromStandingState(x0, r));
       %standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
       plan_eval = bipedControllers.BipedPlanEval(r, standing_plan);
-      control = bipedControllers.InstantaneousQPController(r);
+      
+      control = bipedControllers.InstantaneousQPController(r.getManipulator().urdf{1}, r.control_config_file);
       obj.plan_eval_and_control = bipedControllers.BipedPlanEvalAndControlSystem(r, control, plan_eval);
     end
     
@@ -192,7 +193,7 @@ classdef LCMInputFromAtlasCommandBlock < MIMODrakeSystem
       data_neck = obj.lcmonitor_neck.getMessage();
       if (~isempty(data_neck))
        neck_cmd = obj.lcmtype_neck_constructor.newInstance(data_neck);
-       obj.neck_desired_angle.setData(neck_cmd.pitch);
+       obj.neck_desired_angle.setData(neck_cmd.joint_position(1));
       end
       
       % see if we have a new message (new command state)

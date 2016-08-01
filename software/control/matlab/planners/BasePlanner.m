@@ -5,7 +5,7 @@ classdef BasePlanner < DRCPlanner
     end
 
     function obj = withValkyrie(varargin)
-      obj = BasePlanner(BasePlanner.constructValkyrie(varargin{:}));
+      obj = BasePlanner(BasePlanner.constructValkyrie());
     end
   end
 

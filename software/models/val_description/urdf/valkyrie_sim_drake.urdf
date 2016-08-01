@@ -207,7 +207,7 @@
     <parent link="torso"/>
     <child link="lowerNeckPitchLink"/>
     <limit effort="26" lower="0" upper="1.162" velocity="5"/>
-    <controller_gains Kd="400" Ki="0.0" Kp="400"/>
+    <controller_gains Kd="400" Ki="0.0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
   <gazebo reference="lowerNeckPitch">
@@ -220,7 +220,7 @@
     <parent link="lowerNeckPitchLink"/>
     <child link="neckYawLink"/>
     <limit effort="26" lower="-1.04719755" upper="1.04719755" velocity="5"/>
-    <controller_gains Kd="400" Ki="0.0" Kp="400"/>
+    <controller_gains Kd="400" Ki="0.0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
   <gazebo reference="neckYaw">
@@ -233,7 +233,7 @@
     <parent link="neckYawLink"/>
     <child link="upperNeckPitchLink"/>
     <limit effort="26" lower="-0.872" upper="0.0" velocity="5"/>
-    <controller_gains Kd="400" Ki="0.0" Kp="400"/>
+    <controller_gains Kd="400" Ki="0.0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
   <gazebo reference="upperNeckPitch">
@@ -3002,7 +3002,7 @@
     </inertial>
   </link>
   <joint name="l_hand_face_joint" type="fixed">
-    <origin rpy="3.14159265359 0 1.57079632679" xyz="0.07 0.0 -0.08"/>
+    <origin rpy="3.14159265359 0 1.57079632679" xyz="0.06 0.0 -0.045"/>
     <parent link="l_hand_force_torque"/>
     <child link="l_hand_face"/>
   </joint>
@@ -3052,7 +3052,7 @@
     </inertial>
   </link>
   <joint name="r_hand_face_joint" type="fixed">
-    <origin rpy="0 0 -1.57079632679" xyz="0.07 0 0.08"/>
+    <origin rpy="0 0 -1.57079632679" xyz="0.06 0 0.045"/>
     <parent link="r_hand_force_torque"/>
     <child link="r_hand_face"/>
   </joint>
@@ -3072,6 +3072,7 @@
     <member link="neckYawLink"/>
     <member link="upperNeckPitchLink"/>
     <member link="head"/>
+    <member link="hokuyo_link"/>
     <ignored_collision_filter_group collision_filter_group="core"/>
   </collision_filter_group>
   <collision_filter_group name="ignore_core">

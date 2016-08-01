@@ -6,21 +6,10 @@ classdef OHValkyrie < Valkyrie
         options = struct();
       end
       options = applyDefaults(options,...
-                              struct('valkyrie_version', 1,...
-                                     'use_new_kinsol', true));
-
-      if ~any(options.valkyrie_version == [1,2])
-        error('OHValkyrie:badVersion','Invalid OHValkyrie version. Valid values are 1 and 2')
-      end
+                              struct('use_new_kinsol', true));
 
       if nargin < 1 || isempty(urdf)
-        switch options.valkyrie_version
-          case 1
-            %urdf = strcat(getenv('DRC_PATH'),'/models/valkyrie/V1_sim_mit_drake.urdf');
-            urdf = strcat(getenv('DRC_PATH'),'/models/valkyrie/V1_sim_shells_reduced_polygon_count_mit.urdf');
-          case 2
-            urdf = strcat(getenv('DRC_PATH'),'/models/val_description/urdf/valkyrie_sim_drake.urdf');
-        end
+        urdf = strcat(getenv('DRC_PATH'),'/models/val_description/urdf/valkyrie_sim_drake.urdf');
       else
         typecheck(urdf,'char');
       end

@@ -6,5 +6,8 @@ include(cmake/pods.cmake)
 
 # create an executable, and make it public
 add_subdirectory(src/registration)
+add_subdirectory(src/sequential_registration)
 add_subdirectory(src/analysis)
 add_subdirectory(src/test)
+add_subdirectory(src/utils)
+
