@@ -28,7 +28,7 @@ class Main{
         void cameraHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel,
                                  const  bot_core::image_t* msg);
 
-        void sendMasked(const  bot_core::images_t* msg);
+        void applyFilters(const  bot_core::images_t* msg);
         float computeIntensity(unsigned char * rgb, int row, int col, int width);
         void filterLowTexture(cv::Mat& disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold);
         void sobel(cv::Mat& disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold);
@@ -39,98 +39,28 @@ class Main{
         CameraParams camera_params_;
         uint8_t* img_buf_;
         multisense_image_utils miu_;
-        float thresh;
-        float depthThreshold = 100;
-        float sizeThreshold = 6000;
-        float windowSize = 5;
-        float gradientSize = 25;
-        float sobelWindowSize = 5;
-        float sobelGradientSize = 60;
-        float parallelLineCos = 0.99;
         int rows;
         int cols;
+        float thresh;
+
+        //speckle filter parameters
+        float depthThreshold = 100;
+        float sizeThreshold = 6000;
+
+        //filter for textureless area removal
+        float windowSize = 5;
+        float gradientSize = 25;
+
+        //filter for textureless area removal based on Sobel operator
+        float sobelWindowSize = 5;
+        float sobelGradientSize = 60;
+
+        //removing horizontal edges
+        //disparity cannot be computed accurately for edges which are parallel to the epipolar line - in this case horizontal edges
+        bool removeHorizontalEdges = true;
+
 };
 
-
-float Main::computeIntensity(unsigned char * rgb, int row, int col, int width) {
-
-    return 0.2126 * rgb[3 * (row * width + col) + 0] + 0.7152 * rgb[3 * (row * width + col) + 1] + 0.0722 * rgb[3 * (row * width + col) + 2];
-}
-
-void Main::filterLowTexture(cv::Mat& disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold) {
-
-    for (int i=windowSize; i<height-windowSize; i++) {
-       for (int j=windowSize; j<width-windowSize; j++) {
-
-          float tl = computeIntensity(rgb, i-windowSize, j-windowSize, width);
-          float br = computeIntensity(rgb, i+windowSize, j+windowSize, width);
-
-          float tr = computeIntensity(rgb, i-windowSize, j+windowSize, width);
-          float bl = computeIntensity(rgb, i+windowSize, j-windowSize, width);
-
-          float tv = computeIntensity(rgb, i-windowSize, j, width);
-          float bv = computeIntensity(rgb, i+windowSize, j, width);
-
-          float lh = computeIntensity(rgb, i, j-windowSize, width);
-          float rh = computeIntensity(rgb, i, j+windowSize, width);
-
-
-          float d1 = fabs(tl - br);
-          float d2 = fabs(tr - bl);
-          float d3 = fabs(tv - bv);
-          float d4 = fabs(lh - rh);
-
-          float cos = d3 / sqrt(d4*d4 + d3*d3);
-
-          if (cos >= parallelLineCos) {
-              disparity.at<short>(i,j) = 0;
-          }
-
-          if (d1 < threshold && d2 < threshold && d3 < threshold && d4 < threshold) {
-             disparity.at<short>(i,j) = 0;
-          }
-       }
-    }
-}
-
-void Main::sobel(cv::Mat& disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold) {
-
-    for (int i=windowSize; i<height-windowSize; i++) {
-       for (int j=windowSize; j<width-windowSize; j++) {
-
-          float tl = computeIntensity(rgb, i-windowSize, j-windowSize, width);
-          float br = computeIntensity(rgb, i+windowSize, j+windowSize, width);
-
-          float tr = computeIntensity(rgb, i-windowSize, j+windowSize, width);
-          float bl = computeIntensity(rgb, i+windowSize, j-windowSize, width);
-
-          float tv = computeIntensity(rgb, i-windowSize, j, width);
-          float bv = computeIntensity(rgb, i+windowSize, j, width);
-
-          float lh = computeIntensity(rgb, i, j-windowSize, width);
-          float rh = computeIntensity(rgb, i, j+windowSize, width);
-
-          float gx = -1 * tl + 1 * tr - 2 * lh + 2 * rh - 1 * bl + 1 * br;
-          float gy = -1 * tl + 1 * bl - 2 * tv + 2 * bv - 1 * tr + 1 * br;
-
-          float g = sqrt(gx*gx + gy*gy);
-
-          float d3 = fabs(tv - bv);
-          float d4 = fabs(lh - rh);
-
-          float cos = d3 / sqrt(d4*d4 + d3*d3);
-
-          if (cos >= parallelLineCos) {
-              disparity.at<short>(i,j) = 0;
-          }
-
-          if (g<threshold) {
-             disparity.at<short>(i,j) = 0;
-         }
-       }
-    }
-}
-    
 Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_, 
            std::string camera_channel, int output_color_mode, 
            bool use_convex_hulls, std::string camera_frame,
@@ -176,7 +106,7 @@ Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_,
 }
 
 
-void Main::sendMasked(const  bot_core::images_t* msg){
+void Main::applyFilters(const  bot_core::images_t* msg){
     int64_t msg_time = msg->utime;
 
     // Uncompress the RGB image, apply a mask and re compress
@@ -186,17 +116,17 @@ void Main::sendMasked(const  bot_core::images_t* msg){
     uint8_t* buf = imgutils_->unzipImage( &(msg->images[1]) );
     pass->applyMask(msg_time, (uint16_t*) buf, 0, 0);
 
-    //Apply Sobel edge detection
-    cv::Mat1w disparity(rows, cols, (uint16_t*) buf);
-    sobel(disparity, (unsigned char *) img_buf_, cols, rows, sobelWindowSize, sobelGradientSize);
+    //Sobel operator to filter out textureless areas
+    miu_.sobelEdgeFilter((unsigned short *) buf, (unsigned char *) img_buf_, cols, rows, sobelWindowSize, sobelGradientSize, removeHorizontalEdges);
 
     //Remove speckles
+    cv::Mat1w disparity(rows, cols, (uint16_t*) buf);
     miu_.removeSmall(disparity, thresh, sizeThreshold);
 
     buf = disparity.data;
     bot_core::image_t image = imgutils_->zipImage(buf, msg_time, camera_params_.width, camera_params_.height, 2);
 
-    // Transmitt the CAMERA images with filters applied
+    // Transmit the CAMERA images with filters applied
     bot_core::images_t ms;
     ms.images.push_back( msg->images[0] );
     ms.images.push_back(image);
@@ -216,7 +146,7 @@ void Main::multisenseHandler(const lcm::ReceiveBuffer* rbuf, const std::string& 
 
     pass->sendOutput(msg->utime);
 
-    sendMasked(msg);
+    applyFilters(msg);
 }
 
 
