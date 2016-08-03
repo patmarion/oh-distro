@@ -26,6 +26,9 @@ VoFeatures::VoFeatures(boost::shared_ptr<lcm::LCM> &lcm_, int image_width_, int 
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(3001,"Reference Features",1,1, 3000,1,colors_v_g));
   pc_vis_->obj_cfg_list.push_back( obj_cfg(3002,"Current Camera Pose",5,reset) );
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(3003,"Current Features",1,reset, 3002,1,colors_v_b));
+
+  imgutils_ = new image_io_utils( lcm_, image_width_, 2*image_height_); // extra space for stereo tasks
+
 }
 
 // TODO: remove fovis dependency entirely:
@@ -133,18 +136,27 @@ void VoFeatures::setFeatures(const fovis::FeatureMatch* matches, int num_matches
 
 // reference_or_current = 0 send reference (at the change of a key frame change)
 // reference_or_current = 1 send current (otherwise)
-void VoFeatures::doFeatureProcessing(int reference_or_current){
-  if (1==0){ // this only works for old approach
-    writeReferenceImages();
-    writeFeatures(features_ref_);
-    writePose();
+void VoFeatures::doFeatureProcessing(bool useCurrent, bool writeOutput){
+  if (writeOutput){
+    if (!useCurrent){
+    //  std::cout << "write reference features\n";
+    //  writeImage(left_ref_buf_, output_counter_, utime_);
+    //  writeFeatures(features_ref_, output_counter_, utime_);
+    //  writePose(ref_camera_pose_, output_counter_, utime_);
+    }else{
+      std::cout << "write current features\n";
+      writeImage(left_cur_buf_, output_counter_, utime_);
+      writeFeatures(features_cur_, output_counter_, utime_);
+      writePose(cur_camera_pose_, output_counter_, utime_);
+    }
   }
 
   
-  if( reference_or_current==0){ // reference
-    sendFeatures(features_ref_,features_ref_indices_, "FEATURES_REF");
+  if(!useCurrent){ // reference
+    // This timestamp is incorrect. need to get and cache the correct one:
+    sendFeatures(features_ref_,features_ref_indices_, "FEATURES_REF", ref_camera_pose_, utime_);
+    sendImage("REF_LEFT",left_ref_buf_, features_ref_, features_ref_indices_);
     Isometry3dTime ref_camera_poseT = Isometry3dTime(utime_, ref_camera_pose_);
-    sendImage("REF_LEFT",reference_or_current);
   
     // Send Features paired with the pose at the ref frame:
     pc_vis_->pose_to_lcm_from_list(3000, ref_camera_poseT);
@@ -153,9 +165,9 @@ void VoFeatures::doFeatureProcessing(int reference_or_current){
     //pc_vis_->pose_to_lcm_from_list(3002, ref_camera_poseT);
     //sendFeaturesAsCollection(features_ref_, features_ref_indices_, 3003); // blue, last 
   }else{ // current
-    sendFeatures(features_cur_,features_cur_indices_,"FEATURES_CUR");
+    sendFeatures(features_cur_,features_cur_indices_,"FEATURES_CUR", cur_camera_pose_, utime_);
+    sendImage("CUR_LEFT",left_cur_buf_, features_cur_, features_cur_indices_);
     Isometry3dTime cur_camera_poseT = Isometry3dTime(utime_, cur_camera_pose_);
-    sendImage("CUR_LEFT",reference_or_current);
 
     // Send Features paired with the pose at the ref frame:
     //pc_vis_->pose_to_lcm_from_list(3000, cur_camera_poseT);
@@ -170,44 +182,29 @@ void VoFeatures::doFeatureProcessing(int reference_or_current){
 }
 
 
-void VoFeatures::drawFeaturesOnImage(cv::Mat &img, int which_image ){
-  cv::Point p;
-  p.x =3; p.y = 10;
+void VoFeatures::drawFeaturesOnImage(cv::Mat &img, std::vector<ImageFeature> &features,
+    std::vector<int> &feature_indices){
   CvScalar color_out = CV_RGB(255,0,0);
-  
-  if (which_image==0){
-    for (size_t j=0;j< features_ref_.size(); j++){
-      if (features_ref_indices_[j]){
-        cv::Point p0;
-        p0.x = features_ref_[j].base_uv[0]; 
-        p0.y = features_ref_[j].base_uv[1];
-        cv::circle( img, p0, 5, color_out, 0 ); 
-      }
-    }  
-  }else{
-    for (size_t j=0;j< features_cur_.size(); j++){
-      if (features_cur_indices_[j]){
-        cv::Point p0;
-        p0.x = features_cur_[j].base_uv[0]; 
-        p0.y = features_cur_[j].base_uv[1];
-        cv::circle( img, p0, 5, color_out, 0 ); 
-      }
-    }  
-  }
+  for (size_t j=0;j< features.size(); j++){
+    if (feature_indices[j]){
+      cv::Point p0;
+      p0.x = features[j].base_uv[0]; 
+      p0.y = features[j].base_uv[1];
+      cv::circle( img, p0, 5, color_out, 0 ); 
+    }
+  }  
 }
 
-void VoFeatures::sendImage(std::string channel, int which_image ){
+void VoFeatures::sendImage(std::string channel, uint8_t* img_buf, std::vector<ImageFeature> &features,
+    std::vector<int> &feature_indices){
   Mat img = Mat::zeros( image_height_, image_width_,CV_8UC1);
-  if (which_image == 0){
-    img.data = left_ref_buf_;
-  }else{
-    img.data = left_cur_buf_;
-  }
+  img.data = img_buf;
 
-  drawFeaturesOnImage(img, which_image);
-  
-  int n_colors=1;
+  drawFeaturesOnImage(img, features, feature_indices);
+  imgutils_->sendImageJpeg(img.data, 0, img.cols, img.rows, 94, channel, 1);
+}
 
+void VoFeatures::publishImage(std::string channel, cv::Mat img, int n_colors){
   bot_core_image_t image;
   image.utime =0;
   image.width = img.cols;
@@ -222,26 +219,22 @@ void VoFeatures::sendImage(std::string channel, int which_image ){
 }
 
 
-void VoFeatures::writeReferenceImages(){
+void VoFeatures::writeImage(uint8_t* img_buf, int counter, int64_t utime){
   //cout << "images written to file @ " << utime_ << "\n";
   std::stringstream ss;
   char buff[10];
-  sprintf(buff,"%0.4d",output_counter_);
-  ss << buff << "_" << utime_;
+  sprintf(buff,"%0.4d",counter);
+  ss << buff << "_" << utime;
   Mat img = Mat::zeros( image_height_, image_width_,CV_8UC1);
-  img.data = left_ref_buf_;
+  img.data = img_buf;
   imwrite( ( ss.str() + "_left.png"), img);
-
-  //Mat imgR = Mat::zeros( image_height_, image_width_,CV_8UC1);
-  //imgR.data = right_ref_buf_;
-  //imwrite( (ss.str() + "_right.png"), imgR);  
 }
 
-void VoFeatures::writeFeatures(std::vector<ImageFeature> features){
+void VoFeatures::writeFeatures(std::vector<ImageFeature> features, int counter, int64_t utime){
   std::stringstream ss;
   char buff[10];
-  sprintf(buff,"%0.4d",output_counter_);
-  ss << buff << "_" << utime_;
+  sprintf(buff,"%0.4d",counter);
+  ss << buff << "_" << utime;
 
   std::fstream feat_file;
   string fname = string(  ss.str() + ".feat");
@@ -265,25 +258,29 @@ void VoFeatures::writeFeatures(std::vector<ImageFeature> features){
 }
 
 
-void VoFeatures::writePose(){
-  std::stringstream ss;
-  char buff[10];
-  sprintf(buff,"%0.4d",output_counter_);
-  ss << buff << "_" << utime_;
+void VoFeatures::writePose(Eigen::Isometry3d pose, int counter, int64_t utime){
 
-  std::fstream feat_file;
-  string fname = string(  ss.str() + ".pose");
-  feat_file.open(  fname.c_str() , std::fstream::out);
-  feat_file << "#utime,pos_x,pos_y,pos_z,quat_w,quat_x,quat_y,quat_z\n";
-  
-  Eigen::Vector3d t(ref_camera_pose_.translation());
-  Eigen::Quaterniond r(ref_camera_pose_.rotation());
-  feat_file <<utime_<< "," << t[0]<<","<<t[1]<<","<<t[2]<<"," 
-       <<r.w()<<","<<r.x()<<","<<r.y()<<","<<r.z() ;
-  
-  
-  
-  feat_file.close();
+  if(!output_pose_file_.is_open()){
+    std::cout << "pose_trajectory.txt file not open, opening it\n";
+    output_pose_file_.open(  "pose_trajectory.txt" , std::fstream::out);
+    output_pose_file_ << "# utime x y z qw qx qy qz roll pitch yaw\n";
+    output_pose_file_.flush();
+  }
+
+  double pose_rpy[3];
+  Eigen::Quaterniond pose_quat = Eigen::Quaterniond( pose.rotation() );
+  quat_to_euler( pose_quat, pose_rpy[0], pose_rpy[1], pose_rpy[2]);
+
+  if(output_pose_file_.is_open()){
+    output_pose_file_ << utime  << " "
+                    << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z() << " "
+                    << pose_quat.w() << " " << pose_quat.x() << " " << pose_quat.y() << " " << pose_quat.z() << " "
+                    << pose_rpy[0] << " " << pose_rpy[1] << " " << pose_rpy[2] << "\n";
+    output_pose_file_.flush();                   
+  }else{
+    std::cout << "file not open still\n";
+  }
+
 }
 
 void VoFeatures::sendFeaturesAsCollection(std::vector<ImageFeature> features, 
@@ -306,10 +303,12 @@ void VoFeatures::sendFeaturesAsCollection(std::vector<ImageFeature> features,
 
 void VoFeatures::sendFeatures(std::vector<ImageFeature> features, 
                               std::vector<int> features_indices, 
-                              std::string channel){
+                              std::string channel,
+                              Eigen::Isometry3d pose,
+                              int64_t utime){
   
   reg::features_t msg;
-  msg.utime = utime_;
+  msg.utime = utime;
   for (size_t i = 0; i < features.size(); i++) {
     if (features_indices[i]){
       reg::feature_t* feat(new reg::feature_t());
@@ -335,8 +334,8 @@ void VoFeatures::sendFeatures(std::vector<ImageFeature> features,
   }
   msg.nfeatures= msg.features.size();
 
-  Eigen::Vector3d t(ref_camera_pose_.translation());
-  Eigen::Quaterniond r(ref_camera_pose_.rotation());
+  Eigen::Vector3d t(pose.translation());
+  Eigen::Quaterniond r(pose.rotation());
   msg.pos[0] = t[0];
   msg.pos[1] = t[1];
   msg.pos[2] = t[2];
@@ -345,5 +344,52 @@ void VoFeatures::sendFeatures(std::vector<ImageFeature> features,
   msg.quat[2] = r.y();
   msg.quat[3] = r.z();
   lcm_->publish(channel.c_str(), &msg);
+}
+
+
+void VoFeatures::getFeaturesFromLCM(const  reg::features_t* msg, std::vector<ImageFeature> &features, Eigen::Isometry3d &pose){
+  //std::vector<ImageFeature> features;
+    
+  for (int i =0; i < msg->nfeatures; i++){ 
+    ImageFeature f;
+    
+    f.track_id = msg->features[i].track_id;
+    f.uv[0] = msg->features[i].uv[0];
+    f.uv[1] = msg->features[i].uv[1];
+    f.base_uv[0] = msg->features[i].base_uv[0];
+    f.base_uv[1] = msg->features[i].base_uv[1];
+    f.uvd[0] = msg->features[i].uvd[0];
+    f.uvd[1] = msg->features[i].uvd[1];
+    f.uvd[2] = msg->features[i].uvd[2];
+    f.xyz[0] = msg->features[i].xyz[0];
+    f.xyz[1] = msg->features[i].xyz[1];
+    f.xyz[2] = msg->features[i].xyz[2];
+    f.xyzw[0] = msg->features[i].xyzw[0];
+    f.xyzw[1] = msg->features[i].xyzw[1];
+    f.xyzw[2] = msg->features[i].xyzw[2];
+    f.xyzw[3] = msg->features[i].xyzw[3];
+    // color left out for now
+    
+    pose.setIdentity();
+    pose.translation() << msg->pos[0], msg->pos[1], msg->pos[2];
+    Eigen::Quaterniond m(msg->quat[0],msg->quat[1],msg->quat[2],msg->quat[3]);
+    pose.rotate(m);
+    /*
+    cout << line << " is line\n";
+    cout << "i: " << i <<"\n";
+    cout << "f.track_id: " << f.track_id <<"\n";
+    cout << "f.uv: " << f.uv[0] << " "<< f.uv[1] <<"\n";
+    cout << "f.base_uv: " << f.base_uv[0] << " "<< f.base_uv[1] <<"\n";
+    cout << "f.uvd: " << f.uvd[0] << " "<< f.uvd[1]<< " "<< f.uvd[2]<<"\n";
+    cout << "f.xyz: " << f.xyz[0] << " "<< f.xyz[1]<< " "<< f.xyz[2]<<"\n";
+    cout << "f.xyzw: " << f.xyzw[0] << " "<< f.xyzw[1]<< " "<< f.xyzw[2]<< " "<< f.xyzw[3]<<"\n";
+    cout << "f.color: " << (int)f.color[0] << " "<< (int)f.color[1] << " "<< (int)f.color[2] <<"\n";
+      */
+
+    features.push_back(f);
+  }
+  
+  //cout << "in: " << msg->nfeatures << " | extracted: "<< features.size() << "\n"; 
+  return;  
 }
 

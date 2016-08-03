@@ -56,6 +56,7 @@ struct CommandLineConfig
   std::string in_log_fname;
   std::string param_file;
   bool draw_lcmgl;
+  bool write_feature_output;
 };
 
 std::ofstream fovision_output_file_;
@@ -201,9 +202,8 @@ void StereoOdom::featureAnalysis(){
   if (counter% cl_cfg_.feature_analysis_publish_period == 0 ){
     features_->setFeatures(vo_->getMatches(), vo_->getNumMatches() , utime_cur_);
     features_->setCurrentImage(left_buf_);
-    //features_->setCurrentImages(left_buf_, right_buf_);
     features_->setCurrentCameraPose( estimator_->getCameraPose() );
-    features_->doFeatureProcessing(1); // 1 = send the FEATURES_CUR
+    features_->doFeatureProcessing(true, cl_cfg_.write_feature_output ); // use current features
   }
   
   /// Reference Feature Output: ///////////////////////////////////////////////
@@ -216,7 +216,7 @@ void StereoOdom::featureAnalysis(){
         features_->setFeatures(vo_->getMatches(), vo_->getNumMatches() , ref_utime_);
         features_->setReferenceImage(left_buf_ref_);
         features_->setReferenceCameraPose( ref_camera_pose_ );
-        features_->doFeatureProcessing(0); // 0 = send the FEATURES_REF
+        //features_->doFeatureProcessing(false); // use reference features
       }
     }
     changed_ref_frames_=false;
@@ -476,7 +476,11 @@ void StereoOdom::fuseInterial(Eigen::Quaterniond local_to_body_orientation_from_
       Eigen::Isometry3d init_pose;
       init_pose.setIdentity();
       init_pose.translation() << 0,0,0;
-      init_pose.rotate( local_to_body_orientation_from_imu );
+
+      // Take the RPY from the IMU and only use the roll+pitch with zero yaw to init the estimator
+      double rpy_imu[3];
+      quat_to_euler(  local_to_body_orientation_from_imu , rpy_imu[0], rpy_imu[1], rpy_imu[2]);
+      init_pose.rotate( euler_to_quat( rpy_imu[0], rpy_imu[1], 0) );
       estimator_->setBodyPose(init_pose);
       pose_initialized_ = true;
       cout << "got first IMU measurement\n";
@@ -612,6 +616,7 @@ int main(int argc, char **argv){
   cl_cfg.param_file = ""; // full path to file
   cl_cfg.draw_lcmgl = FALSE;  
   double processing_rate = 1; // real time
+  cl_cfg.write_feature_output = FALSE;
 
   ConciseArgs parser(argc, argv, "simple-fusion");
   parser.add(cl_cfg.camera_config, "c", "camera_config", "Camera Config block to use: CAMERA, stereo, stereo_with_letterbox");
@@ -630,6 +635,7 @@ int main(int argc, char **argv){
   parser.add(param_file, "P", "param_file", "Pull params from this file instead of LCM");
   parser.add(cl_cfg.draw_lcmgl, "g", "lcmgl", "Draw LCMGL visualization of features");
   parser.add(processing_rate, "pr", "processing_rate", "Processing Rate from a log [0=ASAP, 1=realtime]");  
+  parser.add(cl_cfg.write_feature_output, "fo", "write_feature_output", "Write feature poses, images to file");
   parser.parse();
   cout << cl_cfg.fusion_mode << " is fusion_mode\n";
   cout << cl_cfg.camera_config << " is camera_config\n";
