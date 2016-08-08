@@ -14,10 +14,6 @@ if(drake-ik_FOUND)
 	add_subdirectory(src/test)
 	add_subdirectory(src/finalPosePlanner)
 	add_subdirectory(src/trajectoryTrackingTestAnalysis)
-
-	# Unit Testing
-	include(CTest)
-	add_test(NAME test_FPP COMMAND test-FPP)
 else()
 	message(WARNING "Drake IK not found, skipping planning")
 endif()
