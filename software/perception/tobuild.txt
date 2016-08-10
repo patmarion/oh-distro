@@ -1,7 +1,7 @@
 # list of subdirectories to build, one one each line.  Empty lines
 # and lines starting with '#' are ignored
-multisense_utils
-image_io_utils
+#multisense_utils
+#image_io_utils
 opencv-utils
 # library to create depth masks:
 rgbd_simulation
