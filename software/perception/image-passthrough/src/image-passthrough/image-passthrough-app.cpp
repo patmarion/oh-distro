@@ -191,10 +191,13 @@ void Pass::prepareModel(){
   cout<< "URDF handler"<< endl;
 
   // Received robot urdf string. Store it internally and get all available joints.
-  gl_robot_ = boost::shared_ptr<visualization_utils::GlKinematicBody>(new visualization_utils::GlKinematicBody(urdf_xml_string_));
+  gl_robot_ = std::shared_ptr<visualization_utils::GlKinematicBody>(new visualization_utils::GlKinematicBody(urdf_xml_string_));
   cout<< "Number of Joints: " << gl_robot_->get_num_joints() <<endl;
   links_map_ = gl_robot_->get_links_map();
   cout<< "Size of Links Map: " << links_map_.size() <<endl;
+
+  // set pointer with default constructed object
+  prim_ = std::make_shared<rgbd_primitives>();
   
   typedef map<string, boost::shared_ptr<urdf::Link> > links_mapType;
   
@@ -232,15 +235,15 @@ void Pass::prepareModel(){
 
         }else if(geom->type == urdf::Geometry::BOX){
           boost::shared_ptr<urdf::Box> box(dynamic_pointer_cast<urdf::Box>( geom ));
-          simexample->mergePolygonMesh(mesh_ptr, 
+          simexample->mergePolygonMesh(mesh_ptr,
                                       prim_->getCubeWithTransform(visual_origin, box->dim.x, box->dim.y, box->dim.z) );
         }else if(geom->type == urdf::Geometry::CYLINDER){
           boost::shared_ptr<urdf::Cylinder> cyl(dynamic_pointer_cast<urdf::Cylinder>( geom ));
-          simexample->mergePolygonMesh(mesh_ptr, 
+          simexample->mergePolygonMesh(mesh_ptr,
                                       prim_->getCylinderWithTransform(visual_origin, cyl->radius, cyl->radius, cyl->length) );
         }else if(geom->type == urdf::Geometry::SPHERE){
           boost::shared_ptr<urdf::Sphere> sphere(dynamic_pointer_cast<urdf::Sphere>(geom)); 
-          simexample->mergePolygonMesh(mesh_ptr, 
+          simexample->mergePolygonMesh(mesh_ptr,
                                       prim_->getSphereWithTransform(visual_origin, sphere->radius) );
         }else{
           std::cout << "Pass::urdfHandler() Unrecognised urdf object\n";

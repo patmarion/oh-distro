@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 
 #include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/assign/std/vector.hpp>
 #include <lcm/lcm-cpp.hpp>
 
@@ -36,7 +37,7 @@ class Pass{
     typedef boost::shared_ptr<Pass> Ptr;
     typedef boost::shared_ptr<const Pass> ConstPtr;
     
-    Pass(int argc, char** argv, boost::shared_ptr<lcm::LCM> &publish_lcm, 
+    Pass(int argc, char** argv, boost::shared_ptr<lcm::LCM> &publish_lcm,
          std::string camera_channel_, int output_color_mode_, 
          bool use_convex_hulls_, std::string camera_frame_,
          CameraParams camera_params_, bool verbose_);
@@ -108,10 +109,10 @@ class Pass{
     // External Objects:
     BotParam* botparam_;
     pronto_vis* pc_vis_;
-    boost::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
+    std::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
     image_io_utils*  imgutils_; 
     SimExample::Ptr simexample;
-    boost::shared_ptr<rgbd_primitives>  prim_; // this should be moved into the library
+    std::shared_ptr<rgbd_primitives>  prim_; // this should be moved into the library
 
 
     // Config:
