@@ -655,3 +655,11 @@ void Pass::applyMask(int64_t utime, uint16_t* img_buf, uint8_t background_value,
     }
   }
 }
+
+uint8_t* Pass::getDepthBufferAsColor(){
+  return simexample->getDepthBufferAsColor();
+}
+
+uint8_t* Pass::getColorBuffer(int n_colors){
+  return simexample->getColorBuffer(n_colors);
+}

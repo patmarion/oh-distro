@@ -57,13 +57,10 @@ class Pass{
     void applyMask(int64_t utime, uint16_t* img_buf, uint8_t background_value, uint16_t set_value);
 
     // Get the GL depth buffer, flip up/down it, color mask it. always 3 colors
-    uint8_t* getDepthBufferAsColor(){
-      return simexample->getDepthBufferAsColor();
-    }
+    uint8_t* getDepthBufferAsColor();
+
     // Get the GL color buffer, flip up/down and output either gray (red channel) or rgb
-    uint8_t* getColorBuffer(int n_colors){
-      return simexample->getColorBuffer(n_colors);
-    }
+    uint8_t* getColorBuffer(int n_colors);
 
     // Get the raw GL depth buffer.  Direct pointer to GL buffer:
     const float* getDepthBuffer(){
