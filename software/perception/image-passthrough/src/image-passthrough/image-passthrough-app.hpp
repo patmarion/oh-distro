@@ -73,6 +73,13 @@ class Pass{
     const uint8_t* getColorBuffer(){
       return simexample->getColorBuffer();
     }
+
+    // provide width of buffer
+    unsigned int getBufferWidth() { return camera_params_.width; }
+
+    // provide height of buffer
+    unsigned int getBufferHeight() { return camera_params_.height; }
+
     void setUpdateRobotState(bool update_robot_state_in){
       update_robot_state_ = update_robot_state_in;
     };
