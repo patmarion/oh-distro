@@ -123,8 +123,8 @@ Pass::Pass(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_,
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(9996,"iPass - Sim Cloud"     ,1,1, 9995,0, colors_v ));
   pc_vis_->obj_cfg_list.push_back( obj_cfg(9994,"iPass - Null",5,1) );
   pc_vis_->ptcld_cfg_list.push_back( ptcld_cfg(9993,"iPass - World "     ,7,1, 9994,0, colors_v ));
-  imgutils_ = new image_io_utils( lcm_, 
-                                  camera_params_.width, 
+  imgutils_ = new image_io_utils( lcm_,
+                                  camera_params_.width,
                                   camera_params_.height ); // Actually outputs the Mask PCLImage:
 
 
@@ -198,9 +198,9 @@ void Pass::prepareModel(){
 
   // set pointer with default constructed object
   prim_ = std::make_shared<rgbd_primitives>();
-  
+
   typedef map<string, boost::shared_ptr<urdf::Link> > links_mapType;
-  
+
   int i =0;
   for(links_mapType::const_iterator it =  links_map_.begin(); it!= links_map_.end(); it++){
     cout << it->first << endl;
@@ -213,7 +213,7 @@ void Pass::prepareModel(){
       // For each visual element within the link geometry:
       typedef map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >  visual_groups_mapType;
       visual_groups_mapType::iterator v_grp_it = it->second->visual_groups.find("default");
-      for (size_t iv = 0;iv < v_grp_it->second->size();iv++){  // 
+      for (size_t iv = 0;iv < v_grp_it->second->size();iv++){  //
         vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
         boost::shared_ptr<urdf::Geometry> geom =  visuals[iv]->geometry;
         Eigen::Isometry3d visual_origin = URDFPoseToEigen( visuals[iv]->origin );
@@ -225,12 +225,12 @@ void Pass::prepareModel(){
 
           // Read the Mesh, transform by the visual component origin:
           pcl::PolygonMesh::Ptr this_mesh = getPolygonMesh(file_path);
-          pcl::PointCloud<pcl::PointXYZRGB> mesh_cloud_1st;  
+          pcl::PointCloud<pcl::PointXYZRGB> mesh_cloud_1st;
           pcl::fromPCLPointCloud2(this_mesh->cloud, mesh_cloud_1st);
           Eigen::Isometry3f visual_origin_f= visual_origin.cast<float>();
           Eigen::Quaternionf visual_origin_quat(visual_origin_f.rotation());
-          pcl::transformPointCloud (mesh_cloud_1st, mesh_cloud_1st, visual_origin_f.translation(), visual_origin_quat);  
-          pcl::toPCLPointCloud2 (mesh_cloud_1st, this_mesh->cloud);  
+          pcl::transformPointCloud (mesh_cloud_1st, mesh_cloud_1st, visual_origin_f.translation(), visual_origin_quat);
+          pcl::toPCLPointCloud2 (mesh_cloud_1st, this_mesh->cloud);
           simexample->mergePolygonMesh(mesh_ptr, this_mesh );
 
         }else if(geom->type == urdf::Geometry::BOX){
@@ -242,7 +242,7 @@ void Pass::prepareModel(){
           simexample->mergePolygonMesh(mesh_ptr,
                                       prim_->getCylinderWithTransform(visual_origin, cyl->radius, cyl->radius, cyl->length) );
         }else if(geom->type == urdf::Geometry::SPHERE){
-          boost::shared_ptr<urdf::Sphere> sphere(dynamic_pointer_cast<urdf::Sphere>(geom)); 
+          boost::shared_ptr<urdf::Sphere> sphere(dynamic_pointer_cast<urdf::Sphere>(geom));
           simexample->mergePolygonMesh(mesh_ptr,
                                       prim_->getSphereWithTransform(visual_origin, sphere->radius) );
         }else{
@@ -361,13 +361,13 @@ void Pass::affordancePlusInterpret(drc::affordance_plus_t affplus, int aff_uid, 
 
       // Apply transform to polymesh:
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-      pcl::fromPCLPointCloud2(mesh_out->cloud, *cloud);  
+      pcl::fromPCLPointCloud2(mesh_out->cloud, *cloud);
       Eigen::Isometry3f pose_f = transform.cast<float>();
       Eigen::Quaternionf quat_f(pose_f.rotation());
       pcl::transformPointCloud (*cloud, *cloud,
       pose_f.translation(), quat_f); // !! modifies cloud
-      pcl::toPCLPointCloud2(*cloud, mesh_out->cloud);       
-      
+      pcl::toPCLPointCloud2(*cloud, mesh_out->cloud);
+
     }else{
       cout  << aff_uid << " is a not recognised ["<< otdf_type <<"] not supported yet\n";
     }
