@@ -638,7 +638,7 @@ void Pass::overlayMask(int64_t utime, uint8_t* img_buf){
 void Pass::applyMask(int64_t utime, uint8_t* img_buf, int background_value, int set_value){
   uint8_t* mask_buf = simexample->getColorBuffer(1);
   for (size_t i=0; i < camera_params_.width * camera_params_.height; i++){
-    if ( !mask_buf[i] == background_value){
+    if ( mask_buf[i] == background_value){
        img_buf[i*3]   = set_value;
        img_buf[i*3+1] = set_value;
        img_buf[i*3+2] = set_value;
@@ -650,8 +650,8 @@ void Pass::applyMask(int64_t utime, uint8_t* img_buf, int background_value, int 
 void Pass::applyMask(int64_t utime, uint16_t* img_buf, int background_value, int set_value){
   uint8_t* mask_buf = simexample->getColorBuffer(1);
   for (size_t i=0; i < camera_params_.width * camera_params_.height; i++){
-    if ( !mask_buf[i] == background_value){
-       img_buf[i]   = set_value;
+    if ( mask_buf[i] == background_value){
+       img_buf[i] = set_value;
     }
   }
 }
