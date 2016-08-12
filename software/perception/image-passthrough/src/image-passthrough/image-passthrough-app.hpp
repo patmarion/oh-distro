@@ -52,10 +52,10 @@ class Pass{
 
     // look for pixels in the mask with background_value
     // then set the corresponding pixels in img_buf to set_value
-    void applyMask(int64_t utime, uint8_t* img_buf, int background_value, int set_value);
+    void applyMask(int64_t utime, uint8_t* img_buf, uint8_t background_value, uint8_t set_value);
 
-    void applyMask(int64_t utime, uint16_t* img_buf, int background_value, int set_value);
-    
+    void applyMask(int64_t utime, uint16_t* img_buf, uint8_t background_value, uint16_t set_value);
+
     // Get the GL depth buffer, flip up/down it, color mask it. always 3 colors
     uint8_t* getDepthBufferAsColor(){
       return simexample->getDepthBufferAsColor();
