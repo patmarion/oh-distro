@@ -29,6 +29,21 @@ class Main{
                                  const  bot_core::image_t* msg);
 
         void applyFilters(const  bot_core::images_t* msg);
+
+        /**
+         * @brief growMask close holes in mask and grow a trust region
+         * @param growed_mask pointer to array for new mask, memory will be allocated if NULL
+         * @param size size of trust region, e.g. dimensions of the dilate kernel
+         */
+        void growMask(std::vector<uint8_t> &growed_mask, const unsigned int size = 0);
+
+        /**
+         * @brief applyMask filter image with own provided mask
+         * @param mask vector with mask elements
+         * @param image image buffer to filter
+         */
+        void applyMask(const std::vector<uint8_t> &mask, uint16_t* const image);
+
         float computeIntensity(unsigned char * rgb, int row, int col, int width);
         void filterLowTexture(cv::Mat& disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold);
         void sobel(cv::Mat& disparity, unsigned char * rgb, int width, int height, int windowSize, double threshold);
@@ -114,7 +129,13 @@ void Main::applyFilters(const  bot_core::images_t* msg){
 
     // Uncompress the Disparity image, apply a mask
     uint8_t* buf = imgutils_->unzipImage( &(msg->images[1]) );
-    pass->applyMask(msg_time, (uint16_t*) buf, 0, 0);
+
+    // fill holes in mask
+    std::vector<uint8_t> mask;
+    growMask(mask, 10);
+
+    // apply mask to 16bit depth image
+    applyMask(mask, (uint16_t*)buf);
 
     //Sobel operator to filter out textureless areas
     miu_.sobelEdgeFilter((unsigned short *) buf, (unsigned char *) img_buf_, cols, rows, sobelWindowSize, sobelGradientSize, removeHorizontalEdges);
@@ -135,6 +156,41 @@ void Main::applyFilters(const  bot_core::images_t* msg){
     ms.n_images = ms.images.size();
     ms.utime = msg->utime;
     lcm_->publish("CAMERA_FILTERED", &ms);
+}
+
+void Main::growMask(std::vector<uint8_t> &growed_mask, const unsigned int size) {
+    // get dimensions
+    const unsigned int w = pass->getBufferWidth();
+    const unsigned int h = pass->getBufferHeight();
+
+    // allocate memory
+    growed_mask = std::vector<uint8_t>(w*h, 0);
+
+    // copy original mask, we cannot write to the original memory
+    std::memcpy(growed_mask.data(), pass->getColorBuffer(1), w*h);
+
+    // create cv image from memory
+    cv::Mat_<uint8_t> mask(h, w, growed_mask.data());
+
+    // morphological operator: closing
+    const cv::Mat kern_open = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7,7));
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kern_open);
+
+    // fill holes
+    std::vector<std::vector<cv::Point> > cont;
+    cv::findContours(mask, cont, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+    cv::drawContours(mask, cont, -1, cv::Scalar(255), -1);
+
+    // grow mask
+    if(size>0) {
+        const cv::Mat kern_dilate = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(size,size));
+        cv::dilate(mask, mask, kern_dilate);
+    }
+}
+
+void Main::applyMask(const std::vector<uint8_t> &mask, uint16_t* const image) {
+    for (unsigned int i=0; i<mask.size(); i++)
+        if(mask[i]==0) image[i] = 0;
 }
 
 
