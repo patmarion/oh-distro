@@ -16,7 +16,7 @@ class Main{
         Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &publish_lcm,
              std::string camera_channel, int output_color_mode_,
              bool use_convex_hulls, string camera_frame,
-             bool verbose, bool use_mono);
+             bool verbose, bool use_mono, unsigned int mask_edge_size);
 
         ~Main(){
         }
@@ -74,12 +74,14 @@ class Main{
         //disparity cannot be computed accurately for edges which are parallel to the epipolar line - in this case horizontal edges
         bool removeHorizontalEdges = true;
 
+        unsigned int mask_edge_size;
+
 };
 
 Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_, 
            std::string camera_channel, int output_color_mode, 
            bool use_convex_hulls, std::string camera_frame,
-           bool verbose, bool use_mono): lcm_(lcm_){
+           bool verbose, bool use_mono, unsigned int mask_edge_size): lcm_(lcm_), mask_edge_size(mask_edge_size){
 
     // Get Camera Parameters:
     botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -132,7 +134,7 @@ void Main::applyFilters(const  bot_core::images_t* msg){
 
     // fill holes in mask
     std::vector<uint8_t> mask;
-    growMask(mask, 10);
+    growMask(mask, mask_edge_size);
 
     // apply mask to 16bit depth image
     applyMask(mask, (uint16_t*)buf);
@@ -183,7 +185,7 @@ void Main::growMask(std::vector<uint8_t> &growed_mask, const unsigned int size) 
 
     // grow mask
     if(size>0) {
-        const cv::Mat kern_dilate = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(size,size));
+        const cv::Mat kern_dilate = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(size,size));
         cv::dilate(mask, mask, kern_dilate);
     }
 }
@@ -230,12 +232,14 @@ int main( int argc, char** argv ){
     string camera_frame = "left_camera_optical_frame";
     bool verbose = false;
     bool use_mono = false;
+    unsigned int mask_edge_size = 0;
     parser.add(camera_channel, "c", "camera_channel", "Camera channel");
     parser.add(camera_frame, "f", "camera_frame", "Camera frame");
     parser.add(output_color_mode, "o", "output_color_mode", "0rgb |1grayscale |2b/w");
     parser.add(use_convex_hulls, "u", "use_convex_hulls", "Use convex hull models");
     parser.add(verbose, "v", "verbose", "Verbose");
     parser.add(use_mono, "m", "use_mono", "Key off of the left monocularimage");
+    parser.add(mask_edge_size, "b", "mask_edge_size", "Mask border size");
     parser.parse();
     cout << camera_channel << " is camera_channel\n";
     cout << camera_frame << " is camera_frame\n";
@@ -250,9 +254,9 @@ int main( int argc, char** argv ){
     }
 
     Main main(argc,argv, lcm,
-            camera_channel,output_color_mode,
-            use_convex_hulls, camera_frame, verbose,
-           use_mono);
+              camera_channel,output_color_mode,
+              use_convex_hulls, camera_frame, verbose,
+              use_mono, mask_edge_size);
     cout << "image-filter ready" << endl << endl;
     while(0 == lcm->handle());
     return 0;
