@@ -226,7 +226,7 @@ void Main::growMask(std::vector<uint8_t> &growed_mask, const unsigned int size) 
 
     // grow mask
     if(size>0) {
-        const cv::Mat kern_dilate = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(size,size));
+        const cv::Mat kern_dilate = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(size,size));
         cv::dilate(mask, mask, kern_dilate);
     }
 }
