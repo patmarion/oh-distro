@@ -10,13 +10,20 @@
 #include <ConciseArgs>
 using namespace std;
 
+// uncomment to enable benchmarking
+//#define BENCHMARK
+
+#ifdef BENCHMARK
+#include <chrono>
+using namespace std::chrono;
+#endif
 
 class Main{
     public:
         Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &publish_lcm,
              std::string camera_channel, int output_color_mode_,
              bool use_convex_hulls, string camera_frame,
-             bool verbose, bool use_mono, unsigned int mask_edge_size);
+             bool verbose, bool use_mono, unsigned int mask_edge_size, bool apply_sobel_filter);
 
         ~Main(){
         }
@@ -76,12 +83,15 @@ class Main{
 
         unsigned int mask_edge_size;
 
+        // activate filtering of textureless areas
+        bool apply_sobel_filter;
+
 };
 
 Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_, 
            std::string camera_channel, int output_color_mode, 
            bool use_convex_hulls, std::string camera_frame,
-           bool verbose, bool use_mono, unsigned int mask_edge_size): lcm_(lcm_), mask_edge_size(mask_edge_size){
+           bool verbose, bool use_mono, unsigned int mask_edge_size, bool sobel_filter): lcm_(lcm_), mask_edge_size(mask_edge_size), apply_sobel_filter(sobel_filter){
 
     // Get Camera Parameters:
     botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -124,6 +134,12 @@ Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_,
 
 
 void Main::applyFilters(const  bot_core::images_t* msg){
+
+#ifdef BENCHMARK
+    std::vector<milliseconds> times;
+    times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
+#endif
+
     int64_t msg_time = msg->utime;
 
     // Uncompress the RGB image, apply a mask and re compress
@@ -136,15 +152,36 @@ void Main::applyFilters(const  bot_core::images_t* msg){
     std::vector<uint8_t> mask;
     growMask(mask, mask_edge_size);
 
+#ifdef BENCHMARK
+    times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
+    std::cout<<"grow mask: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
+#endif
+
     // apply mask to 16bit depth image
     applyMask(mask, (uint16_t*)buf);
 
-    //Sobel operator to filter out textureless areas
-    miu_.sobelEdgeFilter((unsigned short *) buf, (unsigned char *) img_buf_, cols, rows, sobelWindowSize, sobelGradientSize, removeHorizontalEdges);
+#ifdef BENCHMARK
+    times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
+    std::cout<<"apply mask: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
+#endif
+
+    if(apply_sobel_filter) {
+        //Sobel operator to filter out textureless areas
+        miu_.sobelEdgeFilter((unsigned short *) buf, (unsigned char *) img_buf_, cols, rows, sobelWindowSize, sobelGradientSize, removeHorizontalEdges);
+#ifdef BENCHMARK
+        times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
+        std::cout<<"sobel: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
+#endif
+    }
 
     //Remove speckles
     cv::Mat1w disparity(rows, cols, (uint16_t*) buf);
     miu_.removeSmall(disparity, thresh, sizeThreshold);
+
+#ifdef BENCHMARK
+    times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
+    std::cout<<"speckle: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
+#endif
 
     buf = disparity.data;
     bot_core::image_t image = imgutils_->zipImage(buf, msg_time, camera_params_.width, camera_params_.height, 2);
@@ -158,6 +195,10 @@ void Main::applyFilters(const  bot_core::images_t* msg){
     ms.n_images = ms.images.size();
     ms.utime = msg->utime;
     lcm_->publish("CAMERA_FILTERED", &ms);
+
+#ifdef BENCHMARK
+    std::cout<<"filter total: "<<(times.back()-times.front()).count()<<" ms"<<std::endl;
+#endif
 }
 
 void Main::growMask(std::vector<uint8_t> &growed_mask, const unsigned int size) {
@@ -205,6 +246,7 @@ void Main::multisenseHandler(const lcm::ReceiveBuffer* rbuf, const std::string& 
     pass->sendOutput(msg->utime);
 
     applyFilters(msg);
+
 }
 
 
@@ -233,6 +275,7 @@ int main( int argc, char** argv ){
     bool verbose = false;
     bool use_mono = false;
     unsigned int mask_edge_size = 0;
+    bool sobel_filter = false;
     parser.add(camera_channel, "c", "camera_channel", "Camera channel");
     parser.add(camera_frame, "f", "camera_frame", "Camera frame");
     parser.add(output_color_mode, "o", "output_color_mode", "0rgb |1grayscale |2b/w");
@@ -240,6 +283,7 @@ int main( int argc, char** argv ){
     parser.add(verbose, "v", "verbose", "Verbose");
     parser.add(use_mono, "m", "use_mono", "Key off of the left monocularimage");
     parser.add(mask_edge_size, "b", "mask_edge_size", "Mask border size");
+    parser.add(sobel_filter, "s", "sobel_filter", "filter textureless areas using Sobel operator");
     parser.parse();
     cout << camera_channel << " is camera_channel\n";
     cout << camera_frame << " is camera_frame\n";
@@ -256,7 +300,7 @@ int main( int argc, char** argv ){
     Main main(argc,argv, lcm,
               camera_channel,output_color_mode,
               use_convex_hulls, camera_frame, verbose,
-              use_mono, mask_edge_size);
+              use_mono, mask_edge_size, sobel_filter);
     cout << "image-filter ready" << endl << endl;
     while(0 == lcm->handle());
     return 0;
