@@ -20,13 +20,19 @@ using namespace std::chrono;
 
 class Main{
     public:
+        enum mask { none, robot, environment };
+
         Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &publish_lcm,
              std::string camera_channel, int output_color_mode_,
              bool use_convex_hulls, string camera_frame,
-             bool verbose, bool use_mono, unsigned int mask_edge_size, bool apply_sobel_filter);
+             bool verbose, bool use_mono, unsigned int mask_edge_size, bool apply_sobel_filter,
+             mask mask_type);
 
         ~Main(){
         }
+
+
+        static const std::map<std::string, mask> mask_map;
 
     private:
         boost::shared_ptr<lcm::LCM> lcm_;
@@ -86,12 +92,22 @@ class Main{
         // activate filtering of textureless areas
         bool apply_sobel_filter;
 
+        // store type of mask that should be applied to the data
+        mask mask_type;
+
+};
+
+const std::map<std::string, Main::mask> Main::mask_map = {
+    {"none", mask::none}, {"robot", mask::robot}, {"environment", mask::environment}
 };
 
 Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_, 
            std::string camera_channel, int output_color_mode, 
            bool use_convex_hulls, std::string camera_frame,
-           bool verbose, bool use_mono, unsigned int mask_edge_size, bool sobel_filter): lcm_(lcm_), mask_edge_size(mask_edge_size), apply_sobel_filter(sobel_filter){
+           bool verbose, bool use_mono, unsigned int mask_edge_size, bool sobel_filter,
+           mask mask_type):
+    lcm_(lcm_), mask_edge_size(mask_edge_size), mask_type(mask_type), apply_sobel_filter(sobel_filter)
+{
 
     // Get Camera Parameters:
     botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
@@ -148,23 +164,26 @@ void Main::applyFilters(const  bot_core::images_t* msg){
     // Uncompress the Disparity image, apply a mask
     uint8_t* buf = imgutils_->unzipImage( &(msg->images[1]) );
 
-    // fill holes in mask
-    std::vector<uint8_t> mask;
-    growMask(mask, mask_edge_size);
+    if(mask_type!=mask::none) {
+        // fill holes in mask
+        std::vector<uint8_t> mask;
+        growMask(mask, mask_edge_size);
 
 #ifdef BENCHMARK
-    times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
-    std::cout<<"grow mask: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
+        times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
+        std::cout<<"grow mask: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
 #endif
 
-    // apply mask to 16bit depth image
-    applyMask(mask, (uint16_t*)buf);
+        // apply mask to 16bit depth image
+        applyMask(mask, (uint16_t*)buf);
+    }
 
 #ifdef BENCHMARK
     times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
     std::cout<<"apply mask: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
 #endif
 
+    cv::Mat1w disparity(rows, cols, (uint16_t*) buf);
     if(apply_sobel_filter) {
         //Sobel operator to filter out textureless areas
         miu_.sobelEdgeFilter((unsigned short *) buf, (unsigned char *) img_buf_, cols, rows, sobelWindowSize, sobelGradientSize, removeHorizontalEdges);
@@ -172,11 +191,10 @@ void Main::applyFilters(const  bot_core::images_t* msg){
         times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
         std::cout<<"sobel: "<<(times.end()[-1]-times.end()[-2]).count()<<" ms"<<std::endl;
 #endif
-    }
 
-    //Remove speckles
-    cv::Mat1w disparity(rows, cols, (uint16_t*) buf);
-    miu_.removeSmall(disparity, thresh, sizeThreshold);
+        //Remove speckles
+        miu_.removeSmall(disparity, thresh, sizeThreshold);
+    }
 
 #ifdef BENCHMARK
     times.push_back(duration_cast<milliseconds>(system_clock::now().time_since_epoch()));
@@ -215,6 +233,9 @@ void Main::growMask(std::vector<uint8_t> &growed_mask, const unsigned int size) 
     // create cv image from memory
     cv::Mat_<uint8_t> mask(h, w, growed_mask.data());
 
+    // workaround to find contours of holes that connect to the image border
+    cv::rectangle(mask, cv::Point(0,0), cv::Point(w,h), cv::Scalar(255), 2);
+
     // morphological operator: closing
     const cv::Mat kern_open = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7,7));
     cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kern_open);
@@ -224,10 +245,25 @@ void Main::growMask(std::vector<uint8_t> &growed_mask, const unsigned int size) 
     cv::findContours(mask, cont, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
     cv::drawContours(mask, cont, -1, cv::Scalar(255), -1);
 
+    // undo workaround
+    cv::rectangle(mask, cv::Point(0,0), cv::Point(w,h), cv::Scalar(0), 2);
+
     // grow mask
     if(size>0) {
         const cv::Mat kern_dilate = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(size,size));
         cv::dilate(mask, mask, kern_dilate);
+    }
+
+    // set mask according to requested part of image
+    switch(mask_type) {
+    case Main::mask::robot:
+        cv::threshold(mask, mask, 0, 255, cv::THRESH_BINARY);
+        break;
+    case Main::mask::environment:
+        cv::threshold(mask, mask, 0, 255, cv::THRESH_BINARY_INV);
+        break;
+    default:
+        std::cerr<<"Undefined mask! This should not happen."<<std::endl;
     }
 }
 
@@ -276,6 +312,7 @@ int main( int argc, char** argv ){
     bool use_mono = false;
     unsigned int mask_edge_size = 0;
     bool sobel_filter = false;
+    std::string mask_type = "none";
     parser.add(camera_channel, "c", "camera_channel", "Camera channel");
     parser.add(camera_frame, "f", "camera_frame", "Camera frame");
     parser.add(output_color_mode, "o", "output_color_mode", "0rgb |1grayscale |2b/w");
@@ -284,6 +321,7 @@ int main( int argc, char** argv ){
     parser.add(use_mono, "m", "use_mono", "Key off of the left monocularimage");
     parser.add(mask_edge_size, "b", "mask_edge_size", "Mask border size");
     parser.add(sobel_filter, "s", "sobel_filter", "filter textureless areas using Sobel operator");
+    parser.add(mask_type, "t", "mask_type", "specify object to filter ('robot', 'environment') or 'none'");
     parser.parse();
     cout << camera_channel << " is camera_channel\n";
     cout << camera_frame << " is camera_frame\n";
@@ -300,7 +338,8 @@ int main( int argc, char** argv ){
     Main main(argc,argv, lcm,
               camera_channel,output_color_mode,
               use_convex_hulls, camera_frame, verbose,
-              use_mono, mask_edge_size, sobel_filter);
+              use_mono, mask_edge_size, sobel_filter,
+              Main::mask_map.at(mask_type));
     cout << "image-filter ready" << endl << endl;
     while(0 == lcm->handle());
     return 0;
