@@ -9,6 +9,7 @@ set(REQUIRED_LIBS ${VTK_IO_TARGET_LINK_LIBRARIES} ${GLEW_LIBRARIES}
 set(PKG_CONFIG_DEPS eigen3 rgbd_simulation pcl_visualization-1.7 pcl_io-1.7)
 include_directories(${VTK_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 
+add_definitions(-std=c++11)
 
 ################
 add_library(image-passthrough  SHARED image-passthrough.cpp)

@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 
 #include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/assign/std/vector.hpp>
 #include <lcm/lcm-cpp.hpp>
 
@@ -35,35 +36,32 @@ class Pass{
   public:
     typedef boost::shared_ptr<Pass> Ptr;
     typedef boost::shared_ptr<const Pass> ConstPtr;
-    
-    Pass(int argc, char** argv, boost::shared_ptr<lcm::LCM> &publish_lcm, 
-         std::string camera_channel_, int output_color_mode_, 
+
+    Pass(int argc, char** argv, boost::shared_ptr<lcm::LCM> &publish_lcm,
+         std::string camera_channel_, int output_color_mode_,
          bool use_convex_hulls_, std::string camera_frame_,
          CameraParams camera_params_, bool verbose_);
-    
+
     ~Pass(){
     }
-    
+
     bool createMask(int64_t msg_time);
     void sendOutput(int64_t utime);
-    
+
     void overlayMask(int64_t utime, uint8_t* img_buf);
 
     // look for pixels in the mask with background_value
     // then set the corresponding pixels in img_buf to set_value
-    void applyMask(int64_t utime, uint8_t* img_buf, int background_value, int set_value);
+    void applyMask(int64_t utime, uint8_t* img_buf, uint8_t background_value, uint8_t set_value);
 
-    void applyMask(int64_t utime, uint16_t* img_buf, int background_value, int set_value);
-    
+    void applyMask(int64_t utime, uint16_t* img_buf, uint8_t background_value, uint16_t set_value);
+
     // Get the GL depth buffer, flip up/down it, color mask it. always 3 colors
-    uint8_t* getDepthBufferAsColor(){
-      return simexample->getDepthBufferAsColor();
-    }
+    uint8_t* getDepthBufferAsColor();
+
     // Get the GL color buffer, flip up/down and output either gray (red channel) or rgb
-    uint8_t* getColorBuffer(int n_colors){
-      return simexample->getColorBuffer(n_colors);
-    }
-    
+    uint8_t* getColorBuffer(int n_colors);
+
     // Get the raw GL depth buffer.  Direct pointer to GL buffer:
     const float* getDepthBuffer(){
       return simexample->getDepthBuffer();
@@ -71,70 +69,76 @@ class Pass{
     // Get the GL depth buffer as floats - ranges I think
     const uint8_t* getColorBuffer(){
       return simexample->getColorBuffer();
-    }    
-    
+    }
+
+    // provide width of buffer
+    unsigned int getBufferWidth() { return camera_params_.width; }
+
+    // provide height of buffer
+    unsigned int getBufferHeight() { return camera_params_.height; }
+
     void setUpdateRobotState(bool update_robot_state_in){
-      update_robot_state_ = update_robot_state_in; 
+      update_robot_state_ = update_robot_state_in;
     };
     void setRobotState(Eigen::Isometry3d & world_to_body_in, std::map<std::string, double> & jointpos_in){
       world_to_body_ = world_to_body_in;
       jointpos_ = jointpos_in;
       init_rstate_ = true;
     }
-    void setAffordanceMesh(pcl::PolygonMesh::Ptr &aff_mesh_in){ 
+    void setAffordanceMesh(pcl::PolygonMesh::Ptr &aff_mesh_in){
       combined_aff_mesh_ = aff_mesh_in;
       aff_mesh_filled_ = true;
     }
     void setRendererRobot(bool renderer_robot_in){
       renderer_robot_ = renderer_robot_in;
     }
-    
+
 
   private:
     boost::shared_ptr<ModelClient> model_;
-    
+
     // settings:
     bool update_robot_state_; // update the robot state using EST_ROBOT_STATE continously?
     bool verbose_;
     int output_color_mode_;
     bool use_convex_hulls_;
     bool renderer_robot_;
-    
+
     // LCM:
     boost::shared_ptr<lcm::LCM> lcm_;
-    void robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::robot_state_t* msg);   
+    void robotStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::robot_state_t* msg);
     //void affordancePlusHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  drc::affordance_plus_collection_t* msg);
-    
+
     // External Objects:
     BotParam* botparam_;
     pronto_vis* pc_vis_;
-    boost::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
-    image_io_utils*  imgutils_; 
+    std::shared_ptr<visualization_utils::GlKinematicBody> gl_robot_;
+    image_io_utils*  imgutils_;
     SimExample::Ptr simexample;
-    boost::shared_ptr<rgbd_primitives>  prim_; // this should be moved into the library
+    std::shared_ptr<rgbd_primitives>  prim_; // this should be moved into the library
 
 
     // Config:
-    CameraParams camera_params_;   
+    CameraParams camera_params_;
     std::string camera_channel_, camera_frame_; // what channel and what frame
-    
+
     // State:
-    std::string urdf_xml_string_; 
-    bool init_rstate_; // have we received a robot state?    
+    std::string urdf_xml_string_;
+    bool init_rstate_; // have we received a robot state?
     Eigen::Isometry3d world_to_body_; // Current Position of the Robot:
     std::map<std::string, double> jointpos_;
-    
-    
+
+
     std::map<std::string, boost::shared_ptr<urdf::Link> > links_map_;
     boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
     pcl::PolygonMesh::Ptr combined_aff_mesh_ ;
     bool aff_mesh_filled_;
-    
+
 //    AffordanceUtils affutils;
-    
+
     void prepareModel();
-    
+
 //    void affordancePlusInterpret(drc::affordance_plus_t affplus, int aff_uid, pcl::PolygonMesh::Ptr &mesh_out);
-    
+
 };
 
