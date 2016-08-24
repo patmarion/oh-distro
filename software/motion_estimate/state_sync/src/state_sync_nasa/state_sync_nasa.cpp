@@ -188,13 +188,15 @@ bot_core::rigid_transform_t getIsometry3dAsBotRigidTransform(Eigen::Isometry3d p
 
 // Handle message published by JointPositionGoalController (Neck Controller)
 void state_sync_nasa::neckStateHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel, const  bot_core::joint_state_t* msg) {
-  for (int i=0; i < msg->num_joints; i++) {
-    auto it = std::find(core_robot_joints_.name.begin(), core_robot_joints_.name.end(), msg->joint_name[i]);
-    int joint_index = std::distance(core_robot_joints_.name.begin(), it);
+  if(!core_robot_joints_.name.empty()) {
+      for (int i=0; i < msg->num_joints; i++) {
+        auto it = std::find(core_robot_joints_.name.begin(), core_robot_joints_.name.end(), msg->joint_name[i]);
+        int joint_index = std::distance(core_robot_joints_.name.begin(), it);
 
-    core_robot_joints_.position[joint_index] = msg->joint_position[i];
-    core_robot_joints_.velocity[joint_index] = 0;
-    core_robot_joints_.effort[joint_index] = 0;
+        core_robot_joints_.position[joint_index] = msg->joint_position[i];
+        core_robot_joints_.velocity[joint_index] = 0;
+        core_robot_joints_.effort[joint_index] = 0;
+      }
   }
 }
 
