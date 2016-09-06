@@ -9,7 +9,7 @@
 #include <bot_param/param_client.h>
 #include <bot_core/timestamp.h>
 
-#include <drc_utils/LcmWrapper.hpp>
+#include <maps_utils/LcmWrapper.hpp>
 #include <lcm/lcm-cpp.hpp>
 #include <lcmtypes/bot_param/set_t.hpp>
 

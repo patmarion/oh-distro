@@ -1,17 +1,12 @@
 # list of subdirectories to build, one one each line.  Empty lines
 # and lines starting with '#' are ignored
-#multisense_utils
-#image_io_utils
-opencv-utils
 # library to create depth masks:
 rgbd_simulation
-maps
 # module to apply object masks:
 image-passthrough
 # particle-filter based tracking
 particle_filter
 jpl-tags
-plane-seg
 car-tags
 registration
 octrees_difference

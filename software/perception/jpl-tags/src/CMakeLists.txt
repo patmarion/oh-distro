@@ -8,7 +8,7 @@ add_executable(${APP_NAME} jpl-tags-driver.cpp)
 # The test program uses the shared library, use the pkg-config file
 pods_use_pkg_config_packages(${APP_NAME}
   jpl-tags
-  drc-utils
+  maps-utils
   zlib
   model-client
   kdl-parser
