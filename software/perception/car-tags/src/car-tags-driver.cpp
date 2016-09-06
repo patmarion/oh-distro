@@ -12,8 +12,8 @@
 #include <AprilTags/common/zarray.h>
 #include <AprilTags/common/getopt.h>
 
-#include <drc_utils/LcmWrapper.hpp>
-#include <drc_utils/BotWrapper.hpp>
+#include <maps_utils/LcmWrapper.hpp>
+#include <maps_utils/BotWrapper.hpp>
 #include <lcm/lcm-cpp.hpp>
 
 #include <lcmtypes/bot_core.hpp>

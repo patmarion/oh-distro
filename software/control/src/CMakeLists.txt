@@ -41,7 +41,7 @@ if(matlab)
   endif()
 
   add_mex(BotParamClient BotParamClient.cpp)
-  pods_use_pkg_config_packages(BotParamClient lcm drc-utils bot2-param-client)
+  pods_use_pkg_config_packages(BotParamClient lcm maps-utils bot2-param-client)
 
   add_mex(bot_timestamp_now bot_timestamp_now.cpp)
   pods_use_pkg_config_packages(bot_timestamp_now bot2-core)

@@ -1,8 +1,8 @@
 #include <jpl-tags/fiducial_stereo.h>
 #include <opencv2/opencv.hpp>
 
-#include <drc_utils/LcmWrapper.hpp>
-#include <drc_utils/BotWrapper.hpp>
+#include <maps_utils/LcmWrapper.hpp>
+#include <maps_utils/BotWrapper.hpp>
 #include <lcm/lcm-cpp.hpp>
 
 #include <kdl/tree.hpp>

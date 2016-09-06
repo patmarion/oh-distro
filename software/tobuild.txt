@@ -1,12 +1,13 @@
 # list of subdirectories to build, one one each line.  Empty lines
 # and lines starting with '#' are ignored
-drake/drake
+#drake/drake
 pronto
 drc_lcmtypes
 ihmc
 latency
 cv_utils
 drivers
+maps_server
 utils
 perception
 motion_estimate
