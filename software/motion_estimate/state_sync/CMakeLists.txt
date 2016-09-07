@@ -11,7 +11,7 @@ include(cmake/pods.cmake)
 include(cmake/lcmtypes.cmake)
 lcmtypes_build()
 
-
+add_subdirectory(src/alpha_filter)
 add_subdirectory(src/joints2frames)
 #add_subdirectory(src/state_sync)
 add_subdirectory(src/state_sync_nasa)
