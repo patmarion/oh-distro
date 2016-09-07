@@ -167,6 +167,14 @@ void state_sync_nasa::coreRobotHandler(const lcm::ReceiveBuffer* rbuf, const std
     torque_adjustment_->processSample(core_robot_joints_.name, core_robot_joints_.position, core_robot_joints_.effort );
   }
 
+  if(alpha_filter_ != NULL) {
+      // configure filter once
+      if(!alpha_filter_->isConfigured())
+          alpha_filter_->setup(core_robot_joints_.name, core_robot_joints_.position);
+
+      alpha_filter_->update(core_robot_joints_.position);
+  }
+
   // TODO: check forque_
   publishRobotState(msg->utime, force_torque_);
 }
@@ -413,6 +421,15 @@ main(int argc, char ** argv){
   app.joints_to_be_clamped_to_joint_limits_ =
       joints_to_be_clamped_to_joint_limits;
   app.clamping_tolerance_in_degrees_ = 2.5;  // 2.5deg is OK, above will fail
+
+  const std::set<std::string> filter_hand_joints = {
+      "leftIndexFingerPitch1", "leftIndexFingerPitch2", "leftIndexFingerPitch3",
+      "leftMiddleFingerPitch1", "leftMiddleFingerPitch2", "leftMiddleFingerPitch3",
+      "leftPinkyPitch1", "leftPinkyPitch2", "leftPinkyPitch3",
+      "leftThumbPitch1", "leftThumbPitch2", "leftThumbPitch3", "leftThumbRoll"
+  };
+
+  app.configureAlphaFilter(filter_hand_joints, 0.11);
 
   while (0 == lcm->handle())
     ;

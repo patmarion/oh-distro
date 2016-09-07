@@ -5,6 +5,7 @@ project(state_sync_val)
 
 
 add_executable(drc-state-sync-val state_sync_nasa.cpp  )
+target_link_libraries(drc-state-sync-val alpha_filter)
 pods_use_pkg_config_packages(drc-state-sync-val eigen3
   model-client bot2-param-client bot2-frames drake-rbm
   kalman_filter_tools backlash_filter_tools torque_adjustment_tools
