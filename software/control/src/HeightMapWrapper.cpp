@@ -10,7 +10,7 @@
 #include <maps_utils/LcmWrapper.hpp>
 #include <maps_utils/BotWrapper.hpp>
 
-#include <lcmtypes/drc/data_request_t.hpp>
+#include <lcmtypes/maps/data_request_t.hpp>
 
 #include <terrain-map/TerrainMap.hpp>
 
@@ -162,7 +162,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             terrainMap->setInfo(kHeightMapViewId, kHeightMapChannel);
           }
           else {
-            terrainMap->setInfo(drc::data_request_t::HEIGHT_MAP_SCENE,
+            terrainMap->setInfo(maps::data_request_t::HEIGHT_MAP_SCENE,
                                 "MAP_DEPTH");
           }
         }
