@@ -34,6 +34,12 @@ public:
     bool isConfigured() { return _configured; }
 
     /**
+     * @brief getAlpha get alpha value
+     * @return alpha value
+     */
+    double getAlpha() { return _alpha; }
+
+    /**
      * @brief update update the internal state of the filter by new measurements
      * The method will exchange the provided values with the filtered values in-place.
      * @param measurement new measured joint positions

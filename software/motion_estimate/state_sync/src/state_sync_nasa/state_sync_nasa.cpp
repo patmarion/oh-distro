@@ -195,7 +195,7 @@ void state_sync_nasa::coreRobotHandler(const lcm::ReceiveBuffer* rbuf, const std
     torque_adjustment_->processSample(core_robot_joints_.name, core_robot_joints_.position, core_robot_joints_.effort );
   }
 
-  if(alpha_filter_ != NULL) {
+  if(alpha_filter_ != NULL && alpha_filter_->getAlpha() < 1.0) {
       // configure filter once
       if(!alpha_filter_->isConfigured())
           alpha_filter_->setup(core_robot_joints_.name, core_robot_joints_.position);

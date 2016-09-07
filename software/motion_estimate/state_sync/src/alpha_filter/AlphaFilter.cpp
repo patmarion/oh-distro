@@ -3,8 +3,12 @@
 AlphaFilter::AlphaFilter(const std::set<std::string> &target_joints, float alpha)
     : _configured(false), _alpha(alpha), _n_alpha(1-alpha), _target_joints(target_joints)
 {
-    if( !(0.0<alpha && alpha<1.0))
-        std::cerr<<"Your alpha should be in range (0,1)! Continuing anyway."<<std::endl;
+    if( !(0.0<alpha && alpha<=1.0)) {
+        std::cerr<<"Alpha is out of range! Truncating to [0,1]."<<std::endl;
+        // truncate alpha value to valid range
+        alpha = (alpha < 0.0) ? 0.0 : alpha;
+        alpha = (alpha > 1.0) ? 1.0 : alpha;
+    }
 }
 
 void AlphaFilter::setup(const std::vector<std::string> &name, const std::vector<float> &values) {
