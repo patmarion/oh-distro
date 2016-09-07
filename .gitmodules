@@ -28,3 +28,6 @@
 [submodule "software/cv_utils"]
 	path = software/cv_utils
 	url = git@github.com:openhumanoids/cv_utils.git
+[submodule "software/maps_server"]
+	path = software/maps_server
+	url = git@github.com:openhumanoids/maps_server.git
