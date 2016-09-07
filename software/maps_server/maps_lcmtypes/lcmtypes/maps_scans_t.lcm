@@ -1,6 +1,6 @@
-package drc;
+package maps;
 
-struct map_scans_t
+struct scans_t
 {
   // timestamp of this message
   int64_t utime;
@@ -21,7 +21,7 @@ struct map_scans_t
   float transform[4][4];
 
   // scan data
-  map_scan_t scans[num_scans];
+  scan_t scans[num_scans];
 
   // sequence info
   int32_t chunk_id;

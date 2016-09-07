@@ -1,4 +1,4 @@
-package drc;
+package maps;
 
 struct data_request_t {
   // high-level type of data requested (see enum)

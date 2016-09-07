@@ -1,6 +1,6 @@
-package drc;
+package maps;
 
-struct map_pointcloud_request_t
+struct pointcloud_request_t
 {
   int64_t utime;
 

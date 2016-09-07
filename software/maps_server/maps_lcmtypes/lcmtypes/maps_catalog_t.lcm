@@ -7,7 +7,7 @@ struct map_catalog_t
 
   // current active maps
   int32_t num_maps;
-  map_params_t maps[num_maps];
+  map_params_t map_params[num_maps]; // variable was maps
 
   // current active views
   int32_t num_views;

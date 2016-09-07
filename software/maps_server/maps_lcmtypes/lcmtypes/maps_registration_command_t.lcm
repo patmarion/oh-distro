@@ -1,6 +1,6 @@
-package drc;
+package maps;
 
-struct map_registration_command_t
+struct registration_command_t
 {
   // timestamp of this message
   int64_t utime;
