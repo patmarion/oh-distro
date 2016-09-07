@@ -186,7 +186,7 @@ class CameraListener {
     }
 
     bool setup(bool show_window, bool publish_img_with_matches = false) {
-        mBotWrapper.reset(new drc::BotWrapper());
+        mBotWrapper.reset(new maps::BotWrapper());
 
         while (!mBotWrapper->getBotParam()) {
             std::cout << "Re-trying ... " << std::endl;
@@ -194,7 +194,7 @@ class CameraListener {
         }
         
 
-        mLcmWrapper.reset(new drc::LcmWrapper(mBotWrapper->getLcm()));
+        mLcmWrapper.reset(new maps::LcmWrapper(mBotWrapper->getLcm()));
         mLcmWrapper->get()->subscribe("CAMERA", &CameraListener::onCamera, this);
 
         mCamTransLeft = bot_param_get_new_camtrans(mBotWrapper->getBotParam(),"CAMERA_LEFT");
@@ -304,8 +304,8 @@ class CameraListener {
     bool mShowWindow;
     bool mPublishImageWithMatches;
     AprilTagDetector *mDetector;
-    drc::LcmWrapper::Ptr mLcmWrapper;
-    drc::BotWrapper::Ptr mBotWrapper;
+    maps::LcmWrapper::Ptr mLcmWrapper;
+    maps::BotWrapper::Ptr mBotWrapper;
     BotCamTrans* mCamTransLeft;
     Eigen::Matrix3d K;
 };

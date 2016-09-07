@@ -50,8 +50,8 @@ struct FrameMapInfo {
 };
 
 struct State {
-  drc::BotWrapper::Ptr mBotWrapper;
-  drc::LcmWrapper::Ptr mLcmWrapper;
+  maps::BotWrapper::Ptr mBotWrapper;
+  maps::LcmWrapper::Ptr mLcmWrapper;
   bot_lcmgl_t* mBotLcmgl;
   BotCamTrans* mCamTransLeft;
   BotCamTrans* mCamTransRight;
@@ -180,8 +180,8 @@ struct State {
   }
 
   void setup() {
-    mBotWrapper.reset(new drc::BotWrapper());
-    mLcmWrapper.reset(new drc::LcmWrapper(mBotWrapper->getLcm()));
+    mBotWrapper.reset(new maps::BotWrapper());
+    mLcmWrapper.reset(new maps::LcmWrapper(mBotWrapper->getLcm()));
     if (mBotLcmgl != NULL) bot_lcmgl_destroy(mBotLcmgl);
     mBotLcmgl = bot_lcmgl_init(mBotWrapper->getLcm()->getUnderlyingLCM(),
                                "jpl-tag-debug");
