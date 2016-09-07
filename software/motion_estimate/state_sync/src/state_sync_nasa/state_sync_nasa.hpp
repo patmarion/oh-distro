@@ -72,10 +72,7 @@ class state_sync_nasa{
       botparam_ = new_botparam;
     }
 
-    void configureAlphaFilter(const std::set<std::string> &target_joints, float alpha) {
-        delete alpha_filter_;
-        alpha_filter_ = new AlphaFilter(target_joints, alpha);
-    }
+    bool configureAlphaFilter();
 
     std::vector<std::string> joints_to_be_clamped_to_joint_limits_;
     double clamping_tolerance_in_degrees_;

@@ -125,6 +125,34 @@ state_sync_nasa::state_sync_nasa(std::shared_ptr<lcm::LCM> &lcm_,
 
 }
 
+bool state_sync_nasa::configureAlphaFilter() {
+    // get target joint names from parameter server
+    const unsigned int n_joints = bot_param_get_array_len (botparam_, "alpha_filter.target_joints");
+    char** const joints = bot_param_get_str_array_alloc(botparam_, "alpha_filter.target_joints");
+    if(joints == NULL) {
+        std::cerr<<"configuration for 'alpha_filter' is missing 'target_joints' list"<<std::endl;
+        return false;
+    }
+
+    std::set<std::string> target_joints;
+    for (unsigned int i = 0; i<n_joints; i++)
+        target_joints.insert( std::string(joints[i]) );
+
+    bot_param_str_array_free(joints);
+
+    // get alpha value from parameter server
+    double alpha = 0;
+    if(bot_param_get_double(botparam_, "alpha_filter.alpha", &alpha) != 0) {
+        std::cerr<<"configuration for 'alpha_filter' is missing 'alpha' value"<<std::endl;
+        return false;
+    }
+
+    delete alpha_filter_;
+    alpha_filter_ = new AlphaFilter(target_joints, alpha);
+
+    return true;
+}
+
 void state_sync_nasa::setPoseToZero(PoseT &pose){
   pose.utime = 0; // use this to signify un-initalised
   pose.pos << 0,0, 0.95; // for ease of use, initialise at typical height
@@ -422,14 +450,10 @@ main(int argc, char ** argv){
       joints_to_be_clamped_to_joint_limits;
   app.clamping_tolerance_in_degrees_ = 2.5;  // 2.5deg is OK, above will fail
 
-  const std::set<std::string> filter_hand_joints = {
-      "leftIndexFingerPitch1", "leftIndexFingerPitch2", "leftIndexFingerPitch3",
-      "leftMiddleFingerPitch1", "leftMiddleFingerPitch2", "leftMiddleFingerPitch3",
-      "leftPinkyPitch1", "leftPinkyPitch2", "leftPinkyPitch3",
-      "leftThumbPitch1", "leftThumbPitch2", "leftThumbPitch3", "leftThumbRoll"
-  };
-
-  app.configureAlphaFilter(filter_hand_joints, 0.11);
+  if(!app.configureAlphaFilter()) {
+      std::cerr<<"configuration of alpha filter failed"<<std::endl;
+      exit(1);
+  }
 
   while (0 == lcm->handle())
     ;
