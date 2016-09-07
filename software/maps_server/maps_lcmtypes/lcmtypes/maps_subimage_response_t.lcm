@@ -1,4 +1,4 @@
-package drc;
+package maps;
 
 struct subimage_response_t {
   subimage_request_t subimage_request;

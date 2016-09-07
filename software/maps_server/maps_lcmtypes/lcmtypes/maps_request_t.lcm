@@ -1,6 +1,6 @@
-package drc;
+package maps;
 
-struct map_request_t
+struct request_t
 {
   // timestamp of this message
   int64_t utime;

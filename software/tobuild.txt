@@ -1,13 +1,19 @@
 # list of subdirectories to build, one one each line.  Empty lines
 # and lines starting with '#' are ignored
+
+# these modules are basically all externals
 drake/drake
 pronto
 drc_lcmtypes
 ihmc
 latency
 cv_utils
-drivers
 maps_server
+
+# drivers could be externals, but may require some minor work
+drivers
+
+# oh-core code
 utils
 perception
 motion_estimate

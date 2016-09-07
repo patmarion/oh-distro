@@ -18,12 +18,12 @@
 #include <maps/PointCloudView.hpp>
 
 #include <lcmtypes/bot_core/rigid_transform_t.hpp>
-#include <lcmtypes/drc/map_registration_command_t.hpp>
+#include <lcmtypes/maps/registration_command_t.hpp>
 
 #include <pcl/registration/icp.h>
 
 struct State : public maps::Collector::DataListener {
-  std::shared_ptr<drc::LcmWrapper> mLcmWrapper;
+  std::shared_ptr<maps::LcmWrapper> mLcmWrapper;
   std::shared_ptr<lcm::LCM> mLcm;
   std::shared_ptr<maps::BotWrapper> mBotWrapper;
   std::shared_ptr<maps::Collector> mCollector;
@@ -49,7 +49,7 @@ struct State : public maps::Collector::DataListener {
 
   State() {
     // initialize some variables
-    mLcmWrapper.reset(new drc::LcmWrapper());
+    mLcmWrapper.reset(new maps::LcmWrapper());
     mLcm = mLcmWrapper->get();
     mBotWrapper.reset(new maps::BotWrapper(mLcm));
     mCollector.reset(new maps::Collector());
@@ -76,8 +76,8 @@ struct State : public maps::Collector::DataListener {
 
   void onCommand(const lcm::ReceiveBuffer* iBuf,
                  const std::string& iChannel,
-                 const drc::map_registration_command_t* iMessage) {
-    if (iMessage->command == drc::map_registration_command_t::RESET) {
+                 const maps::registration_command_t* iMessage) {
+    if (iMessage->command == maps::registration_command_t::RESET) {
       std::unique_lock<std::mutex> lock(mCommandMutex);
       mResetReference = true;
       mCondition.notify_one();

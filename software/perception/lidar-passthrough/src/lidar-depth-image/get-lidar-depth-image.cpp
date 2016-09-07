@@ -64,7 +64,7 @@ public:
     mCollector->setBotWrapper(mBotWrapper);
     mActiveMapId = 0;
     mLcmGl = bot_lcmgl_init(mLcm->getUnderlyingLCM(), "test-points");
-    drc::Clock::instance()->setLcm(mLcmStd);
+    maps::Clock::instance()->setLcm(mLcmStd);
   }
   
   ~State() {

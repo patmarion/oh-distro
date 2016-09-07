@@ -11,7 +11,7 @@
 
 #include <bot_lcmgl_client/lcmgl.h>
 
-#include <lcmtypes/drc/map_scans_t.hpp>
+#include <lcmtypes/maps/scans_t.hpp>
 #include <lcmtypes/drc/affordance_collection_t.hpp>
 #include <lcmtypes/drc/block_fit_request_t.hpp>
 
@@ -24,8 +24,8 @@
 #include "BlockFitter.hpp"
 
 struct State {
-  drc::BotWrapper::Ptr mBotWrapper;
-  drc::LcmWrapper::Ptr mLcmWrapper;
+  maps::BotWrapper::Ptr mBotWrapper;
+  maps::LcmWrapper::Ptr mLcmWrapper;
   bool mRunContinuously;
   bool mDoFilter;
   bool mRemoveGround;
@@ -38,7 +38,7 @@ struct State {
   bool mTriggered;
   bool mShouldProcess;
 
-  drc::map_scans_t mData;
+  maps::scans_t mData;
   int64_t mLastDataTime;
   Eigen::Isometry3f mSensorPose;
   Eigen::Isometry3f mGroundPose;
@@ -85,7 +85,7 @@ struct State {
       mShouldProcess = false;
 
       // grab data
-      drc::map_scans_t data;
+      maps::scans_t data;
       Eigen::Isometry3f sensorPose;
       Eigen::Isometry3f groundPose;
       {
@@ -299,7 +299,7 @@ struct State {
 
   void onScans(const lcm::ReceiveBuffer* iBuf,
                const std::string& iChannel,
-               const drc::map_scans_t* iMessage) {
+               const maps::scans_t* iMessage) {
     std::unique_lock<std::mutex> lock(mDataMutex);
     if (!mTriggered) return;
     mData = *iMessage;
@@ -367,11 +367,11 @@ int main(const int iArgc, const char** iArgv) {
   }
 
   do {
-    state.mBotWrapper.reset(new drc::BotWrapper());
+    state.mBotWrapper.reset(new maps::BotWrapper());
   }
   while (state.mBotWrapper->getBotParam() == NULL);
   std::cout << "got bot params" << std::endl;
-  state.mLcmWrapper.reset(new drc::LcmWrapper(state.mBotWrapper->getLcm()));
+  state.mLcmWrapper.reset(new maps::LcmWrapper(state.mBotWrapper->getLcm()));
 
   if (triggerChannel.length() > 0) {
     state.mDoTrigger = true;

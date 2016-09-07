@@ -45,7 +45,7 @@ protected:
   BotParamClient() {
     mBotParam = NULL;
     mLcm.reset(new lcm::LCM());
-    mLcmWrapper.reset(new drc::LcmWrapper(mLcm));
+    mLcmWrapper.reset(new maps::LcmWrapper(mLcm));
     mLcmWrapper->startHandleThread();
     getParamFromServer();
   }
@@ -91,7 +91,7 @@ protected:
 
 protected:
   std::shared_ptr<lcm::LCM> mLcm;
-  std::shared_ptr<drc::LcmWrapper> mLcmWrapper;
+  std::shared_ptr<maps::LcmWrapper> mLcmWrapper;
   BotParam* mBotParam;
 };
 

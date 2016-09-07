@@ -1,6 +1,6 @@
-package drc;
+package maps;
 
-struct map_cloud_t
+struct cloud_t
 {
   // timestamp of this message
   int64_t utime;
@@ -15,5 +15,5 @@ struct map_cloud_t
   float transform[4][4];
 
   // the actual data
-  map_blob_t blob;
+  blob_t blob;
 }

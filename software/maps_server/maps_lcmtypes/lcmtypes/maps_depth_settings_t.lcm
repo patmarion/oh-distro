@@ -1,6 +1,6 @@
-package drc;
+package maps;
 
-struct map_depth_settings_t {
+struct depth_settings_t {
   // which map, indicated by type of data request
   data_request_t data_request;
 

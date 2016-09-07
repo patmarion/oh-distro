@@ -1,4 +1,4 @@
-package drc;
+package maps;
 
 struct shaper_data_request_t
 {
