@@ -1,4 +1,4 @@
-package drc;
+package maps;
 
 struct subimage_request_t {
   // channel information etc
