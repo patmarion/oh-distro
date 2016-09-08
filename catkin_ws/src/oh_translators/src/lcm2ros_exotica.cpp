@@ -14,9 +14,9 @@
 #include "lcmtypes/drc/robot_plan_t.hpp"
 #include "lcmtypes/drc/plan_control_t.hpp"
 #include "lcmtypes/drc/affordance_collection_t.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
 #include "lcmtypes/drc/exotica_planner_request_t.hpp"
-#include "lcmtypes/drc/map_octree_t.hpp"
+#include "lcmtypes/maps/octree_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <trajectory_msgs/JointTrajectory.h>
 #include <ipab_msgs/PlannerRequest.h>
 #include <octomap_msgs/Octomap.h>
@@ -47,7 +47,7 @@ private:
   void ikRequestHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
                         const drc::exotica_planner_request_t* msg);
   void octreeHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                        const drc::map_octree_t* msg);
+                        const maps::octree_t* msg);
 
   OcTree* tree_;
 };
@@ -97,7 +97,7 @@ void LCM2ROS::ikRequestHandler(const lcm::ReceiveBuffer* rbuf, const std::string
 }
 
 void LCM2ROS::octreeHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel,
-                               const drc::map_octree_t* msg)
+                               const maps::octree_t* msg)
 {
   // A simple translation of the Octomap data stream fails (silently)
   // The LCM system uses writeBinaryConst to extract a datablob
