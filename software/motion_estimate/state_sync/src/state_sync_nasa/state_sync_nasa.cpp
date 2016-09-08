@@ -196,11 +196,7 @@ void state_sync_nasa::coreRobotHandler(const lcm::ReceiveBuffer* rbuf, const std
   }
 
   if(alpha_filter_ != NULL && alpha_filter_->getAlpha() < 1.0) {
-      // configure filter once
-      if(!alpha_filter_->isConfigured())
-          alpha_filter_->setup(core_robot_joints_.name, core_robot_joints_.position);
-
-      alpha_filter_->update(core_robot_joints_.position);
+      alpha_filter_->update(core_robot_joints_.name, core_robot_joints_.position);
   }
 
   // TODO: check forque_
