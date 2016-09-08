@@ -24,7 +24,7 @@
 #include <pronto_utils/pronto_math.hpp>
 #include <estimate_tools/torque_adjustment.hpp>
 
-#include <AlphaFilter.hpp>
+#include <estimate_tools/AlphaFilter.hpp>
 
 struct Joints { 
   std::vector<float> position;
