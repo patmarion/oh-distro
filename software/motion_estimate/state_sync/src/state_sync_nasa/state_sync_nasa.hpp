@@ -24,6 +24,8 @@
 #include <pronto_utils/pronto_math.hpp>
 #include <estimate_tools/torque_adjustment.hpp>
 
+#include <estimate_tools/AlphaFilter.hpp>
+
 struct Joints { 
   std::vector<float> position;
   std::vector<float> velocity;
@@ -62,12 +64,15 @@ class state_sync_nasa{
     state_sync_nasa(std::shared_ptr<lcm::LCM> &lcm_, std::shared_ptr<CommandLineConfig> &cl_cfg_);
     
     ~state_sync_nasa(){
+        delete alpha_filter_;
     }
     void Identity();
     
     void setBotParam(BotParam* new_botparam){
       botparam_ = new_botparam;
     }
+
+    bool configureAlphaFilter();
 
     std::vector<std::string> joints_to_be_clamped_to_joint_limits_;
     double clamping_tolerance_in_degrees_;
@@ -103,6 +108,8 @@ class state_sync_nasa{
 
     bot_core::six_axis_force_torque_array_t force_torque_; // More recent force torque messurement
     bool force_torque_init_; // Have we received a force torque message?
+
+    AlphaFilter *alpha_filter_ = NULL;
 
 };    
 
