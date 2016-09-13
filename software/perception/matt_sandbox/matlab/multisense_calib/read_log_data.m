@@ -19,7 +19,7 @@ while (true)
         scan.timestamp = int64(scan.utime);
         scans{end+1} = scan;
     elseif (strcmp(channel,'CAMERA'))
-        obj = multisense.images_t(event.data);
+        obj = bot_core.images_t(event.data);
         ind = (obj.image_types == obj.DISPARITY) | (obj.image_types == obj.DISPARITY_ZIPPED);
         img = obj.images(ind);
         data = img.data;
