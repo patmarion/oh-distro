@@ -297,14 +297,14 @@ figure, myplot3(all_pts(:,1:3),'r.'); axis equal; view3d
 %% output as pcl cloud
 rgb = impixel(img,pix(:,1),pix(:,2));
 xyzrgb = [all_pts(:,1:3),rgb/255];
-%savepcd('/tmp/xyzrgb_orig.pcd',xyzrgb');
+savepcd('/tmp/xyzrgb_orig.pcd',xyzrgb');
 
 %% output camera + lidar as cloud
 rgb = impixel(img,pix(:,1),pix(:,2));
 xyzrgb = [all_pts(:,1:3),rgb/255];
 all_pts2 = accum_scans(scans,res.P_pre_spindle_to_camera,res.P_lidar_to_post_spindle,[1,10],[-1000,1000],30);
 xyzrgb = [all_pts2(:,1:3), ones(size(all_pts2,1),3);xyzrgb];
-%savepcd('/tmp/xyzrgb_all.pcd',xyzrgb');
+savepcd('/tmp/xyzrgb_all.pcd',xyzrgb');
 
 %% show all lidar points superimposed on image
 plot_points_on_image(all_pts(:,1:3),K,img);
