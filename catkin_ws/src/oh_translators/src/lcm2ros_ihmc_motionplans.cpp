@@ -264,8 +264,10 @@ KDL::Twist LCM2ROS::Interpolate(double t1, double t2, double t3, const KDL::Fram
     Eigen::Quaterniond dq1 = GetQuat(T1.M.Inverse()*T2.M);
     Eigen::Quaterniond dq2 = GetQuat(T2.M.Inverse()*T3.M);
     Eigen::Quaterniond dq = Eigen::Quaterniond::Identity().slerp(dt1/(dt1+dt2),dq1)*Eigen::Quaterniond::Identity().slerp(dt2/(dt1+dt2),dq2);
-    KDL::Rotation vel = KDL::Rotation::Quaternion(dq.x(),dq.y(),dq.z(),dq.w());
-    ret.rot = vel.GetRot()*2.0/(dt1+dt2);
+    Eigen::AngleAxisd tmp(dq);
+    Eigen::Vector3d velvec=tmp.axis()*tmp.angle();
+    velvec=velvec*2.0/(dt1+dt2);
+    ret.rot=KDL::Vector(velvec(0),velvec(1),velvec(2));
 
     return ret;
 }
