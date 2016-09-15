@@ -269,7 +269,7 @@ KDL::Twist LCM2ROS::Interpolate(double t1, double t2, double t3, const KDL::Fram
         Eigen::Quaterniond dq2;
         dq1KDL.GetQuaternion(dq1.x(),dq1.y(),dq1.z(),dq1.w());
         dq2KDL.GetQuaternion(dq2.x(),dq2.y(),dq2.z(),dq2.w());
-        Eigen::Quaterniond dq = Eigen::Quaterniond::Identity().slerp(dt1*0.5,dq1)*Eigen::Quaterniond::Identity().slerp(dt2*0.5,dq2);
+        Eigen::Quaterniond dq = Eigen::Quaterniond::Identity().slerp(1.0/dt1*0.5,dq1)*Eigen::Quaterniond::Identity().slerp(1.0/dt2*0.5,dq2);
         //Eigen::Quaterniond dq = dq1.slerp(dt2/(dt1+dt2),dq2);
         Eigen::AngleAxisd tmp(dq);
         Eigen::Vector3d velvec=tmp.axis()*tmp.angle();
