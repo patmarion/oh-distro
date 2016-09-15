@@ -260,14 +260,21 @@ KDL::Twist LCM2ROS::Interpolate(double t1, double t2, double t3, const KDL::Fram
     double dt1 = t2-t1;
     double dt2 = t3-t2;
 
-    ret.vel = (T2.p-T1.p)*dt1 + (T3.p-T2.p)*dt2;
-    Eigen::Quaterniond dq1 = GetQuat(T1.M.Inverse()*T2.M);
-    Eigen::Quaterniond dq2 = GetQuat(T2.M.Inverse()*T3.M);
-    Eigen::Quaterniond dq = Eigen::Quaterniond::Identity().slerp(dt1/(dt1+dt2),dq1)*Eigen::Quaterniond::Identity().slerp(dt2/(dt1+dt2),dq2);
-    Eigen::AngleAxisd tmp(dq);
-    Eigen::Vector3d velvec=tmp.axis()*tmp.angle();
-    velvec=velvec*2.0/(dt1+dt2);
-    ret.rot=KDL::Vector(velvec(0),velvec(1),velvec(2));
+    if(dt1*dt2>0.0)
+    {
+        ret.vel = (T2.p-T1.p)/dt1*0.5 + (T3.p-T2.p)/dt2*0.5;
+        KDL::Rotation dq1KDL=T1.M.Inverse()*T2.M;
+        KDL::Rotation dq2KDL=T2.M.Inverse()*T3.M;
+        Eigen::Quaterniond dq1;
+        Eigen::Quaterniond dq2;
+        dq1KDL.GetQuaternion(dq1.x(),dq1.y(),dq1.z(),dq1.w());
+        dq2KDL.GetQuaternion(dq2.x(),dq2.y(),dq2.z(),dq2.w());
+        Eigen::Quaterniond dq = Eigen::Quaterniond::Identity().slerp(dt1*0.5,dq1)*Eigen::Quaterniond::Identity().slerp(dt2*0.5,dq2);
+        //Eigen::Quaterniond dq = dq1.slerp(dt2/(dt1+dt2),dq2);
+        Eigen::AngleAxisd tmp(dq);
+        Eigen::Vector3d velvec=tmp.axis()*tmp.angle();
+        ret.rot=KDL::Vector(velvec(0),velvec(1),velvec(2));
+    }
 
     return ret;
 }
@@ -339,10 +346,11 @@ void LCM2ROS::getPelvisTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::P
 {
     // Collect frames
     std::vector<KDL::Frame> pelvis;
+
     for (int i = 0; i < msg->num_states; i++)
     {
         bot_core::robot_state_t state = msg->plan[i];
-        pelvis.push_back(KDL::Frame(KDL::Rotation::Quaternion(state.pose.rotation.x,state.pose.rotation.y,state.pose.rotation.z,state.pose.rotation.z),
+        pelvis.push_back(KDL::Frame(KDL::Rotation::Quaternion(state.pose.rotation.x,state.pose.rotation.y,state.pose.rotation.z,state.pose.rotation.w),
                                     KDL::Vector(state.pose.translation.x,state.pose.translation.y,state.pose.translation.z)));
     }
 
@@ -363,8 +371,6 @@ void LCM2ROS::getPelvisTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::P
             point.linear_velocity.x = 0;
             point.linear_velocity.y = 0;
             point.linear_velocity.z = 0;
-            point.angular_velocity.y = 0;
-            point.angular_velocity.z = 0;
             point.angular_velocity.x = 0;
             point.angular_velocity.y = 0;
             point.angular_velocity.z = 0;
