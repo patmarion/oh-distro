@@ -10,7 +10,7 @@ find_package(PythonInterp REQUIRED)
 # install all python files in the python/ subdirectory
 pods_install_python_packages(${CMAKE_CURRENT_SOURCE_DIR}/python)
 
-pods_install_python_script(drc_utils drc_utils.main)
+pods_install_python_script(botpy botpy.main)
 
 #################################################
 pods_install_python_script(drc-spin-lidar python/spin_lidar_command.py)
