@@ -11,11 +11,7 @@ import matplotlib.mlab as mlab
 
 from threading import Thread
 import threading
-
-home_dir =os.getenv("HOME")
-#print home_dir
-sys.path.append(home_dir + "/drc/software/build/lib/python2.7/site-packages")
-sys.path.append(home_dir + "/drc/software/build/lib/python2.7/dist-packages")
+import botpy
 
 from bot_core.pose_t import pose_t
 from drc.robot_state_t import robot_state_t
@@ -29,20 +25,6 @@ class State:
     self.prev_rpy = [0,0,0]
     self.prev_xyz = [0,0,0]
 
-def quat_to_euler(q) :
-  
-  roll_a = 2.0 * (q[0]*q[1] + q[2]*q[3]);
-  roll_b = 1.0 - 2.0 * (q[1]*q[1] + q[2]*q[2]);
-  roll = math.atan2 (roll_a, roll_b);
-
-  pitch_sin = 2.0 * (q[0]*q[2] - q[3]*q[1]);
-  pitch = math.asin (pitch_sin);
-
-  yaw_a = 2.0 * (q[0]*q[3] + q[1]*q[2]);
-  yaw_b = 1.0 - 2.0 * (q[2]*q[2] + q[3]*q[3]);  
-  yaw = math.atan2 (yaw_a, yaw_b);
-  return [roll,pitch,yaw]
-
 def doPrint():
   print "#utime, utime_delta, velocity, yaw_delta"
 
@@ -53,7 +35,7 @@ def on_ers(channel, data):
   if (delta_time < 1):
     return
 
-  rpy = quat_to_euler([m.pose.rotation.w, m.pose.rotation.x, m.pose.rotation.y, m.pose.rotation.z] )
+  rpy = botpy.quat_to_euler([m.pose.rotation.w, m.pose.rotation.x, m.pose.rotation.y, m.pose.rotation.z] )
   xyz = [m.pose.translation.x, m.pose.translation.y, m.pose.translation.z]
   measure_drift(delta_time, m.utime, xyz, rpy)
 
@@ -64,7 +46,7 @@ def on_pose(channel, data):
   if (delta_time < 1):
     return
 
-  rpy = quat_to_euler(m.orientation )
+  rpy = botpy.quat_to_euler(m.orientation )
   xyz = m.pos
   measure_drift(delta_time, m.utime, xyz, rpy)
 

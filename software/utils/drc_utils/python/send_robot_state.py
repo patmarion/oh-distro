@@ -1,22 +1,13 @@
 #!/usr/bin/python
 import os,sys
 import time
-
-home_dir =os.getenv("HOME")
-#print home_dir
-sys.path.append(home_dir + "/drc/software/build/lib/python2.7/site-packages")
-sys.path.append(home_dir + "/drc/software/build/lib/python2.7/dist-packages")
-
+import numpy as np
+import math
 import lcm
 from bot_core.robot_state_t import robot_state_t
 from bot_core.pose_t import pose_t
-import time
-import numpy as np
-import math
-
 import multisense as lcmmultisense
-
-def timestamp_now (): return int (time.time () * 1000000)
+import botpy
 
 print "drc-send-robot-state [v5|val1|val2|multisense|husky]"
 
@@ -38,22 +29,7 @@ else:
 print robot_name
 
 
-def euler_to_quat(rpy):
-  roll =  rpy[0]
-  pitch = rpy[1]
-  yaw =   rpy[2]
 
-  sy = math.sin(yaw*0.5);
-  cy = math.cos(yaw*0.5);
-  sp = math.sin(pitch*0.5);
-  cp = math.cos(pitch*0.5);
-  sr = math.sin(roll*0.5);
-  cr = math.cos(roll*0.5);
-  w = cr*cp*cy + sr*sp*sy;
-  x = sr*cp*cy - cr*sp*sy;
-  y = cr*sp*cy + sr*cp*sy;
-  z = cr*cp*sy - sr*sp*cy;
-  return np.array([w,x,y,z])
 
 
 if robot_name == "v5":
@@ -106,7 +82,7 @@ if mode == "static":
   msg.pose.translation.y = 0
   msg.pose.translation.z = 1.2
   msg.joint_position[0] = 0
-  orientation = euler_to_quat([0, 0.0*np.pi/180.0,0])
+  orientation = botpy.euler_to_quat([0, 0.0*np.pi/180.0,0])
   msg.pose.rotation.w = orientation[0]
   msg.pose.rotation.x = orientation[1]
   msg.pose.rotation.y = orientation[2]
@@ -120,7 +96,7 @@ if mode == "static":
   if rotation_flag == 'rotate':
     time.sleep(5)
     msg3 = lcmmultisense.command_t()
-    msg3.utime = timestamp_now()
+    msg3.utime = botpy.timestamp_now()
     msg3.fps = 15
     msg3.gain = -1
     msg3.exposure_us = 10000
