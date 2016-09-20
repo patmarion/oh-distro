@@ -263,17 +263,17 @@ KDL::Twist LCM2ROS::Interpolate(double t1, double t2, double t3, const KDL::Fram
     if(dt1*dt2>0.0)
     {
         ret.vel = (T2.p-T1.p)/dt1*0.5 + (T3.p-T2.p)/dt2*0.5;
-        KDL::Rotation dq1KDL=T1.M.Inverse()*T2.M;
-        KDL::Rotation dq2KDL=T2.M.Inverse()*T3.M;
-        Eigen::Quaterniond dq1;
-        Eigen::Quaterniond dq2;
-        dq1KDL.GetQuaternion(dq1.x(),dq1.y(),dq1.z(),dq1.w());
-        dq2KDL.GetQuaternion(dq2.x(),dq2.y(),dq2.z(),dq2.w());
-        Eigen::Quaterniond dq = Eigen::Quaterniond::Identity().slerp(1.0/dt1*0.5,dq1)*Eigen::Quaterniond::Identity().slerp(1.0/dt2*0.5,dq2);
-        //Eigen::Quaterniond dq = dq1.slerp(dt2/(dt1+dt2),dq2);
-        Eigen::AngleAxisd tmp(dq);
-        Eigen::Vector3d velvec=tmp.axis()*tmp.angle();
-        ret.rot=KDL::Vector(velvec(0),velvec(1),velvec(2));
+
+        // Get quaternion 4tuples
+        Eigen::Vector4d q1; T1.M.GetQuaternion(q1(0),q1(1),q1(2),q1(3));
+        Eigen::Vector4d q2; T2.M.GetQuaternion(q2(0),q2(1),q2(2),q2(3));
+        Eigen::Vector4d q3; T3.M.GetQuaternion(q3(0),q3(1),q3(2),q3(3));
+        // Finite differences in central frame
+        Eigen::Vector4d dq_=(q2-q1)/dt1*0.5+(q3-q2)/dt2*0.5;
+        // Convert to world frame
+        Eigen::Quaterniond dq= Eigen::Quaterniond(dq_(3),dq_(0),dq_(1),dq_(2))*Eigen::Quaterniond(q2(3),q2(0),q2(1),q2(2)).conjugate();
+        // Scale and return
+        ret.rot=KDL::Vector(dq.x()*2.0,dq.y()*2.0,dq.z()*2.0);
     }
 
     return ret;
