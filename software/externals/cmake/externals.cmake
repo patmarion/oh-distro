@@ -102,7 +102,7 @@ set(estimate-pose_revision e24a46af00c46116b76f69ff0f20923e60daa519)
 set(estimate-pose_depends fovis)
 
 set(vicon_url https://github.com/openhumanoids/vicon.git)
-set(vicon_revision 867d2f1192ad37b2c37ad3d7611e40ef27ff349d)
+set(vicon_revision c70aaad42235b0f856d71a599cebe1c582c53e3e)
 set(vicon_depends libbot)
 
 set(apriltags_url https://github.com/psiorx/apriltags-pod.git)
