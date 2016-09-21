@@ -18,3 +18,4 @@ wxm = Wolfgang Merkt <w.merkt@gmail.com>
 simalpha = Simona Nobili <nobili.simona@gmail.com>
 VladimirIvan = Vladimir Ivan <v.ivan@ed.ac.uk>
 yimingyanged = Yiming Yang <yymalex@gmail.com>
+cr = Christian Rauch <Christian.Rauch@ed.ac.uk>
