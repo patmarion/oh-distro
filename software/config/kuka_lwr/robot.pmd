@@ -9,6 +9,11 @@ group "0.params_and_model_pub" {
         host = "localhost";
     }
 
+    cmd "exotica_bridge" {
+        exec = "roslaunch oh_translators exotica_bridge.launch";
+        host = "localhost";
+    }
+
     cmd "param_server" {
         exec = "bot-param-server $DRC_BASE/software/config/kuka_lwr/robot.cfg";
         host = "localhost";
@@ -61,6 +66,18 @@ group "4.mapping" {
     cmd "kintinuous" {
         exec = "Kintinuous -vi -vc -s 3 -df -b";
         host = "localhost";
+    }
+}
+
+group "5.exotica" {
+    cmd "exotica_json AICO" {
+      exec = "roslaunch exotica_json IKandAICO.launch";
+      host = "localhost";
+    }
+
+    cmd "exotica_json OMPL" {
+      exec = "roslaunch exotica_json IKandOMPL.launch";
+      host = "localhost";
     }
 }
 
