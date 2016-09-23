@@ -1,0 +1,9 @@
+1. Replace robotiq_s_model_visualization with robotiq_hand_description
+2. Currently deactivated bumblee2 (requires pointgrey_camera_description)
+3. Currently deactivated PTU
+
+Packages left to add:
+
+flir_ptu_description
+lms1xx
+pointgrey_camera_description
