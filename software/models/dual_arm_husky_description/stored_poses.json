@@ -1,0 +1,24 @@
+{
+  "General": [
+    {
+      "allow_mirror": false,
+      "description": "arm up pregrasp",
+      "joints": {
+        "l_ur5_arm_shoulder_pan_joint": -1.57,
+        "l_ur5_arm_shoulder_lift_joint": -0.1745,
+        "l_ur5_arm_elbow_joint": -2.79, 
+        "l_ur5_arm_wrist_1_joint": -1.57, 
+        "l_ur5_arm_wrist_2_joint": 0.0, 
+        "l_ur5_arm_wrist_3_joint": 0.0, 
+        "r_ur5_arm_shoulder_pan_joint": -1.57,
+        "r_ur5_arm_shoulder_lift_joint": -0.1745, 
+        "r_ur5_arm_elbow_joint": -2.79, 
+        "r_ur5_arm_wrist_1_joint": -1.57, 
+        "r_ur5_arm_wrist_2_joint": 0.0, 
+        "r_ur5_arm_wrist_3_joint": 0.0
+      },
+      "name": "arm up pregrasp",
+      "nominal_handedness": "left"
+    }
+  ]
+}
