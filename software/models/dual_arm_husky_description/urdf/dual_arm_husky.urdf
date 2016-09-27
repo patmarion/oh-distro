@@ -367,7 +367,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       </material>
       <origin rpy="3.14 0 0" xyz="-0.0295 0.011 0"/>
       <geometry>
-        <mesh filename="package://flir_ptu_description/meshes/flir-ptu-simple.stl"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/flir-ptu-simple.stl"/>
       </geometry>
     </visual>
     <collision>
@@ -404,7 +404,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       </material>
       <origin rpy="3.14 0 0" xyz="-0.0295 0.011 0"/>
       <geometry>
-        <mesh filename="package://flir_ptu_description/meshes/flir-ptu-simple.stl"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/flir-ptu-simple.stl"/>
       </geometry>
     </visual>
     <collision>
