@@ -1264,7 +1264,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <joint name="l_robotiq_hand_joint" type="fixed">
     <origin rpy="1.57 0 0" xyz="0 0 0"/>
     <parent link="l_robotiq_fts300_fts_toolside"/>
-    <child link="l_palm"/>
+    <child link="left_palm"/>
   </joint>
   <!-- Insert the fingers -->
   <!-- Link list -->
@@ -2952,7 +2952,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   </gazebo>
   <!-- link list -->
   <!-- Link palm -->
-  <link name="l_palm">
+  <link name="left_palm">
     <visual>
       <geometry>
         <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/palm.STL"/>
@@ -2975,15 +2975,15 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <inertia ixx="0.0035" ixy="0" ixz="-0" iyy="0.0035" iyz="0" izz="0.0035"/>
     </inertial>
   </link>
-  <gazebo reference="l_palm">
+  <gazebo reference="left_palm">
     <mu1>1.1</mu1>
     <mu2>1.1</mu2>
   </gazebo>
   <!-- End of link list -->
   <!-- Joint list -->
   <!-- Joint palm_finger_1_joint -->
-  <joint name="l_palm_finger_1_joint" type="revolute">
-    <parent link="l_palm"/>
+  <joint name="left_palm_finger_1_joint" type="revolute">
+    <parent link="left_palm"/>
     <child link="l_finger_1_link_0"/>
     <dynamics damping="1" friction="0"/>
     <axis xyz="0 1 0"/>
@@ -2991,12 +2991,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <!-- Limits: [-17deg.,17deg.] -->
     <limit effort="60" lower="-0.2967" upper="0.2967" velocity="-1"/>
   </joint>
-  <gazebo reference="l_palm_finger_1_joint">
+  <gazebo reference="left_palm_finger_1_joint">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
   <!-- Joint palm_finger_2_joint -->
-  <joint name="l_palm_finger_2_joint" type="revolute">
-    <parent link="l_palm"/>
+  <joint name="left_palm_finger_2_joint" type="revolute">
+    <parent link="left_palm"/>
     <child link="l_finger_2_link_0"/>
     <dynamics damping="1" friction="0"/>
     <axis xyz="0 1 0"/>
@@ -3004,19 +3004,19 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <!-- Limits: [-17deg.,17deg.] -->
     <limit effort="60" lower="-0.2967" upper="0.2967" velocity="-1"/>
   </joint>
-  <gazebo reference="l_palm_finger_2_joint">
+  <gazebo reference="left_palm_finger_2_joint">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
   <!-- Joint palm_finger_middle_joint -->
-  <joint name="l_palm_finger_middle_joint" type="revolute">
-    <parent link="l_palm"/>
+  <joint name="left_palm_finger_middle_joint" type="revolute">
+    <parent link="left_palm"/>
     <child link="l_finger_middle_link_0"/>
     <dynamics damping="1" friction="0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
     <limit effort="60" lower="0" upper="0" velocity="-1"/>
   </joint>
-  <gazebo reference="l_palm_finger_middle_joint">
+  <gazebo reference="left_palm_finger_middle_joint">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
   <!-- end of joint list -->
@@ -3024,7 +3024,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <joint name="r_robotiq_hand_joint" type="fixed">
     <origin rpy="1.57 0 0" xyz="0 0 0"/>
     <parent link="r_robotiq_fts300_fts_toolside"/>
-    <child link="r_palm"/>
+    <child link="right_palm"/>
   </joint>
   <!-- Insert the fingers -->
   <!-- Link list -->
@@ -4712,7 +4712,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   </gazebo>
   <!-- link list -->
   <!-- Link palm -->
-  <link name="r_palm">
+  <link name="right_palm">
     <visual>
       <geometry>
         <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/palm.STL"/>
@@ -4735,15 +4735,15 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <inertia ixx="0.0035" ixy="0" ixz="-0" iyy="0.0035" iyz="0" izz="0.0035"/>
     </inertial>
   </link>
-  <gazebo reference="r_palm">
+  <gazebo reference="right_palm">
     <mu1>1.1</mu1>
     <mu2>1.1</mu2>
   </gazebo>
   <!-- End of link list -->
   <!-- Joint list -->
   <!-- Joint palm_finger_1_joint -->
-  <joint name="r_palm_finger_1_joint" type="revolute">
-    <parent link="r_palm"/>
+  <joint name="right_palm_finger_1_joint" type="revolute">
+    <parent link="right_palm"/>
     <child link="r_finger_1_link_0"/>
     <dynamics damping="1" friction="0"/>
     <axis xyz="0 1 0"/>
@@ -4751,12 +4751,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <!-- Limits: [-17deg.,17deg.] -->
     <limit effort="60" lower="-0.2967" upper="0.2967" velocity="-1"/>
   </joint>
-  <gazebo reference="r_palm_finger_1_joint">
+  <gazebo reference="right_palm_finger_1_joint">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
   <!-- Joint palm_finger_2_joint -->
-  <joint name="r_palm_finger_2_joint" type="revolute">
-    <parent link="r_palm"/>
+  <joint name="right_palm_finger_2_joint" type="revolute">
+    <parent link="right_palm"/>
     <child link="r_finger_2_link_0"/>
     <dynamics damping="1" friction="0"/>
     <axis xyz="0 1 0"/>
@@ -4764,19 +4764,19 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <!-- Limits: [-17deg.,17deg.] -->
     <limit effort="60" lower="-0.2967" upper="0.2967" velocity="-1"/>
   </joint>
-  <gazebo reference="r_palm_finger_2_joint">
+  <gazebo reference="right_palm_finger_2_joint">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
   <!-- Joint palm_finger_middle_joint -->
-  <joint name="r_palm_finger_middle_joint" type="revolute">
-    <parent link="r_palm"/>
+  <joint name="right_palm_finger_middle_joint" type="revolute">
+    <parent link="right_palm"/>
     <child link="r_finger_middle_link_0"/>
     <dynamics damping="1" friction="0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
     <limit effort="60" lower="0" upper="0" velocity="-1"/>
   </joint>
-  <gazebo reference="r_palm_finger_middle_joint">
+  <gazebo reference="right_palm_finger_middle_joint">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
   <!-- end of joint list -->
