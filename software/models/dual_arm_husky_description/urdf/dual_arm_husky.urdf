@@ -355,7 +355,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <child link="dual_arm_bulkhead_link"/>
     <origin rpy="0 0 0" xyz="0 0 0.225"/>
   </joint>
-  <!--<link name="husky_ptu_pan_link">
+  <link name="husky_ptu_pan_link">
     <inertial>
       <mass value="0.65"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -443,13 +443,13 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     </inertial>
   </link>
   <!-- There's an offset between the origin of the pan joint and the origin of 
-         the overall device, which is between the mounting screws on its base. --/>
+         the overall device, which is between the mounting screws on its base. -->
   <joint name="husky_ptu_base" type="fixed">
     <parent link="husky_ptu_base_link"/>
     <child link="husky_ptu_pan_link"/>
     <origin xyz="0 -0.011 0.022"/>
   </joint>
-  <!-- The pan joint --/>
+  <!-- The pan joint -->
   <joint name="husky_ptu_pan" type="revolute">
     <parent link="husky_ptu_pan_link"/>
     <origin rpy="-1.5708 0 0" xyz="0 0 0.066"/>
@@ -466,7 +466,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <!-- The tilt joint --/>
+  <!-- The tilt joint -->
   <joint name="husky_ptu_tilt" type="revolute">
     <parent link="husky_ptu_tilt_link"/>
     <origin rpy="-1.5708 0 0" xyz="0 0 0"/>
@@ -483,18 +483,18 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <!-- Fixed joint to provide a convenient attachment point for accessories. -/->
+  <!-- Fixed joint to provide a convenient attachment point for accessories. -->
   <joint name="husky_ptu_mount" type="fixed">
     <parent link="husky_ptu_tilted_link"/>
     <child link="husky_ptu_mount_link"/>
     <origin rpy="3.1416 0 0" xyz="0 0 -0.03912"/>
   </joint>
-  <!-- Connect PTU to Husky bulkhead --/>
+  <!-- Connect PTU to Husky bulkhead -->
   <joint name="husky_ptu_joint" type="fixed">
     <origin rpy="0 1.57 3.14" xyz="0.365 0 0.221"/>
     <parent link="dual_arm_bulkhead_link"/>
     <child link="husky_ptu_base_link"/>
-  </joint>-->
+  </joint>
   <link name="l_ur5_arm_base_link">
     <visual>
       <geometry>
@@ -1163,8 +1163,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>
         <frameName>bumblebee2_optical</frameName>
         <hackBaseline>0.12</hackBaseline>
-        <!-- NOTE: Distortion is currently unused --/>
-        <distortionK1>0.0</distortionK1>
+        <!-/- NOTE: Distortion is currently unused -->
+        <!--<distortionK1>0.0</distortionK1>
         <distortionK2>0.0</distortionK2>
         <distortionK3>0.0</distortionK3>
         <distortionT1>0.0</distortionT1>

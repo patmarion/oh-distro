@@ -3,8 +3,8 @@
   "urdfConfig": {
     "default": "./urdf/dual_arm_husky.urdf",
     "robotState": "./urdf/dual_arm_husky.urdf",
-    "ik":         "./urdf/dual_arm_husky.urdf",
-    "chull":      "./urdf/dual_arm_husky.urdf",
+    "ik":         "./urdf/dual_arm_husky_drake.urdf",
+    "chull":      "./urdf/dual_arm_husky_drake.urdf",
     "playback":   "./urdf/dual_arm_husky.urdf",
     "teleop":     "./urdf/dual_arm_husky.urdf"
   },
@@ -64,11 +64,19 @@
       "handRootLink" : "left_palm",
       "robotMountLink" : "left_palm",
       "palmLink" : "left_palm"
+    },
+    { "side" : "right",
+      "handType" : "right_robotiq",
+      "handLinkName" : "r_robotiq_fts300_fts_toolside",
+      "handUrdf" : "robotiq_hand_right.urdf",
+      "handRootLink" : "right_palm",
+      "robotMountLink" : "right_palm",
+      "palmLink" : "right_palm"
     }
   ],
 
   "pelvisLink": "base_link",
 
-  "userConfig": ["fixedBaseArm"],
+  "userConfig": [],
   "disableComponents": []
 }
