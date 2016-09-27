@@ -2,9 +2,8 @@
 
 1. Replace robotiq_s_model_visualization with robotiq_hand_description
 2. Currently deactivated bumblee2 (requires pointgrey_camera_description)
-3. Currently deactivated PTU
-4. Replaced ``l_palm`` and ``r_palm`` with ``left_palm`` and ``right_palm``
-5. Fix colours in URDF (because we are using an older Drake that doesn't yet support materials - cf. [#2586](https://github.com/RobotLocomotion/drake/pull/2586))
+3. Replaced ``l_palm`` and ``r_palm`` with ``left_palm`` and ``right_palm``
+4. Fix colours in URDF (because we are using an older Drake that doesn't yet support materials - cf. [#2586](https://github.com/RobotLocomotion/drake/pull/2586))
   1. Replace ``<material name="black"/>`` with ``<material name="black"><color rgba="0 0 0 1"/></material>``
   2. Replace ``<material name="green"/>`` with ``<material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>``
   3. Replace ``<material name="yellow"/>`` with ``<material name="yellow"><color rgba="1 1 0 1" /></material>``
@@ -23,7 +22,6 @@
 
 ## Packages left to add:
 
-1. ``flir_ptu_description``
-2. ``pointgrey_camera_description``
+1. ``pointgrey_camera_description``
 
-Both elements are manually commented out in the URDF at the moment.
+The Bumblebee is manually commented out in the URDF at the moment.
