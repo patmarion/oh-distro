@@ -57,10 +57,18 @@
   "postureDatabaseFile" : "./stored_poses.json",
 
   "handCombinations": [
+    { "side" : "left",
+      "handType" : "left_robotiq",
+      "handLinkName" : "l_robotiq_fts300_fts_toolside",
+      "handUrdf" : "robotiq_hand_left.urdf",
+      "handRootLink" : "left_palm",
+      "robotMountLink" : "left_palm",
+      "palmLink" : "left_palm"
+    }
   ],
 
-  "pelvisLink" : "base_link",
+  "pelvisLink": "base_link",
 
-  "userConfig" : [],
-  "disableComponents" : []
+  "userConfig": ["fixedBaseArm"],
+  "disableComponents": []
 }
