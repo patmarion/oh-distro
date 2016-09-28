@@ -70,18 +70,29 @@ private:
   void imuSensorCallback(const sensor_msgs::ImuConstPtr& msg);
 
 
-  ros::Subscriber headJointStatesSub_;
+  ros::Subscriber jointStatesSub_;
   void publishMultisenseState(int64_t utime, float position, float velocity);
   void jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
+
+  ros::Subscriber left_robotiq_sub_, right_robotiq_sub_;
+  void leftRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
+  void rightRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
 
   // Switch between Multisense and Dual Arm Huskies
   std::string husky_type_;
   bool publish_est_robot_state_from_ekf_;
 
   // Store joint states internally and compose EST_ROBOT_STATE
-  void UpdateInternalStateFromJointStatesMsg(const sensor_msgs::JointStateConstPtr& msg);
+  void UpdateInternalStateFromJointStatesMsg(
+      const sensor_msgs::JointStateConstPtr& msg, std::string prefix);
+  void UpdateInternalStateFromJointStatesMsg(
+      const sensor_msgs::JointStateConstPtr& msg);
   void PublishEstRobotStateFromInternalState(int64_t utime);
-  void PublishJointState(int64_t utime, std::string channel, const sensor_msgs::JointStateConstPtr& ros_msg);
+  void PublishJointState(int64_t utime, std::string channel,
+                         const sensor_msgs::JointStateConstPtr& ros_msg,
+                         std::string prefix);
+  void PublishJointState(int64_t utime, std::string channel,
+                         const sensor_msgs::JointStateConstPtr& ros_msg);
 
   // Joint names
   std::vector<std::string> dual_arm_husky_joints_ = {
@@ -173,6 +184,13 @@ App::App(ros::NodeHandle node, std::string husky_type)
   } else if (husky_type_ == "dual_arm") {
     for (auto& joint : dual_arm_husky_joints_)
       joint_states_.insert(std::make_pair(joint, JointState()));
+
+    left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states", 100,
+                                        &App::leftRobotiqStatesCallback, this);
+
+    right_robotiq_sub_ =
+        node_.subscribe("/husky_gripper_right/joint_states", 100,
+                        &App::rightRobotiqStatesCallback, this);
   }
 
   sick_lidar_sub_ = node_.subscribe(std::string("/sick_scan"), 100,
@@ -185,7 +203,7 @@ App::App(ros::NodeHandle node, std::string husky_type)
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
 
-  headJointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
+  jointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
                                         &App::jointStatesCallback, this);
 }
 
@@ -347,19 +365,6 @@ void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg) {
     if (msg->name[0].substr(0, ptu_prefix.size()) == ptu_prefix)
       PublishJointState(utime, "PTU_STATE", msg);
 
-    // Publish Robotiq States
-    // TODO: fix namespace on robot, then come back here
-    std::string left_robotiq_prefix = "l_ur5_arm";
-    std::string right_robotiq_prefix = "r_ur5_arm";
-
-    if (msg->name[0].substr(0, left_robotiq_prefix.size()) ==
-        left_robotiq_prefix)
-      PublishJointState(utime, "ROBOTIQ_LEFT_STATE", msg);
-
-    if (msg->name[0].substr(0, right_robotiq_prefix.size()) ==
-        right_robotiq_prefix)
-      PublishJointState(utime, "ROBOTIQ_RIGHT_STATE", msg);
-
     // Publish Wheel State
     std::string wheel_suffix = "wheel";
     if (msg->name[0].substr(msg->name[0].size() - wheel_suffix.size(),
@@ -377,27 +382,56 @@ void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg) {
   }
 }
 
+void App::leftRobotiqStatesCallback(
+    const sensor_msgs::JointStateConstPtr& msg) {
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+
+  // Store incoming joints in internal state
+  UpdateInternalStateFromJointStatesMsg(msg, "l_");
+
+  // Publish Robotiq States
+  PublishJointState(utime, "ROBOTIQ_LEFT_STATE", msg, "l_");
+}
+
+void App::rightRobotiqStatesCallback(
+    const sensor_msgs::JointStateConstPtr& msg) {
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+
+  // Store incoming joints in internal state
+  UpdateInternalStateFromJointStatesMsg(msg, "r_");
+
+  // Publish Robotiq States
+  PublishJointState(utime, "ROBOTIQ_RIGHT_STATE", msg, "r_");
+}
+
 void App::UpdateInternalStateFromJointStatesMsg(
     const sensor_msgs::JointStateConstPtr& msg) {
+  UpdateInternalStateFromJointStatesMsg(msg, "");
+}
+void App::UpdateInternalStateFromJointStatesMsg(
+    const sensor_msgs::JointStateConstPtr& msg, std::string prefix = "") {
   size_t num_joints = msg->name.size();
 
   for (size_t i = 0; i < num_joints; i++) {
     // NB: Some joint states (PTU) do not contain velocity or effort parts, this
     // catches exceptions
+    std::string name = prefix + msg->name[i];
     double position = (msg->position.size() > 0) ? msg->position[i] : 0.0;
     double velocity = (msg->velocity.size() > 0) ? msg->velocity[i] : 0.0;
     double effort = (msg->effort.size() > 0) ? msg->effort[i] : 0.0;
 
     // Find in map, if not create
-    if (joint_states_.find(msg->name[i]) == joint_states_.end()) {
-      ROS_WARN_STREAM("Joint " << msg->name[i]
+    if (joint_states_.find(name) == joint_states_.end()) {
+      ROS_WARN_STREAM("Joint " << name
                                << " not found in internal state - this should "
                                   "not happen due to pre-allocation -- check "
                                   "correct pre-allocation");
       JointState new_joint_state(position, velocity, effort);
-      joint_states_.insert(std::make_pair(msg->name[i], new_joint_state));
+      joint_states_.insert(std::make_pair(name, new_joint_state));
     } else {
-      JointState& joint_state = joint_states_[msg->name[i]];
+      JointState& joint_state = joint_states_[name];
       joint_state.position = position;
       joint_state.velocity = velocity;
       joint_state.effort = effort;
@@ -458,6 +492,11 @@ void App::PublishEstRobotStateFromInternalState(int64_t utime) {
 
 void App::PublishJointState(int64_t utime, std::string channel,
                             const sensor_msgs::JointStateConstPtr& ros_msg) {
+  PublishJointState(utime, channel, ros_msg, "");
+}
+void App::PublishJointState(int64_t utime, std::string channel,
+                            const sensor_msgs::JointStateConstPtr& ros_msg,
+                            std::string prefix = "") {
   bot_core::joint_state_t msg;
   msg.utime = utime;
   msg.num_joints = ros_msg->name.size();
@@ -471,6 +510,7 @@ void App::PublishJointState(int64_t utime, std::string channel,
   for (int joint_number = 0; joint_number < msg.num_joints; joint_number++) {
     // NB: Some joint states (PTU) do not contain velocity or effort parts, this
     // catches exceptions
+    std::string name = prefix + ros_msg->name[joint_number];
     double position =
         (ros_msg->position.size() > 0) ? ros_msg->position[joint_number] : 0.0;
     double velocity =
@@ -478,7 +518,7 @@ void App::PublishJointState(int64_t utime, std::string channel,
     double effort =
         (ros_msg->effort.size() > 0) ? ros_msg->effort[joint_number] : 0.0;
 
-    msg.joint_name[joint_number] = ros_msg->name[joint_number];
+    msg.joint_name[joint_number] = name;
     msg.joint_position[joint_number] = position;
     msg.joint_velocity[joint_number] = velocity;
     msg.joint_effort[joint_number] = effort;
