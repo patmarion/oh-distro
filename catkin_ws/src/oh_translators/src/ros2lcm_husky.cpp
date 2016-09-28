@@ -452,7 +452,9 @@ int main(int argc, char** argv) {
   if (argc > 1) {
     husky_type = argv[1];
   } else {
-    ROS_ERROR("Need to have one additional argument: husky type (dual_arm or multisense)");
+    ROS_ERROR(
+        "Need to have one additional argument: husky type (dual_arm or "
+        "multisense)");
     exit(-1);
   }
 
