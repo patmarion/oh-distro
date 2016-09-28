@@ -81,21 +81,20 @@ private:
   // Store joint states internally and compose EST_ROBOT_STATE
   void UpdateInternalStateFromJointStatesMsg(const sensor_msgs::JointStateConstPtr& msg);
   void PublishEstRobotStateFromInternalState(int64_t utime);
+  void PublishJointState(int64_t utime, std::string channel, const sensor_msgs::JointStateConstPtr& ros_msg);
 
   // Joint names
-  std::vector<std::string> floating_base_ = {
-      "base_x", "base_y", "base_z", "base_roll", "base_pitch", "base_yaw"};
   std::vector<std::string> dual_arm_husky_joints_ = {
       "front_left_wheel", "front_right_wheel", "rear_left_wheel",
-      "rear_right_wheel", "l_ur5_arm_shoulder_pan_joint",
-      "l_ur5_arm_shoulder_lift_joint", "l_ur5_arm_elbow_joint",
-      "l_ur5_arm_wrist_1_joint", "l_ur5_arm_wrist_2_joint",
-      "l_ur5_arm_wrist_3_joint", "r_ur5_arm_shoulder_pan_joint",
-      "r_ur5_arm_shoulder_lift_joint", "r_ur5_arm_elbow_joint",
-      "r_ur5_arm_wrist_1_joint", "r_ur5_arm_wrist_2_joint",
-      "r_ur5_arm_wrist_3_joint", "l_palm_finger_1_joint", "l_finger_1_joint_1",
-      "l_finger_1_joint_2", "l_finger_1_joint_3",
-      "l_finger_1_joint_proximal_actuating_hinge",
+      "rear_right_wheel", "husky_ptu_pan", "husky_ptu_tilt",
+      "l_ur5_arm_shoulder_pan_joint", "l_ur5_arm_shoulder_lift_joint",
+      "l_ur5_arm_elbow_joint", "l_ur5_arm_wrist_1_joint",
+      "l_ur5_arm_wrist_2_joint", "l_ur5_arm_wrist_3_joint",
+      "r_ur5_arm_shoulder_pan_joint", "r_ur5_arm_shoulder_lift_joint",
+      "r_ur5_arm_elbow_joint", "r_ur5_arm_wrist_1_joint",
+      "r_ur5_arm_wrist_2_joint", "r_ur5_arm_wrist_3_joint",
+      "l_palm_finger_1_joint", "l_finger_1_joint_1", "l_finger_1_joint_2",
+      "l_finger_1_joint_3", "l_finger_1_joint_proximal_actuating_hinge",
       "l_finger_1_joint_paraproximal_actuating_hinge",
       "l_finger_1_joint_proximal_actuating_bar",
       "l_finger_1_joint_paraproximal_bar",
@@ -172,8 +171,8 @@ App::App(ros::NodeHandle node, std::string husky_type)
   if (husky_type_ == "multisense") {
     publish_est_robot_state_from_ekf_ = true;
   } else if (husky_type_ == "dual_arm") {
-    // for (auto& joint : dual_arm_husky_joints_)
-    //   joint_states_.insert(std::make_pair(joint, JointState()));
+    for (auto& joint : dual_arm_husky_joints_)
+      joint_states_.insert(std::make_pair(joint, JointState()));
   }
 
   sick_lidar_sub_ = node_.subscribe(std::string("/sick_scan"), 100,
@@ -332,15 +331,50 @@ void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg) {
   // Store incoming joints in internal state
   UpdateInternalStateFromJointStatesMsg(msg);
 
-  // TODO: dual arm husky: publish left and right arms separately
+  if (husky_type_ == "dual_arm") {
+    // Publish UR5
+    std::string left_ur5_prefix = "l_ur5_arm";
+    std::string right_ur5_prefix = "r_ur5_arm";
 
-  // We got the wheels, so publish joint state
-  // NB: We use the wheels, even though at lower frequency, to trigger the
-  // publishing of the generated message as these will always be available.
-  // Hands or arms, which might be powered down, are not generally available at
-  // all times.
-  // TODO: create a dedicated state sync
-  if (msg->name.size() == 4) PublishEstRobotStateFromInternalState(utime);
+    if (msg->name[0].substr(0, left_ur5_prefix.size()) == left_ur5_prefix)
+      PublishJointState(utime, "LEFT_UR5_STATE", msg);
+
+    if (msg->name[0].substr(0, right_ur5_prefix.size()) == right_ur5_prefix)
+      PublishJointState(utime, "RIGHT_UR5_STATE", msg);
+
+    // Publish PTU State
+    std::string ptu_prefix = "husky_ptu";
+    if (msg->name[0].substr(0, ptu_prefix.size()) == ptu_prefix)
+      PublishJointState(utime, "PTU_STATE", msg);
+
+    // Publish Robotiq States
+    // TODO: fix namespace on robot, then come back here
+    std::string left_robotiq_prefix = "l_ur5_arm";
+    std::string right_robotiq_prefix = "r_ur5_arm";
+
+    if (msg->name[0].substr(0, left_robotiq_prefix.size()) ==
+        left_robotiq_prefix)
+      PublishJointState(utime, "ROBOTIQ_LEFT_STATE", msg);
+
+    if (msg->name[0].substr(0, right_robotiq_prefix.size()) ==
+        right_robotiq_prefix)
+      PublishJointState(utime, "ROBOTIQ_RIGHT_STATE", msg);
+
+    // Publish Wheel State
+    std::string wheel_suffix = "wheel";
+    if (msg->name[0].substr(msg->name[0].size() - wheel_suffix.size(),
+                            wheel_suffix.size()) == wheel_suffix)
+      PublishJointState(utime, "WHEEL_STATE", msg);
+
+    // We got the wheels, so publish joint state
+    // NB: We use the wheels, even though at lower frequency, to trigger the
+    // publishing of the generated message as these will always be available.
+    // Hands or arms, which might be powered down, are not generally available
+    // at
+    // all times.
+    // TODO: create a dedicated state sync
+    if (msg->name.size() == 4) PublishEstRobotStateFromInternalState(utime);
+  }
 }
 
 void App::UpdateInternalStateFromJointStatesMsg(
@@ -348,7 +382,7 @@ void App::UpdateInternalStateFromJointStatesMsg(
   size_t num_joints = msg->name.size();
 
   for (size_t i = 0; i < num_joints; i++) {
-    // NB: Some joint states do not contain velocity or effort parts, this
+    // NB: Some joint states (PTU) do not contain velocity or effort parts, this
     // catches exceptions
     double position = (msg->position.size() > 0) ? msg->position[i] : 0.0;
     double velocity = (msg->velocity.size() > 0) ? msg->velocity[i] : 0.0;
@@ -420,6 +454,37 @@ void App::PublishEstRobotStateFromInternalState(int64_t utime) {
   }
 
   lcmPublish_.publish("EST_ROBOT_STATE", &msg);
+}
+
+void App::PublishJointState(int64_t utime, std::string channel,
+                            const sensor_msgs::JointStateConstPtr& ros_msg) {
+  bot_core::joint_state_t msg;
+  msg.utime = utime;
+  msg.num_joints = ros_msg->name.size();
+
+  msg.joint_name.assign(msg.num_joints, "");
+  msg.joint_position.assign(msg.num_joints, (const float&)0.);
+  msg.joint_velocity.assign(msg.num_joints, (const float&)0.);
+  msg.joint_effort.assign(msg.num_joints, (const float&)0.);
+
+  // Iterate over joint_states_ map
+  for (int joint_number = 0; joint_number < msg.num_joints; joint_number++) {
+    // NB: Some joint states (PTU) do not contain velocity or effort parts, this
+    // catches exceptions
+    double position =
+        (ros_msg->position.size() > 0) ? ros_msg->position[joint_number] : 0.0;
+    double velocity =
+        (ros_msg->velocity.size() > 0) ? ros_msg->velocity[joint_number] : 0.0;
+    double effort =
+        (ros_msg->effort.size() > 0) ? ros_msg->effort[joint_number] : 0.0;
+
+    msg.joint_name[joint_number] = ros_msg->name[joint_number];
+    msg.joint_position[joint_number] = position;
+    msg.joint_velocity[joint_number] = velocity;
+    msg.joint_effort[joint_number] = effort;
+  }
+
+  lcmPublish_.publish(channel, &msg);
 }
 
 void App::publishMultisenseState(int64_t utime, float position, float velocity)
