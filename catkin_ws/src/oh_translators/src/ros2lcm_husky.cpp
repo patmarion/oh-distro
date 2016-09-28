@@ -447,11 +447,22 @@ void App::publishMultisenseState(int64_t utime, float position, float velocity)
 }
 
 int main(int argc, char** argv) {
+  std::string husky_type;
+
+  if (argc > 1) {
+    husky_type = argv[1];
+  } else {
+    ROS_ERROR("Need to have one additional argument: husky type (dual_arm or multisense)");
+    exit(-1);
+  }
+
+  if (husky_type != "dual_arm" && husky_type != "multisense") {
+    ROS_ERROR("Mode not understood: use dual_arm or multisense");
+    exit(-1);
+  }
+
   ros::init(argc, argv, "ros2lcm_husky");
   ros::NodeHandle nh;
-
-  // std::string husky_type = "multisense";
-  std::string husky_type = "dual_arm";
 
   new App(nh, husky_type);
   ROS_INFO_STREAM("ros2lcm_husky translator ready: " << husky_type);
