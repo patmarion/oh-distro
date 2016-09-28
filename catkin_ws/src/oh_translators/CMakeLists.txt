@@ -48,6 +48,7 @@ set(TARGETS
     ros2lcm_sdh
     lcm2ros_sdh
     ros2lcm_husky
+    ros2lcm_dual_arm_husky
 )
 
 include_directories(
@@ -129,7 +130,7 @@ pods_use_pkg_config_packages(ros2lcm_sdh lcm bot2-core eigen3)
 add_executable(lcm2ros_sdh src/lcm2ros_sdh.cpp)
 target_link_libraries(lcm2ros_sdh ${catkin_LIBRARIES})
 add_dependencies(lcm2ros_sdh ipab_msgs_generate_messages_cpp)
-pods_use_pkg_config_packages(lcm2ros_sdh lcm bot2-core lcmtypes_robotiqhand  std_srvs)
+pods_use_pkg_config_packages(lcm2ros_sdh lcm bot2-core lcmtypes_robotiqhand std_srvs)
 
 
 ######################################################
@@ -138,6 +139,10 @@ target_link_libraries(ros2lcm_husky ${catkin_LIBRARIES})
 #add_dependencies(ros2lcm_husky )
 pods_use_pkg_config_packages(ros2lcm_husky lcm bot2-core eigen3)
 
+add_executable(ros2lcm_dual_arm_husky src/ros2lcm_dual_arm_husky.cpp)
+target_link_libraries(ros2lcm_dual_arm_husky ${catkin_LIBRARIES})
+#add_dependencies(ros2lcm_dual_arm_husky )
+pods_use_pkg_config_packages(ros2lcm_dual_arm_husky lcm bot2-core eigen3)
 
 #############
 ## Install ##

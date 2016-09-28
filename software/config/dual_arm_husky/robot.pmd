@@ -22,7 +22,7 @@ group "1.ros_communication_translators" {
     }
 
     cmd "translator_husky" {
-        exec = "rosrun oh_translators ros2lcm_husky dual_arm";
+        exec = "rosrun oh_translators ros2lcm_dual_arm_husky";
         host = "localhost";
     }
 

@@ -59,7 +59,7 @@ group "3.rosbag" {
     }
 
     cmd "translator_husky" {
-        exec = "rosrun oh_translators ros2lcm_husky multisense";
+        exec = "rosrun oh_translators ros2lcm_husky";
         host = "localhost";
     }
 
