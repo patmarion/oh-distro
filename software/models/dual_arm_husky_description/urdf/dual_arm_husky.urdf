@@ -1194,14 +1194,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_force_torque_sensor/meshes/visual/robotiq_fts300.dae"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/visual/robotiq_fts300.dae"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_force_torque_sensor/meshes/collision/robotiq_fts300.dae"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/collision/robotiq_fts300.dae"/>
       </geometry>
     </collision>
   </link>
@@ -1235,14 +1235,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_force_torque_sensor/meshes/visual/robotiq_fts300.dae"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/visual/robotiq_fts300.dae"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_force_torque_sensor/meshes/collision/robotiq_fts300.dae"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/collision/robotiq_fts300.dae"/>
       </geometry>
     </collision>
   </link>
