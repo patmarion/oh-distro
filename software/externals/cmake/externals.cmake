@@ -2,12 +2,12 @@
 
 if(NOT USE_SYSTEM_LCM)
   set(lcm_proj lcm)
-  set(lcm_url https://github.com/lcm-proj/lcm/releases/download/v1.3.0/lcm-1.3.0.zip)
-  set(lcm_download_hash 5d46a902fe04608809af3dc526909f9b)
+  set(lcm_url https://github.com/lcm-proj/lcm.git)
+  set(lcm_revision 5052abb)
   set(lcm_depends)
   set(lcm_external_args
-    CONFIGURE_COMMAND ${source_prefix}/lcm/configure --prefix=${CMAKE_INSTALL_PREFIX}
-    BUILD_IN_SOURCE 1
+    CMAKE_CACHE_ARGS
+      ${default_cmake_args}
     )
 endif()
 
