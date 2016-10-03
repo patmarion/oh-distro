@@ -11,7 +11,7 @@ if(NOT USE_SYSTEM_LCM)
     )
 endif()
 
-set(bot_core_lcmtypes_url https://github.com/mwoehlke-kitware/bot_core_lcmtypes.git)
+set(bot_core_lcmtypes_url https://github.com/openhumanoids/bot_core_lcmtypes.git)
 set(bot_core_lcmtypes_revision 6f8d14dc2f810aaf995c640518e6c3431179de98)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 set(bot_core_lcmtypes_external_args
@@ -20,7 +20,7 @@ set(bot_core_lcmtypes_external_args
   )
 
 set(libbot_url https://github.com/openhumanoids/libbot.git)
-set(libbot_revision 2e852b4626e421623f1080f855328efa6b098cdb)
+set(libbot_revision caa89ab)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
