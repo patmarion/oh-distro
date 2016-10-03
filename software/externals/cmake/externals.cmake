@@ -11,9 +11,13 @@ if(NOT USE_SYSTEM_LCM)
     )
 endif()
 
-set(bot_core_lcmtypes_url https://github.com/iamwolf/bot_core_lcmtypes.git)
-set(bot_core_lcmtypes_revision c29cd6076d13ca2a3ecc23ffcbe28a0a1ab46314)
+set(bot_core_lcmtypes_url https://github.com/mwoehlke-kitware/bot_core_lcmtypes.git)
+set(bot_core_lcmtypes_revision 0434090)
 set(bot_core_lcmtypes_depends ${lcm_proj})
+set(bot_core_lcmtypes_external_args
+  CMAKE_CACHE_ARGS
+    ${default_cmake_args}
+  )
 
 set(libbot_url https://github.com/openhumanoids/libbot.git)
 set(libbot_revision a238668b8e2e7ef985517716bdd4ee96e774a445)
