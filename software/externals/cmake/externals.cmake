@@ -81,7 +81,7 @@ set(frsm_revision 0fb51ac1580a7f6ce3b5f4d7afc302caa976246f)
 set(frsm_depends libbot)
 
 set(kinect_url https://github.com/openhumanoids/kinect.git)
-set(kinect_revision 1b7c944c08ba4e3a488298d1cdbf6f8485fb015e)
+set(kinect_revision c2aadd5bec41837fac4a46555d8b8544c22248d6)
 set(kinect_depends libbot)
 
 set(microstrain_url https://github.com/openhumanoids/microstrain.git)
