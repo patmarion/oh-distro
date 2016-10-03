@@ -19,8 +19,8 @@ set(bot_core_lcmtypes_external_args
     ${default_cmake_args}
   )
 
-set(libbot_url https://github.com/RobotLocomotion/libbot.git)
-set(libbot_revision 6d932c8)
+set(libbot_url https://github.com/openhumanoids/libbot.git)
+set(libbot_revision 2e852b4626e421623f1080f855328efa6b098cdb)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
