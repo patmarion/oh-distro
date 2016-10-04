@@ -2,7 +2,6 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include <path_util/path_util.h>
-#include <lcmtypes/bot_core.hpp>
 
 #include <bot_param/param_client.h>
 #include <bot_param/param_util.h>

@@ -78,7 +78,7 @@ void accel_from_position::pose_handler(const lcm::ReceiveBuffer* rbuf, const std
   lcm_->publish( "POSE_IMU_VELOCITY", &pose_msg);
 
 
-  microstrain::ins_t out;
+  bot_core::ins_t out;
   out.utime = msg->utime;
   out.accel[0] = accel(0);
   out.accel[1] = accel(1);

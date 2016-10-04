@@ -6,8 +6,8 @@
 #include <map>
 #include <memory>
 
-#include "lcmtypes/bot_core.hpp"
-#include "lcmtypes/drc/behavior_t.hpp"
+#include <lcmtypes/bot_core/pose_t.hpp>
+#include <lcmtypes/drc/behavior_t.hpp>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 #include <pronto_utils/pronto_math.hpp>
