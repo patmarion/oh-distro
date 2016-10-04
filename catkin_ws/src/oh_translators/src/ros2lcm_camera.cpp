@@ -24,7 +24,7 @@
 
 // ### LCM
 #include <lcm/lcm-cpp.hpp>
-#include <lcmtypes/bot_core.hpp>
+#include <lcmtypes/bot_core/image_t.hpp>
 
 // ### OpenCV
 #include <opencv2/imgproc/imgproc.hpp>

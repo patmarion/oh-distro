@@ -26,7 +26,6 @@
 #include <std_msgs/Int32.h>
 #include <sensor_msgs/LaserScan.h>
 
-#include <lcmtypes/bot_core.hpp>
 #include "lcmtypes/drc/behavior_t.hpp"
 
 #include <tf/transform_listener.h>

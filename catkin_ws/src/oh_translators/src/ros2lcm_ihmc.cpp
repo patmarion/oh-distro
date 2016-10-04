@@ -31,7 +31,15 @@
 #include <ihmc_msgs/FootstepStatusRosMessage.h>
 
 // Core Bot Types
-#include <lcmtypes/bot_core.hpp>
+#include <lcmtypes/bot_core/ins_t.hpp>
+#include <lcmtypes/bot_core/pose_t.hpp>
+#include <lcmtypes/bot_core/planar_lidar_t.hpp>
+#include <lcmtypes/bot_core/joint_state_t.hpp>
+#include <lcmtypes/bot_core/rigid_transform_t.hpp>
+#include <lcmtypes/bot_core/force_torque_t.hpp>
+#include <lcmtypes/bot_core/six_axis_force_torque_t.hpp>
+#include <lcmtypes/bot_core/six_axis_force_torque_array_t.hpp>
+#include <lcmtypes/bot_core/utime_t.hpp>
 
 // Core OH types
 #include "lcmtypes/drc/behavior_t.hpp"

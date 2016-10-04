@@ -19,7 +19,13 @@
 #include <map>
 #include <string>
 
-#include <lcmtypes/bot_core.hpp>
+#include <lcmtypes/bot_core/ins_t.hpp>
+#include <lcmtypes/bot_core/robot_state_t.hpp>
+#include <lcmtypes/bot_core/planar_lidar_t.hpp>
+#include <lcmtypes/bot_core/rigid_transform_t.hpp>
+#include <lcmtypes/bot_core/pose_t.hpp>
+#include <lcmtypes/bot_core/joint_state_t.hpp>
+
 #include <lcm/lcm-cpp.hpp>
 
 
