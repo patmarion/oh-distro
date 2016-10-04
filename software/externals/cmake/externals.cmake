@@ -1,9 +1,7 @@
-
-
 if(NOT USE_SYSTEM_LCM)
   set(lcm_proj lcm)
   set(lcm_url https://github.com/lcm-proj/lcm.git)
-  set(lcm_revision 5052abb)
+  set(lcm_revision 0fb8cba1476480db664c7931571a94d26f1dbbaf)
   set(lcm_depends)
   set(lcm_external_args
     CMAKE_CACHE_ARGS
