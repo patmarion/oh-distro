@@ -3,7 +3,7 @@
 #include <ConciseArgs>
 #include <map>
 
-#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include <lcmtypes/bot_core/robot_state_t.hpp>
 #include "lcmtypes/drc/foot_contact_estimate_t.hpp"
 
 
