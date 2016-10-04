@@ -26,10 +26,10 @@
 #include <pronto_utils/pronto_lcm.hpp>
 #include <pronto_utils/pronto_vis.hpp>
 
-#include <lcmtypes/bot_core.hpp>
-#include "lcmtypes/bot_core/robot_state_t.hpp"
-#include "lcmtypes/bot_core/robot_urdf_t.hpp"
-#include "lcmtypes/microstrain/ins_t.hpp"
+#include <lcmtypes/bot_core/pose_t.hpp>
+#include <lcmtypes/bot_core/robot_state_t.hpp>
+#include <lcmtypes/bot_core/robot_urdf_t.hpp>
+#include <lcmtypes/bot_core/ins_t.hpp>
 
 ///////////////////////////////////////////////////////////////
 class accel_from_position{
