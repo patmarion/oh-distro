@@ -5,7 +5,7 @@
 #include <sys/time.h>
 
 #include <lcm/lcm-cpp.hpp>
-#include "lcmtypes/bot_core.hpp"
+#include "lcmtypes/bot_core/bot_core.hpp"
 
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 #include "lcmtypes/drc/utime_two_t.hpp"
