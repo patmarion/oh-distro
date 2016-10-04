@@ -77,7 +77,7 @@ set(occ-map_revision 34ab71fa693216d2c0508f0f2680b9a68994f473)
 set(occ-map_depends libbot ${opencv_proj})
 
 set(common_utils_url https://github.com/openhumanoids/common_utils.git)
-set(common_utils_revision d887653f8e565f2b94ae96b7b411af134212ebfd)
+set(common_utils_revision 9f430d29600b4545c4e10fac930a5900e09b66c1)
 set(common_utils_depends Eigen_pod libbot occ-map octomap)
 
 set(frsm_url https://github.com/openhumanoids/frsm.git)
