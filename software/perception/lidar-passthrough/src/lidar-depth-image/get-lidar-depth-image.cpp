@@ -10,7 +10,8 @@
 #include <math.h>
 
 #include <lcm/lcm-cpp.hpp>
-#include <lcmtypes/bot_core.hpp>
+#include <lcmtypes/bot_core/image_t.hpp>
+#include <lcmtypes/bot_core/images_t.hpp>
 
 #include <bot_frames/bot_frames.h>
 #include <bot_param/param_client.h>

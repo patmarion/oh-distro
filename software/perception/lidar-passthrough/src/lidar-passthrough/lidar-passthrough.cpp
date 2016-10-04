@@ -32,7 +32,7 @@
 
 #include <pronto_utils/pronto_vis.hpp> // visualize pt clds
 #include <pronto_utils/pronto_lcm.hpp> // unpack lidar to xyz
-#include "lcmtypes/bot_core.hpp"
+#include "lcmtypes/bot_core/planar_lidar_t.hpp"
 #include "lcmtypes/bot_core/robot_urdf_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <ConciseArgs>
