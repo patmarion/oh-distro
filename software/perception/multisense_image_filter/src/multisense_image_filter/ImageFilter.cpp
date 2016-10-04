@@ -1,6 +1,7 @@
 #include <boost/shared_ptr.hpp>
 #include <lcm/lcm-cpp.hpp>
-#include "lcmtypes/bot_core.hpp"
+#include <lcmtypes/bot_core/image_t.hpp>
+#include <lcmtypes/bot_core/images_t.hpp>
 
 #include <image-passthrough/image-passthrough-app.hpp>
 #include <multisense_image_utils/multisense_image_utils.hpp>
