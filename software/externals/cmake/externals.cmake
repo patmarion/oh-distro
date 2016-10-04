@@ -81,7 +81,7 @@ set(common_utils_revision 9f430d29600b4545c4e10fac930a5900e09b66c1)
 set(common_utils_depends Eigen_pod libbot occ-map octomap)
 
 set(frsm_url https://github.com/openhumanoids/frsm.git)
-set(frsm_revision 0fb51ac1580a7f6ce3b5f4d7afc302caa976246f)
+set(frsm_revision 3fdf2b829cd0d6659383b228a06875ece55c6e71)
 set(frsm_depends libbot)
 
 set(kinect_url https://github.com/openhumanoids/kinect.git)
