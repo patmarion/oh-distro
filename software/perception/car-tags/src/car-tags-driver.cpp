@@ -16,9 +16,9 @@
 #include <maps_utils/BotWrapper.hpp>
 #include <lcm/lcm-cpp.hpp>
 
-#include <lcmtypes/bot_core.hpp>
-#include <lcmtypes/bot_core/images_t.hpp>
 #include <lcmtypes/bot_core/image_t.hpp>
+#include <lcmtypes/bot_core/images_t.hpp>
+#include <lcmtypes/bot_core/rigid_transform_t.hpp>
 
 #include <bot_core/camtrans.h>
 #include <bot_param/param_util.h>

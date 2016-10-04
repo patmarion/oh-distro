@@ -2,10 +2,6 @@
 // drc-image-passthrough -o 1
 // june 2016
 
-#include <boost/shared_ptr.hpp>
-#include <lcm/lcm-cpp.hpp>
-#include "lcmtypes/bot_core.hpp"
-
 #include <image-passthrough/image-passthrough-app.hpp>
 
 #include <ConciseArgs>
