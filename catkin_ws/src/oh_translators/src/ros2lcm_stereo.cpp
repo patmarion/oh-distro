@@ -44,7 +44,7 @@
 #include <std_msgs/Float64.h>
 
 #include <lcm/lcm-cpp.hpp>
-#include <lcmtypes/bot_core.hpp>
+#include <lcmtypes/bot_core/images_t.hpp>
 #include <opencv2/opencv.hpp>
 #include <zlib.h>
 

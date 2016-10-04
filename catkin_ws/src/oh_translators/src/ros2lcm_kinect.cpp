@@ -12,7 +12,7 @@
 #include <zlib.h>
 
 #include "lcmtypes/kinect.hpp"
-#include "lcmtypes/bot_core.hpp"
+// #include "lcmtypes/bot_core.hpp"
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
