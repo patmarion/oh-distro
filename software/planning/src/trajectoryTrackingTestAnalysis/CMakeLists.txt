@@ -2,6 +2,6 @@ add_definitions(-ggdb3 -std=c++0x)
 
 add_executable(TrajectoryTrackingTestAnalysis TrajectoryTrackingTestAnalysis.cpp)
 target_link_libraries(TrajectoryTrackingTestAnalysis lcm tinyxml2)
-pods_use_pkg_config_packages(TrajectoryTrackingTestAnalysis)
+pods_use_pkg_config_packages(TrajectoryTrackingTestAnalysis lcmtypes_bot2-core)
 pods_install_executables(TrajectoryTrackingTestAnalysis)
 
