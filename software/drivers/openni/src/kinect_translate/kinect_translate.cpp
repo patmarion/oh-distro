@@ -7,7 +7,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "lcmtypes/bot_core.hpp"
+#include <lcmtypes/bot_core/image_t.hpp>
 #include "lcmtypes/openni.hpp"
 #include "lcmtypes/kinect.hpp"
 class rgb_tool{
