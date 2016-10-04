@@ -1,5 +1,5 @@
 #include "fppUtil.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include <lcmtypes/bot_core/robot_state_t.hpp>
 
 using namespace std;
 using namespace Eigen;
