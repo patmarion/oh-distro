@@ -17,7 +17,7 @@
 #include <map>
 #include <string>
 
-#include <lcmtypes/bot_core.hpp>
+#include <lcmtypes/bot_core/planar_lidar_t.hpp>
 #include <lcm/lcm-cpp.hpp>
 
 
