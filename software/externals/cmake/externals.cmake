@@ -89,7 +89,7 @@ set(kinect_revision 5aad46b491db2ede0df41f8a6338e912b3918895)
 set(kinect_depends libbot bot_core_lcmtypes)
 
 set(microstrain_url https://github.com/openhumanoids/microstrain.git)
-set(microstrain_revision 93f4582491f0cfec1c658ed3fb84ae84a13bc6c2)
+set(microstrain_revision 94e0fad7ca21e9c63e1ed17416a9fbee662fb8cb)
 set(microstrain_depends common_utils)
 
 set(bullet_url https://github.com/RobotLocomotion/bullet-pod.git)
