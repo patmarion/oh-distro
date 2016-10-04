@@ -12,7 +12,7 @@ if(NOT USE_SYSTEM_LCM)
 endif()
 
 set(bot_core_lcmtypes_url https://github.com/openhumanoids/bot_core_lcmtypes.git)
-set(bot_core_lcmtypes_revision 9a33ebc8a4de900f16c214c1a3933b3edb431e83)
+set(bot_core_lcmtypes_revision 95d59aab0233a262293c3e215c07babfbba9d985)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 set(bot_core_lcmtypes_external_args
   CMAKE_CACHE_ARGS
