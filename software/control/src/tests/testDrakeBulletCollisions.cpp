@@ -19,7 +19,6 @@
 #include <lcm/lcm-cpp.hpp>
 #include <bot_lcmgl_client/lcmgl.h>
 
-#include "lcmtypes/bot_core.hpp"
 #include <ConciseArgs>
 #include <drake/systems/plants/RigidBodyTree.h>
 #include <drake/util/drakeGeometryUtil.h>
