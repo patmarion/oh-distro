@@ -254,57 +254,143 @@ Eigen::Isometry3d KDLToEigen(KDL::Frame tf)
 }
 
 
-bool LCM2ROS::getChestTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::ChestTrajectoryRosMessage& m)
+KDL::Twist LCM2ROS::Interpolate(double t1, double t2, double t3, const KDL::Frame& T1, const KDL::Frame& T2, const KDL::Frame& T3)
 {
-  for (int i = 0; i < msg->num_states; i++)  // NB: skipping the first sample as it has time = 0
-  {
-    // 0. Extract World Pose of body:
-    bot_core::robot_state_t this_state = msg->plan[i];
-    Eigen::Isometry3d world_to_body;
-    world_to_body.setIdentity();
-    world_to_body.translation()  << this_state.pose.translation.x, this_state.pose.translation.y, this_state.pose.translation.z;
-    world_to_body.rotate(Eigen::Quaterniond(this_state.pose.rotation.w, this_state.pose.rotation.x,
-                                                 this_state.pose.rotation.y, this_state.pose.rotation.z));
+    KDL::Twist ret;
+    double dt1 = t2-t1;
+    double dt2 = t3-t2;
 
-    // 1. Solve for Forward Kinematics:
-    std::map<std::string, double> jointpos_in;
-    std::map<std::string, KDL::Frame > cartpos_out;
-    for (uint i=0; i< (uint) this_state.num_joints; i++)  // cast to uint to suppress compiler warning
-      jointpos_in.insert(make_pair(this_state.joint_name[i], this_state.joint_position[i]));
-
-    // Calculate forward position kinematics
-    bool kinematics_status;
-    bool flatten_tree = true;  // determines absolute transforms to robot origin, otherwise relative transforms between joints.
-    kinematics_status = fksolver_->JntToCart(jointpos_in, cartpos_out, flatten_tree);
-    if (kinematics_status < 0)
+    if(dt1*dt2>0.0)
     {
-      std::cerr << "Error: could not calculate forward kinematics!" << std::endl;
-      return false;
+        ret.vel = (T2.p-T1.p)/dt1*0.5 + (T3.p-T2.p)/dt2*0.5;
+
+        // Get quaternion 4tuples
+        Eigen::Vector4d q1; T1.M.GetQuaternion(q1(0),q1(1),q1(2),q1(3));
+        Eigen::Vector4d q2; T2.M.GetQuaternion(q2(0),q2(1),q2(2),q2(3));
+        Eigen::Vector4d q3; T3.M.GetQuaternion(q3(0),q3(1),q3(2),q3(3));
+        // Finite differences in central frame
+        Eigen::Vector4d dq_=(q2-q1)/dt1*0.5+(q3-q2)/dt2*0.5;
+        // Convert to world frame
+        Eigen::Quaterniond dq= Eigen::Quaterniond(dq_(3),dq_(0),dq_(1),dq_(2))*Eigen::Quaterniond(q2(3),q2(0),q2(1),q2(2)).conjugate();
+        // Scale and return
+        ret.rot=KDL::Vector(dq.x()*2.0,dq.y()*2.0,dq.z()*2.0);
     }
 
-    // 2. Find the world orientation of the chest:
-    Eigen::Isometry3d world_to_torso = world_to_body * KDLToEigen(cartpos_out.find(chestLinkName_)->second);
-    Eigen::Quaterniond wTt_quat = Eigen::Quaterniond(world_to_torso.rotation());
-
-    ihmc_msgs::SO3TrajectoryPointRosMessage point;
-    point.time = getPlanTimeAtWaypoint( this_state.utime );
-    point.orientation.w = wTt_quat.w();
-    point.orientation.x = wTt_quat.x();
-    point.orientation.y = wTt_quat.y();
-    point.orientation.z = wTt_quat.z();
-    // TODO: Compute velocity
-    point.angular_velocity.x = 0;
-    point.angular_velocity.y = 0;
-    point.angular_velocity.z = 0;
-    point.unique_id = -1;
-
-    m.taskspace_trajectory_points.push_back(point);
-
-  }
-
-  return true;
+    return ret;
 }
 
+bool LCM2ROS::getChestTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::ChestTrajectoryRosMessage& m)
+{
+    std::vector<KDL::Frame> world_to_chest;
+    for (int i = 0; i < msg->num_states; i++)
+    {
+
+        bot_core::robot_state_t this_state = msg->plan[i];
+
+        // 0. Extract World Pose of body:
+        KDL::Frame world_to_body(KDL::Rotation::Quaternion(this_state.pose.rotation.x,this_state.pose.rotation.y, this_state.pose.rotation.z,this_state.pose.rotation.w),
+                                 KDL::Vector(this_state.pose.translation.x, this_state.pose.translation.y, this_state.pose.translation.z));
+
+        // 1. Solve for Forward Kinematics:
+        std::map<std::string, double> jointpos_in;
+        std::map<std::string, KDL::Frame > cartpos_out;
+        for (uint i=0; i< (uint) this_state.num_joints; i++)  // cast to uint to suppress compiler warning
+          jointpos_in.insert(make_pair(this_state.joint_name[i], this_state.joint_position[i]));
+
+        // Calculate forward position kinematics
+        bool kinematics_status;
+        bool flatten_tree = true;  // determines absolute transforms to robot origin, otherwise relative transforms between joints.
+        kinematics_status = fksolver_->JntToCart(jointpos_in, cartpos_out, flatten_tree);
+        if (kinematics_status < 0)
+        {
+          std::cerr << "Error: could not calculate forward kinematics!" << std::endl;
+          return false;
+        }
+        world_to_chest.push_back(world_to_body*cartpos_out.at(chestLinkName_));
+    }
+
+    for (int i = 0; i < msg->num_states; i++)
+    {
+        bot_core::robot_state_t this_state = msg->plan[i];
+        ihmc_msgs::SO3TrajectoryPointRosMessage point;
+        point.time = getPlanTimeAtWaypoint( this_state.utime );
+
+        // Copy orientation
+        world_to_chest[i].M.GetQuaternion(point.orientation.x,point.orientation.y,point.orientation.z,point.orientation.w);
+
+        // Compute velocity
+        if(i==0||i==msg->num_states-1)
+        {
+            point.angular_velocity.x = 0;
+            point.angular_velocity.y = 0;
+            point.angular_velocity.z = 0;
+        }
+        else
+        {
+            KDL::Twist vel = Interpolate(msg->plan[i-1].utime*1e-6,msg->plan[i].utime*1e-6,msg->plan[i+1].utime*1e-6,
+                    world_to_chest[i-1],world_to_chest[i],world_to_chest[i+1]);
+            point.angular_velocity.x = vel.rot.x();
+            point.angular_velocity.y = vel.rot.y();
+            point.angular_velocity.z = vel.rot.z();
+        }
+
+        point.unique_id = -1;
+        m.taskspace_trajectory_points.push_back(point);
+    }
+
+    return true;
+}
+
+
+void LCM2ROS::getPelvisTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::PelvisTrajectoryRosMessage& m)
+{
+    // Collect frames
+    std::vector<KDL::Frame> pelvis;
+
+    for (int i = 0; i < msg->num_states; i++)
+    {
+        bot_core::robot_state_t state = msg->plan[i];
+        pelvis.push_back(KDL::Frame(KDL::Rotation::Quaternion(state.pose.rotation.x,state.pose.rotation.y,state.pose.rotation.z,state.pose.rotation.w),
+                                    KDL::Vector(state.pose.translation.x,state.pose.translation.y,state.pose.translation.z)));
+    }
+
+    for (int i = 0; i < msg->num_states; i++)
+    {
+        bot_core::robot_state_t this_state = msg->plan[i];
+        ihmc_msgs::SE3TrajectoryPointRosMessage point;
+        point.time = getPlanTimeAtWaypoint( this_state.utime );
+
+        // Copy position and orientation
+        point.position.x = pelvis[i].p.x();
+        point.position.y = pelvis[i].p.y();
+        point.position.z = pelvis[i].p.z();
+        pelvis[i].M.GetQuaternion(point.orientation.x,point.orientation.y,point.orientation.z,point.orientation.w);
+        // Compute velocity
+        if(i==0||i==msg->num_states-1)
+        {
+            point.linear_velocity.x = 0;
+            point.linear_velocity.y = 0;
+            point.linear_velocity.z = 0;
+            point.angular_velocity.x = 0;
+            point.angular_velocity.y = 0;
+            point.angular_velocity.z = 0;
+        }
+        else
+        {
+            KDL::Twist vel = Interpolate(msg->plan[i-1].utime*1e-6,msg->plan[i].utime*1e-6,msg->plan[i+1].utime*1e-6,
+                    pelvis[i-1],pelvis[i],pelvis[i+1]);
+            point.linear_velocity.x = vel.vel.x();
+            point.linear_velocity.y = vel.vel.y();
+            point.linear_velocity.z = vel.vel.z();
+            point.angular_velocity.x = vel.rot.x();
+            point.angular_velocity.y = vel.rot.y();
+            point.angular_velocity.z = vel.rot.z();
+        }
+
+        point.unique_id = -1;
+        m.taskspace_trajectory_points.push_back(point);
+    }
+}
 
 void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const drc::robot_plan_t* msg)
 {
@@ -350,35 +436,7 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf, const std::string
 
 
   // 2. Insert Pelvis Pose
-  for (int i = 0; i < msg->num_states; i++)
-  {
-    bot_core::robot_state_t state = msg->plan[i];
-
-    ihmc_msgs::SE3TrajectoryPointRosMessage point;
-    point.time = getPlanTimeAtWaypoint( state.utime );
-
-    point.position.x = state.pose.translation.x;
-    point.position.y = state.pose.translation.y;
-    point.position.z = state.pose.translation.z;
-    point.orientation.w = state.pose.rotation.w;
-    point.orientation.x = state.pose.rotation.x;
-    point.orientation.y = state.pose.rotation.y;
-    point.orientation.z = state.pose.rotation.z;
-
-    // TODO: compute velocity
-
-    point.linear_velocity.x = 0;
-    point.linear_velocity.y = 0;
-    point.linear_velocity.z = 0;
-    point.angular_velocity.x = 0;
-    point.angular_velocity.y = 0;
-    point.angular_velocity.z = 0;
-    point.unique_id = -1;
-    wbt_msg.pelvis_trajectory_message.taskspace_trajectory_points.push_back(point);
-    std::cout << i << ": " << getPlanTimeAtWaypoint(state.utime) << " " << (state.utime - msg->plan[i-1].utime) * 1E-6 << " is time and difference of the pelvis waypoints\n";
-
-  }
-
+  getPelvisTrajectoryPlan(msg,wbt_msg.pelvis_trajectory_message);
 
   // 3. Insert Chest Pose (in work frame)
 
