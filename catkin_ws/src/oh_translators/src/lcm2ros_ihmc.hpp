@@ -106,8 +106,18 @@ const char * getTrajectoryName( int enumVal )
                         std::vector<std::string> input_joint_names, bool is_right,
                         ihmc_msgs::ArmTrajectoryRosMessage &m);
   bool getChestTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::ChestTrajectoryRosMessage& m);
+  void getPelvisTrajectoryPlan(const drc::robot_plan_t* msg, ihmc_msgs::PelvisTrajectoryRosMessage& m);
+
   void sendNeckPlan(const bot_core::joint_angles_t* msg, std::vector<std::string> output_joint_names_neck,
                                   std::vector<std::string> input_joint_names);
+
+  KDL::Twist Interpolate(double t1, double t2, double t3, const KDL::Frame& T1, const KDL::Frame& T2, const KDL::Frame& T3);
+  inline Eigen::Quaterniond GetQuat(const KDL::Rotation& T)
+  {
+      Eigen::Quaterniond ret;
+      T.GetQuaternion(ret.x(),ret.y(),ret.z(),ret.w());
+      return ret;
+  }
 
 
   void handPoseCommandHandler(const lcm::ReceiveBuffer* rbuf, const std::string &channel, const bot_core::pose_t* msg);
