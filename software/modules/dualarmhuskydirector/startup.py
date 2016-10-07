@@ -9,6 +9,7 @@ from director import teleoppanel
 import tabledemo
 import mappingpanel
 import mappingdemo
+import huskyplanningpanel
 
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
@@ -46,6 +47,8 @@ def startup(robotSystem, globalsDict=None):
             rs.ikPlanner, rs.manipPlanner, rs.footstepsDriver, rs.lHandDriver, rs.rHandDriver,
             rs.view, rs.robotStateJointController, playPlans, playbackPanel, jointLimitChecker)
     tableTaskPanel = tabledemo.TableTaskPanel(tableDemo)
+    
+    huskyPlanningPlanel = huskyplanningpanel.init()
 
     tasklaunchpanel.panel.addTaskPanel('Clearing Demo', tableTaskPanel.widget)
     tasklaunchpanel.panel.addTaskPanel('Mapping Demo', mappingTaskPanel.widget)
@@ -56,3 +59,4 @@ def startup(robotSystem, globalsDict=None):
     globalsDict['mappingDemo'] = mappingDemo
     globalsDict['mappingPanel'] = mappingPanel
     globalsDict['mappingTaskPanel'] = mappingTaskPanel
+    globalsDict['huskyPlanningPlanel'] = huskyPlanningPlanel
