@@ -5,6 +5,7 @@ Robot-specific modifications for the Dual Arm Husky
 from director import tasklaunchpanel
 from director import applogic
 from director import teleoppanel
+from director import planningutils
 
 import tabledemo
 import mappingpanel
@@ -29,6 +30,7 @@ def startup(robotSystem, globalsDict=None):
     playbackPanel = globalsDict['playbackPanel']
     jointLimitChecker = globalsDict['jointLimitChecker']
     perception = globalsDict['perception']
+    planningUtils = globalsDict['planningUtils']
 
     ## Remove all task panels
     for taskPanel in tasklaunchpanel.panel.getTaskPanelNames():
@@ -48,7 +50,10 @@ def startup(robotSystem, globalsDict=None):
             rs.view, rs.robotStateJointController, playPlans, playbackPanel, jointLimitChecker)
     tableTaskPanel = tabledemo.TableTaskPanel(tableDemo)
     
-    huskyPlanningPlanel = huskyplanningpanel.init()
+    huskyPlanningPlanel = huskyplanningpanel.init(planningUtils, rs.robotStateModel, 
+            rs.robotStateJointController, rs.teleopRobotModel, rs.teleopJointController, 
+            rs.ikPlanner, rs.manipPlanner, rs.affordanceManager, playbackPanel.setPlan, 
+            playbackPanel.hidePlan)
 
     tasklaunchpanel.panel.addTaskPanel('Clearing Demo', tableTaskPanel.widget)
     tasklaunchpanel.panel.addTaskPanel('Mapping Demo', mappingTaskPanel.widget)

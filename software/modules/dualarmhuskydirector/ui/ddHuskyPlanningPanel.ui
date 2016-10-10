@@ -1,295 +1,302 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>panel</class>
- <widget class="QWidget" name="panel">
+ <class>moveFootDownButton</class>
+ <widget class="QWidget" name="moveFootDownButton">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>465</width>
-    <height>980</height>
+    <width>484</width>
+    <height>1030</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Valkyrie Driver</string>
+   <string>Motion Planning Panel</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
-   <property name="spacing">
-    <number>0</number>
-   </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
-   <item>
-    <widget class="QScrollArea" name="scrollArea">
+  <layout class="QGridLayout" name="gridLayout_7">
+   <item row="3" column="0" colspan="2">
+    <widget class="QFrame" name="MotionPlanningPanel">
+     <property name="frameShape">
+      <enum>QFrame::Panel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <property name="lineWidth">
+      <number>2</number>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="mpInteractiveCheck">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Interactive</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Motion Planning</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="mpPlanButton">
+            <property name="text">
+             <string>Plan</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Planning Mode</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="mpModeCombo">
+          <item>
+           <property name="text">
+            <string>drake</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>exotica</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QFrame" name="EndPosePlanningPanel">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="whatsThis">
+      <string/>
+     </property>
+     <property name="accessibleName">
+      <string/>
+     </property>
      <property name="frameShape">
-      <enum>QFrame::NoFrame</enum>
+      <enum>QFrame::Panel</enum>
      </property>
-     <property name="horizontalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOff</enum>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
      </property>
-     <property name="widgetResizable">
+     <property name="lineWidth">
+      <number>2</number>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_8">
+      <item row="0" column="0" rowspan="2" colspan="2">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Planning mode</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="fpModeCombo">
+          <property name="contextMenuPolicy">
+           <enum>Qt::DefaultContextMenu</enum>
+          </property>
+          <item>
+           <property name="text">
+            <string>drake</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>exotica</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;End-Pose Planning&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Left hand</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QComboBox" name="larmCombo">
+          <item>
+           <property name="text">
+            <string>ee fixed</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>arm fixed</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>free</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="fpInteractiveCheck">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Interactive</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="epPlanButton">
+            <property name="text">
+             <string>Plan</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Right hand</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QComboBox" name="rarmCombo">
+          <item>
+           <property name="text">
+            <string>arm fixed</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>ee fixed</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>free</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Base</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QComboBox" name="baseCombo">
+          <item>
+           <property name="text">
+            <string>fixed</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>constrained</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>free</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QPushButton" name="huskyPlanningButton">
+     <property name="text">
+      <string>Husky Planning</string>
+     </property>
+     <property name="checkable">
       <bool>true</bool>
      </property>
-     <widget class="QWidget" name="scrollAreaWidgetContents">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>465</width>
-        <height>980</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
-       <item>
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="font">
-            <font>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>End Pose Planning</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QComboBox" name="epModeCombo">
-           <item>
-            <property name="text">
-             <string>drake</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>exotica</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>Base</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QComboBox" name="larmCombo">
-           <item>
-            <property name="text">
-             <string>fixed</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>ee pose</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>free</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>Right Arm</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Left Arm</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QCheckBox" name="epInteractiveBox">
-           <property name="text">
-            <string>Interactive</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="2">
-          <widget class="QComboBox" name="rarmCombo">
-           <item>
-            <property name="text">
-             <string>fixed</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>ee pose</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>free</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="4" column="2">
-          <widget class="QComboBox" name="baseCombo">
-           <item>
-            <property name="text">
-             <string>fixed</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>constrained</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>free</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Planning Mode</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="2">
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="epPlanButton">
-             <property name="text">
-              <string>Plan</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QGridLayout" name="gridLayout_3">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="font">
-            <font>
-             <weight>75</weight>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>Motion Planning</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QCheckBox" name="mpInteractiveBox">
-           <property name="text">
-            <string>Interactive</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>PlanningMode</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QComboBox" name="mpModeCombo">
-           <item>
-            <property name="text">
-             <string>drake</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>exotica</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <item>
-            <widget class="QLabel" name="label_9">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_11">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="mpPlanButton">
-             <property name="text">
-              <string>Plan</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </widget>
     </widget>
+   </item>
+   <item row="4" column="0">
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

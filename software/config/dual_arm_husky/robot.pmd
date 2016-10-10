@@ -31,3 +31,29 @@ group "1.ros_communication_translators" {
         host = "localhost";
     }
 }
+
+group "2.exotica_planning" {
+    cmd "exotica_bridge" {
+        exec = "roslaunch oh_translators exotica_bridge.launch mode:=sim_robot";
+        host = "localhost";
+    }
+    cmd "exotica_husky_planning" {
+        exec = "roslaunch exotica_json Husky.launch";
+        host = "localhost";
+    }
+}
+
+
+script "start_exotica" {
+    start group "0.params_and_model_pub";
+	start cmd "roscore";
+    wait ms 1000;
+    start group "2.exotica_planning";
+    start cmd "director";
+}
+
+script "start" {
+    start group "0.params_and_model_pub";
+    wait ms 1000;
+    start cmd "director";
+}
