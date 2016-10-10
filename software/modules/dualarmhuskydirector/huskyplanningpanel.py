@@ -55,15 +55,17 @@ class HuskyPlanningPanel(object):
         self.ui.huskyPlanningButton.connect('clicked()', self.onHuskyPlanningMode)
         self.ui.epPlanButton.connect('clicked()', self.epPlanButtonClicked)
         self.ui.mpPlanButton.connect('clicked()', self.mpPlanButtonClicked)
-    
-        self.ui.larmCombo.setEnabled(False)
-        self.ui.rarmCombo.setEnabled(False)
-        self.ui.baseCombo.setEnabled(False)
+        self.ui.larmCombo.connect('currentIndexChanged(const QString&)', self.onLeftHandChanged)
+        self.ui.rarmCombo.connect('currentIndexChanged(const QString&)', self.onRightHandChanged)
+        self.ui.baseCombo.connect('currentIndexChanged(const QString&)', self.onBaseChanged)
+
         self.ui.fpModeCombo.setEnabled(False)
         self.ui.mpInteractiveCheck.setEnabled(False)
         
         self.constraintSet = None
         self.palmOffsetDistance = 0.0
+        self.baseFrameHeightOffset = 0.17775
+        self.ikPlanner.fixedBaseArm = False
         
         self.deactivate()
         
@@ -101,7 +103,14 @@ class HuskyPlanningPanel(object):
         frame = om.findObjectByName(frameName)
         if frame:
             om.removeFromObjectModel(frame)
-    
+            
+    def removeBaseFrame(self):
+        linkName = self.ikPlanner.pelvisLink
+        frameName = linkName + ' constraint frame'
+        frame = om.findObjectByName(frameName)
+        if frame:
+            om.removeFromObjectModel(frame)
+            
     def createHandGoalFrame(self, side):
         folder = self.getConstraintFrameFolder()
         startPose = self.planningUtils.getPlanningStartPose()
@@ -111,7 +120,18 @@ class HuskyPlanningPanel(object):
         graspToWorld = self.ikPlanner.newGraspToWorldFrame(startPose, side, graspToHand)
         frame = vis.showFrame(graspToWorld, frameName, parent=folder, scale=0.2)
         frame.connectFrameModified(self.onGoalFrameModified)
-            
+    
+    def createBaseGoalFrame(self):
+        folder = self.getConstraintFrameFolder()
+        startPose = self.planningUtils.getPlanningStartPose()
+        linkName = self.ikPlanner.pelvisLink
+        frameName = linkName + ' constraint frame'
+        om.removeFromObjectModel(om.findObjectByName(frameName))
+        baseLinkPose = self.ikPlanner.getLinkFrameAtPose(linkName, startPose)
+        baseLinkPose.Translate([0, 0, -self.baseFrameHeightOffset])
+        frame = vis.showFrame(baseLinkPose, frameName, parent=folder, scale=0.2)
+        frame.connectFrameModified(self.onGoalFrameModified)
+                
     def onGoalFrameModified(self, frame):
         if self.ui.fpInteractiveCheck.checked:
             self.updateIk()
@@ -128,6 +148,30 @@ class HuskyPlanningPanel(object):
     def getRightArmConstraint(self):
         return self.getComboText(self.ui.rarmCombo)
     
+    def onLeftHandChanged(self):
+        if self.getLeftArmConstraint() == 'ee fixed':
+            self.createHandGoalFrame('left')
+        elif self.getLeftArmConstraint() == 'arm fixed':
+            self.removeHandFrames('left') 
+        self.updateIKConstraints()
+        self.updateIk()
+        
+    def onRightHandChanged(self):
+        if self.getRightArmConstraint() == 'ee fixed':
+            self.createHandGoalFrame('right')
+        elif self.getRightArmConstraint() == 'arm fixed':
+            self.removeHandFrames('right') 
+        self.updateIKConstraints()
+        self.updateIk()
+
+    def onBaseChanged(self):
+        if self.getBaseConstraint() == 'fixed':
+            self.removeBaseFrame()
+        elif self.getBaseConstraint() == 'constrained':
+            self.createBaseGoalFrame()
+        self.updateIKConstraints()
+        self.updateIk()
+          
     def updateIKConstraints(self):
         ikPlanner = self.ikPlanner
         startPoseName = 'reach_start'
@@ -140,15 +184,7 @@ class HuskyPlanningPanel(object):
                 thisHandConstraint = self.getLeftArmConstraint()
             elif (side == "right"):
                 thisHandConstraint = self.getRightArmConstraint()
-            
-            linkName = ikPlanner.getHandLink(side)
-            graspToHand = ikPlanner.newPalmOffsetGraspToHandFrame(side, self.palmOffsetDistance)
-            graspToWorld = self.getGoalFrame(linkName)
-            
-            p, q = ikPlanner.createPositionOrientationGraspConstraints(side, graspToWorld, graspToHand)
-            p.tspan = [1.0, 1.0]
-            q.tspan = [1.0, 1.0]
-            
+                
             if thisHandConstraint == 'arm fixed':
                 if (side == "left"):
                     constraints.append(ikPlanner.createLockedLeftArmPostureConstraint(startPoseName))
@@ -156,17 +192,32 @@ class HuskyPlanningPanel(object):
                     constraints.append(ikPlanner.createLockedRightArmPostureConstraint(startPoseName))
                 ikPlanner.setArmLocked(side,True)
             elif thisHandConstraint == 'ee fixed':
+                linkName = ikPlanner.getHandLink(side)
+                graspToHand = ikPlanner.newPalmOffsetGraspToHandFrame(side, self.palmOffsetDistance)
+                graspToWorld = self.getGoalFrame(linkName)
+            
+                p, q = ikPlanner.createPositionOrientationGraspConstraints(side, graspToWorld, graspToHand)
+                p.tspan = [1.0, 1.0]
+                q.tspan = [1.0, 1.0]
                 constraints.extend([p, q])
                 ikPlanner.setArmLocked(side,False)
-            elif thisHandConstraint == 'free':
-                ikPlanner.setArmLocked(side,False)
         
-        # TODO: base constraints
-        constraints.append(ikPlanner.createLockedBasePostureConstraint(startPoseName, lockLegs=False))
-        ikPlanner.setBaseLocked(True)
+        if self.getBaseConstraint() == 'fixed':
+            constraints.append(ikPlanner.createLockedBasePostureConstraint(startPoseName, lockLegs=False))
+            ikPlanner.setBaseLocked(True)
+        elif self.getBaseConstraint() == 'constrained':
+            linkName = ikPlanner.pelvisLink
+            baseToWorld = self.getGoalFrame(linkName)
+            baseoffset = vtk.vtkTransform()
+            baseoffset.Translate([0, 0, -self.baseFrameHeightOffset])
+            p, q = ikPlanner.createPositionOrientationConstraint(linkName, baseToWorld, baseoffset)
+            p.tspan = [1.0, 1.0]
+            q.tspan = [1.0, 1.0]
+            constraints.extend([p, q])
+            ikPlanner.setBaseLocked(False)
         
         self.constraintSet = ikplanner.ConstraintSet(self.ikPlanner, constraints, 'reach_end', startPoseName)
-        print 'update ik constraint'
+
     def updateIk(self):
         if not self.constraintSet:
             self.updateIKConstraints()
