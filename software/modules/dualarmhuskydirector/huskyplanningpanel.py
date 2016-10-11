@@ -59,7 +59,6 @@ class HuskyPlanningPanel(object):
         self.ui.rarmCombo.connect('currentIndexChanged(const QString&)', self.onRightHandChanged)
         self.ui.baseCombo.connect('currentIndexChanged(const QString&)', self.onBaseChanged)
 
-        self.ui.fpModeCombo.setEnabled(False)
         self.ui.mpInteractiveCheck.setEnabled(False)
         
         self.constraintSet = None
