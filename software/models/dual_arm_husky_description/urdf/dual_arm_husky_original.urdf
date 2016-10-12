@@ -70,18 +70,11 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <!-- Base link is the center of the robot's bottom plate -->
   <link name="base_link">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.061875"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.9874 0.5709 0.12375"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/base_link.dae"/>
       </geometry>
-      <material name="Gazebo/DarkYellow"><color rgba=".7 .7 0 1" /></material>
-    </visual>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.185625"/>
-      <geometry>
-        <box size="0.78992 0.5709 0.12375"/>
-      </geometry>
-      <material name="Gazebo/DarkYellow"><color rgba=".7 .7 0 1" /></material>
+      <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.061875"/>
@@ -134,9 +127,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <inertia ixx="0.02467" ixy="0" ixz="0" iyy="0.02467" iyz="0" izz="0.04411"/>
     </inertial>
     <visual>
-      <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="0.1143" radius="0.17775"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/wheel.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -176,9 +169,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <inertia ixx="0.02467" ixy="0" ixz="0" iyy="0.02467" iyz="0" izz="0.04411"/>
     </inertial>
     <visual>
-      <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="0.1143" radius="0.17775"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/wheel.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -218,9 +211,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <inertia ixx="0.02467" ixy="0" ixz="0" iyy="0.02467" iyz="0" izz="0.04411"/>
     </inertial>
     <visual>
-      <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="0.1143" radius="0.17775"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/wheel.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -260,9 +253,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <inertia ixx="0.02467" ixy="0" ixz="0" iyy="0.02467" iyz="0" izz="0.04411"/>
     </inertial>
     <visual>
-      <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <cylinder length="0.1143" radius="0.17775"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/wheel.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -297,7 +290,13 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   </transmission>
   <!-- Spawn Husky chassis -->
   <link name="top_chassis_link">
-
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dual_arm_husky_description/meshes/top_chassis.dae"/>
+      </geometry>
+      <material name="Gazebo/DarkYellow"><color rgba=".7 .7 0 1" /></material>
+    </visual>
   </link>
   <!-- Attach chassis to the robot -->
   <joint name="top_chassis_joint" type="fixed">
@@ -306,7 +305,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   </joint>
   <!-- Spawn front bumper link -->
   <link name="front_bumper_link">
-
+    <visual>
+      <geometry>
+        <mesh filename="package://dual_arm_husky_description/meshes/bumper.dae"/>
+      </geometry>
+      <material name="black"><color rgba="0 0 0 0" /></material>
+    </visual>
   </link>
   <!-- Attach front bumper -->
   <joint name="front_bumper" type="fixed">
@@ -316,7 +320,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   </joint>
   <!-- Spawn rear bumper link -->
   <link name="rear_bumper_link">
-
+    <visual>
+      <geometry>
+        <mesh filename="package://dual_arm_husky_description/meshes/bumper.dae"/>
+      </geometry>
+      <material name="black"><color rgba="0 0 0 0" /></material>
+    </visual>
   </link>
   <!-- Attach rear bumper -->
   <joint name="rear_bumper" type="fixed">
@@ -329,14 +338,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://dual_arm_husky_description/meshes/dual_arm_bulkhead_simple_mesh.dae"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/dual_arm_bulkhead.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://dual_arm_husky_description/meshes/dual_arm_bulkhead_simple_mesh.dae"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/dual_arm_bulkhead.dae"/>
       </geometry>
     </collision>
   </link>
@@ -489,7 +498,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="l_ur5_arm_base_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/base.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/base.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -517,7 +526,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="l_ur5_arm_shoulder_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/shoulder.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/shoulder.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -543,7 +552,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="l_ur5_arm_upper_arm_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/upperarm.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/upperarm.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -571,7 +580,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="l_ur5_arm_forearm_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/forearm.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/forearm.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -599,7 +608,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="l_ur5_arm_wrist_1_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/wrist1.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/wrist1.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -625,7 +634,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="l_ur5_arm_wrist_2_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/wrist2.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/wrist2.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -651,7 +660,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="l_ur5_arm_wrist_3_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/wrist3.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/wrist3.dae"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -755,7 +764,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_ur5_arm_base_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/base.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/base.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -783,7 +792,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_ur5_arm_shoulder_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/shoulder.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/shoulder.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -809,7 +818,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_ur5_arm_upper_arm_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/upperarm.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/upperarm.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -837,7 +846,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_ur5_arm_forearm_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/forearm.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/forearm.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -865,7 +874,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_ur5_arm_wrist_1_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/wrist1.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/wrist1.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -891,7 +900,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_ur5_arm_wrist_2_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/wrist2.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/wrist2.dae"/>
       </geometry>
       <material name="Gazebo/DarkGrey"><color rgba=".175 .175 .175 1.0" /></material>
     </visual>
@@ -917,7 +926,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_ur5_arm_wrist_3_link">
     <visual>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5/collision/wrist3.stl"/>
+        <mesh filename="package://ur_description/meshes/ur5/visual/wrist3.dae"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -1026,9 +1035,10 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <inertia ixx="0.00307156543804" ixy="0.0" ixz="0.0" iyy="0.00312849041527" iyz="0.0" izz="0.00196432421427"/>
     </inertial>
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 -0.05"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.105 0.1 0.1"/>
+        <!-- Origin of this mesh is the focal point of the LIDAR. -->
+        <mesh filename="package://dual_arm_husky_description/meshes/sick-lms1xx.dae"/>
       </geometry>
       <material name="Gazebo/Grey"><color rgba=".3 .3 .3 1" /></material>
     </visual>
@@ -1263,7 +1273,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_0.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_0.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -1291,7 +1301,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.05717 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_1.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_1.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -1319,7 +1329,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.03810 0.0075"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_2.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_2.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -1345,7 +1355,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_3.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_3.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -1824,7 +1834,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_0.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_0.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -1852,7 +1862,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.05717 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_1.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_1.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -1880,7 +1890,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.03810 0.0075"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_2.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_2.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -1906,7 +1916,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_3.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_3.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -2385,7 +2395,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_0.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_0.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -2413,7 +2423,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.05717 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_1.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_1.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -2441,7 +2451,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.03810 0.0075"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_2.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_2.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -2467,7 +2477,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_3.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_3.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -2945,7 +2955,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="left_palm">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/palm.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/palm.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -3023,7 +3033,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_0.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_0.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -3051,7 +3061,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.05717 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_1.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_1.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -3079,7 +3089,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.03810 0.0075"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_2.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_2.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -3105,7 +3115,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_3.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_3.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -3584,7 +3594,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_0.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_0.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -3612,7 +3622,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.05717 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_1.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_1.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -3640,7 +3650,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.03810 0.0075"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_2.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_2.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -3666,7 +3676,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_3.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_3.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -4145,7 +4155,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_0.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_0.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
@@ -4173,7 +4183,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.05717 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_1.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_1.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -4201,7 +4211,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 1.5708" xyz="0 0.03810 0.0075"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_2.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_2.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -4227,7 +4237,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/link_3.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/link_3.STL"/>
       </geometry>
       <material name="Gazebo/LightGrey"><color rgba=".7 .7 .7 1.0" /></material>
     </visual>
@@ -4705,7 +4715,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="right_palm">
     <visual>
       <geometry>
-        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/collision/palm.STL"/>
+        <mesh filename="package://robotiq_hand_description/meshes/s-model_articulated/visual/palm.STL"/>
       </geometry>
       <material name="black"><color rgba="0 0 0 0" /></material>
     </visual>
