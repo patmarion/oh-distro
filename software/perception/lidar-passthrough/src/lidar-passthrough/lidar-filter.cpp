@@ -11,7 +11,7 @@
 
 
 #include <lcm/lcm-cpp.hpp>
-#include "lcmtypes/bot_core.hpp"
+#include <lcmtypes/bot_core/planar_lidar_t.hpp>
 #include <ConciseArgs>
 
 using namespace std;

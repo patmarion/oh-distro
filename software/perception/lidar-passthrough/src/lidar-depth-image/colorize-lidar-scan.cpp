@@ -26,7 +26,9 @@
 #include <pronto_utils/pronto_lcm.hpp> // decode perception lcm messages
 #include <image_io_utils/image_io_utils.hpp> // to simplify jpeg/zlib compression and decompression
 
-#include "lcmtypes/bot_core.hpp"
+#include <lcmtypes/bot_core/image_t.hpp>
+#include <lcmtypes/bot_core/images_t.hpp>
+#include <lcmtypes/bot_core/planar_lidar_t.hpp>
 #include "lcmtypes/visualization.hpp"
 
 #include <camera_params/camera_params.hpp>     // Camera Parameters

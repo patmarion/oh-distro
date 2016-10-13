@@ -1,8 +1,6 @@
 #include <boost/shared_ptr.hpp>
 #include <lcm/lcm-cpp.hpp>
 
-#include <lcmtypes/bot_core.hpp>
-
 #include <bot_param/param_client.h>
 #include <bot_param/param_util.h>
 #include <lcmtypes/bot_core/pose_t.hpp>

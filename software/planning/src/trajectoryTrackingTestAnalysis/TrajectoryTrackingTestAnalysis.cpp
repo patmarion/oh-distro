@@ -1,5 +1,7 @@
 #include <sstream>
 
+#include <lcmtypes/bot_core/robot_state_t.hpp>
+
 #include "lcm_utils/lcm_utils.hpp"
 #include "lcmtypes/drc/plan_status_t.hpp"
 #include "lcmtypes/drc/robot_plan_t.hpp"

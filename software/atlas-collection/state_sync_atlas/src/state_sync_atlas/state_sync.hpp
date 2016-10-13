@@ -8,7 +8,16 @@
 #include <map>
 #include <model-client/model-client.hpp>
 
-#include "lcmtypes/bot_core.hpp"
+#include <lcmtypes/bot_core/joint_angles_t.hpp>
+#include <lcmtypes/bot_core/joint_state_t.hpp>
+#include <lcmtypes/bot_core/kvh_raw_imu_t.hpp>
+#include <lcmtypes/bot_core/kvh_raw_imu_batch_t.hpp>
+#include <lcmtypes/bot_core/pose_t.hpp>
+#include <lcmtypes/bot_core/robot_state_t.hpp>
+#include <lcmtypes/bot_core/rigid_transform_t.hpp>
+#include <lcmtypes/bot_core/six_axis_force_torque_array_t.hpp>
+#include <lcmtypes/bot_core/system_status_t.hpp>
+#include <lcmtypes/bot_core/utime_t.hpp>
 #include "lcmtypes/atlas/state_extra_t.hpp"
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
