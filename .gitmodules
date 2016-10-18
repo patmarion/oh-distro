@@ -31,3 +31,6 @@
 [submodule "software/maps_server"]
 	path = software/maps_server
 	url = git@github.com:openhumanoids/maps_server.git
+[submodule "software/perception/registration"]
+	path = software/perception/registration
+	url = git@github.com:openhumanoids/registration.git
