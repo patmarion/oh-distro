@@ -297,7 +297,7 @@ to set up the correct sources, keys, and ``.bashrc`` parameters.
 
 ::
 
-    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control
+    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control ros-indigo-hardware-interface ros-indigo-controller-interface ros-indigo-joint-limits-interface 
 
 Compile catkin workspace:
 
