@@ -1,28 +1,3 @@
-===================================
-Warning: Don't expect this to work!
-===================================
-
-We're releasing most of the source code from the MIT DRC project in
-the hope that it will benefit the robotics community. But there are
-parts of this software, like the Boston Dynamics Atlas software
-interface, which we are not allowed to release publicly. As a result,
-this public repo is *incomplete*. Some of the submodules and external
-projects are *private*, and you won't be able to access them unless
-you're a member of the team. Sorry!
-
-We're actively working on making this a project that can be used by
-people outside the group, but for now, you should consider it a
-collection of (potentially) interesting code, not a functional
-application.
-
-The core algorithms and tools, however, live in their own projects
-which are much better supported:
-
-* Drake (planning, control, simulation, optimization): http://drake.mit.edu
-* Pronto (state estimation): https://github.com/mitdrc/pronto
-* Director (user interface): https://github.com/RobotLocomotion/director
-
-
 =============
 OpenHumanoids
 =============
@@ -51,6 +26,10 @@ and several fixed base arms.
 This README describes how to download and build the OpenHumanoids source code
 and how to satisfy 3rd party dependencies.
 
+If you are looking for instructions specific to the public open source release, 
+please supplement the following instructions on this page with the additional
+instructions `here <additional_instructions_open_source_release.rst>`_.
+
 
 Background
 ----------
@@ -64,7 +43,7 @@ Background
 System Requirements
 -------------------
 
-These instructions are written for Ubuntu 14.04 64-bit.
+These instructions are written for Ubuntu 14.04 Trusty 64-bit.
 
 
 Download Instructions
@@ -99,13 +78,12 @@ Download the repository with the ``git clone`` command and cd into the distro:
 
 ::
 
-    git clone git@github.com:openhumanoids/oh-distro.git && cd oh-distro
+    git clone git@github.com:openhumanoids/oh-distro-private.git && cd oh-distro-private
 
-If you are **not** a member of the OpenHumanoids organization, please deinit one private submodule or else the following command will fail:
 
-::
-
-    git submodule deinit catkin_ws/src/exotica-dev && git rm catkin_ws/src/exotica-dev
+Users of the open source release need to remote ``-private`` from the URL and directory name
+and also de-initialize some of our submodules as noted in the 
+`supplementary instructions <additional_instructions_open_source_release.rst>`_.
 
 Initialize the submodules (Drake, director, pronto):
 
@@ -113,11 +91,13 @@ Initialize the submodules (Drake, director, pronto):
 
     git submodule update --init --recursive
 
-Add the *sandbox* remote. The *sandbox* is the location where branches can be shared.
+If you're an OpenHumanoids organization member, add the *sandbox* remote. The *sandbox* is the
+location where branches can be shared and deactivate the origin remote.
 
 ::
 
-    git remote add sandbox git@github.com:oh-dev/oh-distro.git
+    git remote set-url --push origin no_push
+    git remote add sandbox git@github.com:oh-dev/oh-distro-private.git
     git fetch sandbox
 
 
@@ -134,14 +114,58 @@ installing packages on Ubuntu. Install with the following commands:
 
     sudo apt-get update
 
-    sudo apt-get install build-essential cmake debhelper freeglut3-dev gtk-doc-tools libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev libboost-random-dev libboost-regex-dev libboost-signals-dev libboost-system-dev libboost-thread-dev libcurl4-openssl-dev libfreeimage-dev libglew-dev libgtkmm-2.4-dev libltdl-dev libgsl0-dev libportmidi-dev libprotobuf-dev libprotoc-dev libqt4-dev libqwt-dev libtar-dev libtbb-dev libtinyxml-dev libxml2-dev ncurses-dev pkg-config protobuf-compiler python-matplotlib libvtk5.8 libvtk5-dev libvtk5-qt4-dev libqhull-dev python-pygame doxygen mercurial libglib2.0-dev openjdk-6-jdk python-dev gfortran f2c libf2c2-dev spacenavd libspnav-dev python-numpy python-scipy python-yaml python-vtk python-pip libgmp3-dev libblas-dev liblapack-dev libv4l-dev subversion libxmu-dev libusb-1.0-0-dev python-pymodbus graphviz curl libwww-perl libterm-readkey-perl libx264-dev libopenni-dev swig libqglviewer-dev libsuitesparse-dev libsdl1.2-dev
+    sudo apt-get install build-essential cmake debhelper freeglut3-dev gtk-doc-tools libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev libboost-random-dev libboost-regex-dev libboost-signals-dev libboost-system-dev libboost-thread-dev libcurl4-openssl-dev libfreeimage-dev libglew-dev libgtkmm-2.4-dev libltdl-dev libgsl0-dev libportmidi-dev libprotobuf-dev libprotoc-dev libqt4-dev libqwt-dev libtar-dev libtbb-dev libtinyxml-dev libxml2-dev ncurses-dev pkg-config protobuf-compiler python-matplotlib libvtk5.8 libvtk5-dev libvtk5-qt4-dev libqhull-dev python-pygame doxygen mercurial libglib2.0-dev python-dev gfortran f2c libf2c2-dev spacenavd libspnav-dev python-numpy python-scipy python-yaml python-vtk python-pip libgmp3-dev libblas-dev liblapack-dev libv4l-dev subversion libxmu-dev libusb-1.0-0-dev python-pymodbus graphviz curl libwww-perl libterm-readkey-perl libx264-dev libopenni-dev swig libqglviewer-dev libsuitesparse-dev libsdl1.2-dev
 
 
+Java 8
+------
+You will also need Java 8 which you can install via:
+
+::
+
+    sudo add-apt-repository ppa:openjdk-r/ppa
+    sudo apt-get update 
+    sudo apt-get install openjdk-8-jdk
+
+If you previously had another version of Java installed make sure to configure the alternatives 
+for ``java`` and ``javac`` to use the correct version of Java:
+
+::
+
+    sudo update-alternatives --config java
+    sudo update-alternatives --config javac
+
+If required, further information can be found `here <http://ubuntuhandbook.org/index.php/2015/01/install-openjdk-8-ubuntu-14-04-12-04-lts/>`_.
+
+gcc/g++ 4.9
+-----------
+More recent Matlab and Drake versions require C++14 support for which you will need to install gcc/g++ 4.9:
+
+::
+    
+    sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    sudo apt-get update
+    sudo apt-get install gcc-4.9 g++-4.9
+    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
+
+CMake 3.5
+---------
+Some of our dependencies require a newer CMake than the system-provided 2.8.12. You can install a local copy and add it to your path by running:
+
+::
+
+    mkdir -p ~/tools
+    cd ~/tools
+    wget https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz
+    tar zxvf cmake-3.5.2-Linux-x86_64.tar.gz
+    rm cmake-3.5.2-Linux-x86_64.tar.gz
+    cd cmake-3.5.2-Linux-x86_64/bin
+    echo "export PATH=`pwd`:\$PATH" >> ~/.bashrc
 
 LCM Dependency
 --------------
 
-LCM (v1.3.1) is a required dependency which must be installed from source. It can be retrieved from http://lcm-proj.github.io/
+LCM (v1.3.1) is a required dependency which must be installed from source. Further instructions and tutorials are available `here <http://lcm-proj.github.io/>`_.
 
 ::
 
@@ -153,34 +177,24 @@ LCM (v1.3.1) is a required dependency which must be installed from source. It ca
     sudo make install
 
 
-
 Install Matlab
 --------------
 
-Download Matlab r2014a from Mathworks.com. Unzip the file you just downloaded (e.g., unzip ./R2014a-linux64.zip)
-cd into the resulting directory
-sudo ./install
+Download Matlab R2016b from `MathWorks <https://mathworks.com/downloads/>`_. Unzip the file you just downloaded (e.g., unzip ./R2016b-linux64.zip)
+cd into the resulting directory and run ``sudo ./install``.
+
 When prompted for how to install, choose "Log in with a MathWorks Account."
 
-Newer versions of Matlab are known to **not** play nicely with our code.
-
 Choose a "Typical" install and click next through the rest of the process. You will need to enter your Mathworks username and password during the install process, and you should see a single license that you can use for the install (this comes from a lookup of the activation key).
-You should have a functional MATLAB in /usr/local/MATLAB/R2014a/bin now. You can either add this directory to your PATH environment variable (e.g. in ~/.bashrc) or you can make a symlink in /usr/local/bin/ that points to the MATLAB binary - sudo ln -s /usr/local/MATLAB/R2014a/bin/matlab /usr/local/bin/matlab. If you put it in .bashrc, you'll need to source that file before matlab will be in your path (or, just start a new shell)
 
 After installing MATLAB, two of the symlinks for libraries need to be changed:
 
 ::
 
-   cd /usr/local/MATLAB/R2014a/sys/os/glnxa64
+   cd /usr/local/MATLAB/R2016b/sys/os/glnxa64
    ls -l
 
 The symbolic links for libstdc++.so.6 and libgfortran.so.3 should point to versions in /usr/lib, not local ones.
-
-Before changing this libraries, first make sure g++ 4.4 is installed:
-
-::
-
-   sudo apt-get install g++-4.4
 
 Now, modify the symlinks:
 
@@ -194,15 +208,13 @@ Now, modify the symlinks:
 Instructions for MOSEK
 ----------------------
 
-Mosek is a solver used in the footstep planner. Obtain an academic licence from
-http://license.mosek.com/academic
-Check your email and place your license in ~/mosek/mosek.lic
-The Mosek code is checked out as part of the project externasl
+Mosek is a solver used in the footstep planner. Obtain an academic licence from `Mosek <http://license.mosek.com/academic>`_.
+Check your email and place your license in ``~/mosek/mosek.lic``.
+The Mosek code is checked out as part of the project externals.
 
 
 Build Instructions
 ==================
-
 
 Environment Setup
 -----------------
@@ -210,13 +222,13 @@ Environment Setup
 The behavior of certain build steps can be affected by environment
 variables, so you should setup your environment before starting the
 build. The environment is setup by sourcing the file
-*oh-distro/software/config/drc\_environment.sh*. Typically, users will source
+*oh-distro-private/software/config/drc\_environment.sh*. Typically, users will source
 this file automatically in their ~/.bashrc file by adding this line to
 ~/.bashrc:
 
 ::
 
-    source /path-to/oh-distro/software/config/drc_environment.sh
+    source /path-to/oh-distro-private/software/config/drc_environment.sh
 
 If you have already done this, make sure your ~/.bashrc contains the
 correct path to the drc\_environment.sh file in the oh-distro source code
@@ -243,22 +255,8 @@ automatically in ~/.bashrc, then do so now with the following command:
 
 ::
 
-    cd oh-distro
+    cd oh-distro-private
     source software/config/drc_environment.sh
-
-If you do not have access to private external submodules such as Gurobi, Snopt, or the Atlas drivers, you need to turn off BUILD_PRIVATE_EXTERNALS:
-
-::
-
-    cd oh-distro/software/externals
-    mkdir pod-build && cd pod-build
-    cmake .. -DBUILD_PRIVATE_EXTERNALS:BOOL=OFF
-    cd ..
-    make -j
-    cd ..
-    make -j
-
-Please make sure to install Gurobi and Snopt manually.
 
 If you are a member of the OpenHumanoids organization, run make to build externals and then the main codebase:
 
@@ -277,7 +275,7 @@ Gurobi is a solver used in our walking controller. Install its dependencies with
 
 ::
 
-    apt-get install curl libwww-perl libterm-readkey-perl
+    sudo apt-get install curl libwww-perl libterm-readkey-perl
 
 Then generate an academic licence: First make an account
 http://www.gurobi.com/download/licenses/free-academic , then use the Gurobi
@@ -294,9 +292,12 @@ ROS
 
 ROS is not required per se. If you would like to use this distribution in conjunction with IHMC's SCS, your own controllers for Valkyrie, or to use EXOTica for planning and optimization, please install ROS Indigo including MoveIt and ROS-Control. Valkyrie uses ROS-Control for the Hardware API and our LCM2ROSControl translator package hence requires ROS Control.
 
+You may need to follow the ROS Indigo installation instructions available `here <http://wiki.ros.org/indigo/Installation/Ubuntu>`_
+to set up the correct sources, keys, and ``.bashrc`` parameters.
+
 ::
 
-    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control
+    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control ros-indigo-hardware-interface ros-indigo-controller-interface ros-indigo-joint-limits-interface 
 
 Compile catkin workspace:
 
@@ -339,7 +340,7 @@ These options are disabled by default on purpose. Then, to make use of the syste
     
     cd software/externals
     mkdir pod-build && cd pod-build
-    cmake .. -DUSE_SYSTEM_PCL:BOOL=ON -DUSE_SYSTEM_OPENCV:BOOL=ON
+    cmake .. -DUSE_SYSTEM_PCL:BOOL=ON -DUSE_SYSTEM_OPENCV:BOOL=ON -DCMAKE_INSTALL_PREFIX:STRING=$DRC_BASE/software/build
 
 
 Using externally installed Gurobi
@@ -361,8 +362,8 @@ ISSUE: make in externals failed:
 * REASON: A submodule has been updated
 * RESOLUTION:
 
-  * retry (make -j 1) and see which module failed
-  * remove the relevent module from pod build: rm pod-build/src/[module] pod-build/tmp/[module]
+  * retry (``make -j1``) and see which module failed
+  * remove the relevent module from pod build: ``rm -rf pod-build/src/[module] pod-build/tmp/[module]``
   * continue making externals
 
 ISSUE: drc_lcmtypes fails to build showing something like:
