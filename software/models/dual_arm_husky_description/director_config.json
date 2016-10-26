@@ -78,5 +78,6 @@
   "pelvisLink": "base_link",
 
   "userConfig": [],
-  "disableComponents": []
+  "disableComponents": ["useFootsteps", "useHumanoidDRCDemos", "useAtlasDriver"],
+  "enableComponents": ["useKinect"]
 }
