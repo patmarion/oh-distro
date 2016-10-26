@@ -19,11 +19,10 @@ def startup(robotSystem, globalsDict=None):
     atlasPanelAction = applogic.getToolBarActions()['ActionAtlasDriverPanel']
     applogic.getMainWindow().panelToolBar().removeAction(atlasPanelAction)
 
-    # Assert that we are starting the Kuka LWR
+    # Assert that we are starting the Dual Arm Husky
     assert globalsDict is not None
     assert 'directorConfig' in globalsDict
     directorConfig = globalsDict['directorConfig']
-    assert 'userConfig' in directorConfig
 
     # Dual Arm Husky Demos
     playPlans = globalsDict['playPlans']
