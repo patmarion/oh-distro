@@ -37,6 +37,23 @@ group "2.exotica_planning" {
     }
 }
 
+group "2.sensing" {
+    cmd "kinect" {
+        exec = "kinect-openni-lcm -j -z";
+        host = "localhost";
+    }
+
+    cmd "kinect-view" {
+        exec = "kinect-glview";
+        host = "localhost";
+    }
+
+    cmd "kinect-rgb-tool" {
+        exec = "kinect-rgb-tool";
+        host = "localhost";
+    }
+}
+
 
 script "start_exotica" {
     start group "0.params_and_model_pub";
