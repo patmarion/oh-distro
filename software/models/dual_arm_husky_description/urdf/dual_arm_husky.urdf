@@ -1078,11 +1078,11 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <child link="base_laser"/>
   </joint>
   <!-- Add bumblebee camera -->
-  <!--<link name="bumblebee2">
+  <link name="bumblebee2">
     <visual>
       <origin rpy="-1.5707 0 -1.5707" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://pointgrey_camera_description/meshes/pointgrey_bumblebee2.dae"/>
+        <mesh filename="package://dual_arm_husky_description/meshes/pointgrey_bumblebee2.dae"/>
       </geometry>
     </visual>
     <collision>
@@ -1153,8 +1153,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>
         <frameName>bumblebee2_optical</frameName>
         <hackBaseline>0.12</hackBaseline>
-        <!-/- NOTE: Distortion is currently unused -->
-        <!--<distortionK1>0.0</distortionK1>
+        <!-- NOTE: Distortion is currently unused -->
+        <distortionK1>0.0</distortionK1>
         <distortionK2>0.0</distortionK2>
         <distortionK3>0.0</distortionK3>
         <distortionT1>0.0</distortionT1>
@@ -1166,7 +1166,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <origin rpy="3.14 1.57 0" xyz="-0.079 0.02 -0.10"/>
     <parent link="husky_ptu_mount_link"/>
     <child link="bumblebee2"/>
-  </joint>-->
+  </joint>
   <!-- Add force torque model FT300 -->
   <!-- mount the fts to the robot -->
   <joint name="l_robotiq_fts300_fts_fix" type="fixed">
