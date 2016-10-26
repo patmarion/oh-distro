@@ -10,7 +10,7 @@ group "0.params_and_model_pub" {
 }
  
 cmd "director" {
-    exec = "director --dual_arm_husky -c $DRC_BASE/software/config/husky/robot.cfg --startup $DRC_BASE/software/modules/dualarmhuskydirector/runstartup.py";
+    exec = "director --dual_arm_husky -c $DRC_BASE/software/config/dual_arm_husky/robot.cfg --startup $DRC_BASE/software/modules/dualarmhuskydirector/runstartup.py";
     host = "localhost";
 }
 
