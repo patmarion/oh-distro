@@ -5,5 +5,5 @@
   <description>robotiq_hand_description</description>
   <license>tbd</license>
 
-  <build_depend>catkin</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
 </package>
