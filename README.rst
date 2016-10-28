@@ -297,14 +297,25 @@ to set up the correct sources, keys, and ``.bashrc`` parameters.
 
 ::
 
-    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control ros-indigo-hardware-interface ros-indigo-controller-interface ros-indigo-joint-limits-interface 
+    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control ros-indigo-hardware-interface ros-indigo-controller-interface ros-indigo-joint-limits-interface python-catkin-tools
+
+Initialize catkin workspace (only required once):
+::
+
+    cd $DRC_BASE/catkin_ws
+    rm -rf devel/ build/ logs/
+    catkin config --init --mkdirs --no-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS=-std=c++11
+    # Additional command on any workstation that does not extend other workspaces:
+    catkin config --extend /opt/nasa/indigo
+    # Additional command for vis04:
+    catkin config --extend ~/val_ws/install
 
 Compile catkin workspace:
 
 ::
 
     cd $DRC_BASE/catkin_ws
-    catkin_make -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    catkin build -s
 
 Before you run any ROS code from the catkin workspace, source the setup script:
 
@@ -312,6 +323,7 @@ Before you run any ROS code from the catkin workspace, source the setup script:
 
     source catkin_ws/devel/setup.bash
 
+This may be done by NASA scripts on vis04. If combining multiple workspaces, extend them in a sequence and source the setup script of the top-most workspace only.
 
 Using system-installed PCL and OpenCV
 =====================================
