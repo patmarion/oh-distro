@@ -1,7 +1,10 @@
 if(NOT USE_SYSTEM_LCM)
+  # This tracks master which still requires some more fixes.
+  # If we switch to this, also include CMake 3.5 as an external
+  # and turn this on by default
   set(lcm_proj lcm)
   set(lcm_url https://github.com/lcm-proj/lcm.git)
-  set(lcm_revision 0fb8cba1476480db664c7931571a94d26f1dbbaf)
+  set(lcm_revision 60f867eb80024306ce48c570b9b413f5c94f5615)
   set(lcm_depends)
   set(lcm_external_args
     CMAKE_CACHE_ARGS
@@ -9,16 +12,13 @@ if(NOT USE_SYSTEM_LCM)
     )
 endif()
 
+# This is the oh-old-buildsystem branch, required until LCM master is stable (1.4.0)
 set(bot_core_lcmtypes_url https://github.com/openhumanoids/bot_core_lcmtypes.git)
-set(bot_core_lcmtypes_revision 95d59aab0233a262293c3e215c07babfbba9d985)
+set(bot_core_lcmtypes_revision 0ccb7e6272743bdc5355ab5fff36d0ae742964e2)
 set(bot_core_lcmtypes_depends ${lcm_proj})
-set(bot_core_lcmtypes_external_args
-  CMAKE_CACHE_ARGS
-    ${default_cmake_args}
-  )
 
 set(libbot_url https://github.com/openhumanoids/libbot.git)
-set(libbot_revision caa89ab)
+set(libbot_revision 88467a834f6a264bfb254ec6d9ed9f94b1b8b821)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
@@ -27,7 +27,7 @@ set(Eigen_pod_depends)
 
 if(NOT USE_SYSTEM_OPENCV)
   set(opencv_proj opencv)
-  set(opencv_url https://github.com/Itseez/opencv.git)
+  set(opencv_url https://github.com/opencv/opencv.git)
   set(opencv_revision 2.4.12.3)
   set(opencv_depends Eigen_pod)
   set(opencv_external_args
@@ -75,7 +75,7 @@ set(occ-map_revision 34ab71fa693216d2c0508f0f2680b9a68994f473)
 set(occ-map_depends libbot ${opencv_proj})
 
 set(common_utils_url https://github.com/openhumanoids/common_utils.git)
-set(common_utils_revision 9f430d29600b4545c4e10fac930a5900e09b66c1)
+set(common_utils_revision 22b87377dc9176515e29dfd888f4a4bfb6a79656)
 set(common_utils_depends Eigen_pod libbot occ-map octomap)
 
 set(frsm_url https://github.com/openhumanoids/frsm.git)
@@ -83,11 +83,11 @@ set(frsm_revision 3fdf2b829cd0d6659383b228a06875ece55c6e71)
 set(frsm_depends libbot)
 
 set(kinect_url https://github.com/openhumanoids/kinect.git)
-set(kinect_revision 248707e9e42a1d4523646ca6af4003c73bbb8922)
-set(kinect_depends libbot bot_core_lcmtypes)
+set(kinect_revision b5654accb30dd0017320395f2c08d25952e8080c)
+set(kinect_depends libbot)
 
 set(microstrain_url https://github.com/openhumanoids/microstrain.git)
-set(microstrain_revision 94e0fad7ca21e9c63e1ed17416a9fbee662fb8cb)
+set(microstrain_revision 83fb6c215dbb56f51ae007e87c8dbeb2ded3c9e5)
 set(microstrain_depends common_utils)
 
 set(bullet_url https://github.com/RobotLocomotion/bullet-pod.git)
