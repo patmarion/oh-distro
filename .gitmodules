@@ -34,3 +34,6 @@
 [submodule "software/perception/registration"]
 	path = software/perception/registration
 	url = git@github.com:openhumanoids/registration.git
+[submodule "catkin_ws/src/pods"]
+	path = catkin_ws/src/pods
+	url = git@github.com:openhumanoids/pods.git
