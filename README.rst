@@ -306,7 +306,7 @@ Initialize catkin workspace (only required once):
     rm -rf devel/ build/ logs/
     catkin config --init --mkdirs --no-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS=-std=c++11
     # Additional command on any workstation that does not extend other workspaces:
-    catkin config --extend /opt/nasa/indigo
+    catkin config --extend /opt/ros/indigo
     # Additional command for vis04:
     catkin config --extend ~/val_ws/install
 
