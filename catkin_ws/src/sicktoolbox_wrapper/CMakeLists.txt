@@ -2,11 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 # needed for string arrays
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated-declarations")
 
-if (NOT COMMAND pods_use_pkg_config_packages)
-  include(cmake/pods.cmake)
-endif()
-set(POD_NAME sicktoolbox_wrapper)
-
 project(sicktoolbox_wrapper)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -16,12 +11,15 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_srvs
   roslint
+  pods
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs tf  sensor_msgs 
+  CATKIN_DEPENDS roscpp std_msgs tf  sensor_msgs pods
   DEPENDS system_lib
 )
+
+set(POD_NAME sicktoolbox_wrapper)
 
 ###########
 ## Build ##
