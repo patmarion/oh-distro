@@ -227,8 +227,8 @@ App::App(ros::NodeHandle node) : node_(node) {
       node_.subscribe("/husky_right_gripper/robotiq_force_torque_sensor", 100,
                       &App::rightRobotiqForceTorqueCallback, this);
 
-  sick_lidar_sub_ = node_.subscribe(std::string("/sick_scan"), 100,
-                                    &App::sick_lidar_cb, this);
+  sick_lidar_sub_ =
+      node_.subscribe(std::string("/scan"), 100, &App::sick_lidar_cb, this);
   spinning_lidar_sub_ = node_.subscribe(std::string("/lidar_scan"), 100,
                                         &App::spinning_lidar_cb, this);
   ekf_odom_sub_ = node_.subscribe(std::string("/robot_pose_ekf/odom_combined"),
@@ -239,6 +239,8 @@ App::App(ros::NodeHandle node) : node_(node) {
 
   jointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
                                     &App::jointStatesCallback, this);
+
+  pose_.position[2] = 0.17775;  // Original base Z offset
 }
 
 App::~App() {}
@@ -363,8 +365,7 @@ void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr &msg) {
   // NB: We use the wheels, even though at lower frequency, to trigger the
   // publishing of the generated message as these will always be available.
   // Hands or arms, which might be powered down, are not generally available
-  // at
-  // all times.
+  // at all times.
   // TODO: create a dedicated state sync
   if (msg->name.size() == 4) PublishEstRobotStateFromInternalState(utime);
 }
