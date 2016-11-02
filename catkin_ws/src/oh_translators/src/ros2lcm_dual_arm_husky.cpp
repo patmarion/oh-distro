@@ -5,6 +5,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 
 // ### Standard includes
 #include <cstdlib>
@@ -46,6 +47,18 @@ struct Pose {
   }
 };
 
+struct ForceTorque {
+  double force[3];
+  double torque[3];
+
+  ForceTorque() {
+    for (int i = 0;i < 3; i++) {
+      force[i] = 0.0;
+      torque[i] = 0.0;
+    }
+  }
+};
+
 class App {
  public:
   explicit App(ros::NodeHandle node);
@@ -73,6 +86,10 @@ class App {
   ros::Subscriber left_robotiq_sub_, right_robotiq_sub_;
   void leftRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
   void rightRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
+
+  ros::Subscriber left_ft_sub_, right_ft_sub_;
+  void leftRobotiqForceTorqueCallback(const robotiq_force_torque_sensor_msgs::ft_sensor& msg);
+  void rightRobotiqForceTorqueCallback(const robotiq_force_torque_sensor_msgs::ft_sensor& msg);
 
   // Store joint states internally and compose EST_ROBOT_STATE
   void UpdateInternalStateFromJointStatesMsg(
@@ -160,6 +177,7 @@ class App {
       "r_finger_middle_joint_paradistal_hinge"};
   std::map<std::string, JointState> joint_states_;
   Pose pose_;
+  ForceTorque left_force_torque_, right_force_torque_;
 };
 
 App::App(ros::NodeHandle node) : node_(node) {
@@ -173,6 +191,9 @@ App::App(ros::NodeHandle node) : node_(node) {
 
   right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states", 100,
                                        &App::rightRobotiqStatesCallback, this);
+
+  left_ft_sub_ = node_.subscribe("/husky_left_gripper/robotiq_force_torque_sensor", 100, &App::leftRobotiqForceTorqueCallback, this);
+  right_ft_sub_ = node_.subscribe("/husky_right_gripper/robotiq_force_torque_sensor", 100, &App::rightRobotiqForceTorqueCallback, this);
 
   sick_lidar_sub_ = node_.subscribe(std::string("/sick_scan"), 100,
                                     &App::sick_lidar_cb, this);
@@ -211,6 +232,26 @@ void App::imuSensorCallback(const sensor_msgs::ImuConstPtr& msg) {
   imu.rel_alt = 0;
 
   lcmPublish_.publish("IMU_MICROSTRAIN", &imu);
+}
+
+void App::leftRobotiqForceTorqueCallback(const robotiq_force_torque_sensor_msgs::ft_sensor& msg) {
+  left_force_torque_.force[0] = msg.Fx;
+  left_force_torque_.force[1] = msg.Fy;
+  left_force_torque_.force[2] = msg.Fz;
+
+  left_force_torque_.torque[0] = msg.Mx;
+  left_force_torque_.torque[1] = msg.My;
+  left_force_torque_.torque[2] = msg.Mz;
+}
+
+void App::rightRobotiqForceTorqueCallback(const robotiq_force_torque_sensor_msgs::ft_sensor& msg) {
+  right_force_torque_.force[0] = msg.Fx;
+  right_force_torque_.force[1] = msg.Fy;
+  right_force_torque_.force[2] = msg.Fz;
+
+  right_force_torque_.torque[0] = msg.Mx;
+  right_force_torque_.torque[1] = msg.My;
+  right_force_torque_.torque[2] = msg.Mz;
 }
 
 void App::ekf_odom_cb(
@@ -377,11 +418,12 @@ void App::PublishEstRobotStateFromInternalState(int64_t utime) {
   msg.force_torque.r_foot_torque_x = 0.0;
   msg.force_torque.r_foot_torque_y = 0.0;
 
+  // Add F/T readings
   for (unsigned int i = 0; i < 3; i++) {
-    msg.force_torque.l_hand_force[i] = 0.0;
-    msg.force_torque.l_hand_torque[i] = 0.0;
-    msg.force_torque.r_hand_force[i] = 0.0;
-    msg.force_torque.r_hand_torque[i] = 0.0;
+    msg.force_torque.l_hand_force[i] = left_force_torque_.force[i];
+    msg.force_torque.l_hand_torque[i] = left_force_torque_.torque[i];
+    msg.force_torque.r_hand_force[i] = right_force_torque_.force[i];
+    msg.force_torque.r_hand_torque[i] = right_force_torque_.torque[i];
   }
 
   msg.joint_name.assign(msg.num_joints, "");

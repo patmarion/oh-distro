@@ -29,6 +29,7 @@
   <depend>kdl_conversions</depend>
   <depend>octomap_msgs</depend>
   <depend>roscpp</depend>
+  <depend>robotiq_force_torque_sensor_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>trajectory_msgs</depend>
