@@ -4,7 +4,7 @@
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Imu.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 
 // ### Standard includes
@@ -75,7 +75,7 @@ class App {
                     std::string channel);
 
   ros::Subscriber ekf_odom_sub_;
-  void ekf_odom_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
+  void odometry_cb(const nav_msgs::OdometryConstPtr &msg);
 
   ros::Subscriber imuSensorSub_;
   void imuSensorCallback(const sensor_msgs::ImuConstPtr &msg);
@@ -206,6 +206,8 @@ class App {
   std::map<std::string, JointState> joint_states_;
   Pose pose_;
   ForceTorque left_force_torque_, right_force_torque_;
+  double base_link_offset_ = 0.15;  // 0.17775; - according to URDF it should be
+                                    // .17775, but that isn't working
 };
 
 App::App(ros::NodeHandle node) : node_(node) {
@@ -231,16 +233,17 @@ App::App(ros::NodeHandle node) : node_(node) {
       node_.subscribe(std::string("/scan"), 100, &App::sick_lidar_cb, this);
   spinning_lidar_sub_ = node_.subscribe(std::string("/lidar_scan"), 100,
                                         &App::spinning_lidar_cb, this);
-  ekf_odom_sub_ = node_.subscribe(std::string("/robot_pose_ekf/odom_combined"),
-                                  100, &App::ekf_odom_cb, this);
+  // ekf_odom_sub_ = node_.subscribe(std::string("/odometry/filtered"),
+  //                                 100, &App::odometry_cb, this);
+  ekf_odom_sub_ =
+      node_.subscribe(std::string("/husky_velocity_controller/odom"), 100,
+                      &App::odometry_cb, this);
 
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
 
   jointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
                                     &App::jointStatesCallback, this);
-
-  pose_.position[2] = 0.17775;  // Original base Z offset
 }
 
 App::~App() {}
@@ -290,16 +293,16 @@ void App::rightRobotiqForceTorqueCallback(
   right_force_torque_.torque[2] = msg.Mz;
 }
 
-void App::ekf_odom_cb(
-    const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg) {
-  ROS_ERROR_STREAM("ekfcp");
+void App::odometry_cb(const nav_msgs::OdometryConstPtr &msg) {
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
 
+  // Add base offset from ground as it's not yet incorporated
   bot_core::pose_t lcm_pose_msg;
-  lcm_pose_msg.utime =
-      (int64_t)msg->header.stamp.toNSec() / 1000;  // from nsec to usec
+  lcm_pose_msg.utime = utime;
   lcm_pose_msg.pos[0] = msg->pose.pose.position.x;
   lcm_pose_msg.pos[1] = msg->pose.pose.position.y;
-  lcm_pose_msg.pos[2] = msg->pose.pose.position.z;
+  lcm_pose_msg.pos[2] = msg->pose.pose.position.z + base_link_offset_;
   lcm_pose_msg.orientation[0] = msg->pose.pose.orientation.w;
   lcm_pose_msg.orientation[1] = msg->pose.pose.orientation.x;
   lcm_pose_msg.orientation[2] = msg->pose.pose.orientation.y;
@@ -310,6 +313,10 @@ void App::ekf_odom_cb(
   for (int i = 0; i < 3; i++) pose_.position[i] = lcm_pose_msg.pos[i];
   for (int i = 0; i < 4; i++)
     pose_.orientation[i] = lcm_pose_msg.orientation[i];
+
+  // Publish EST_ROBOT_STATE
+  // TODO: create a dedicated state sync
+  PublishEstRobotStateFromInternalState(utime);
 }
 
 void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {
@@ -360,14 +367,6 @@ void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr &msg) {
   if (msg->name[0].substr(msg->name[0].size() - wheel_suffix.size(),
                           wheel_suffix.size()) == wheel_suffix)
     PublishJointState(utime, "WHEEL_STATE", msg);
-
-  // We got the wheels, so publish joint state
-  // NB: We use the wheels, even though at lower frequency, to trigger the
-  // publishing of the generated message as these will always be available.
-  // Hands or arms, which might be powered down, are not generally available
-  // at all times.
-  // TODO: create a dedicated state sync
-  if (msg->name.size() == 4) PublishEstRobotStateFromInternalState(utime);
 }
 
 void App::leftRobotiqStatesCallback(

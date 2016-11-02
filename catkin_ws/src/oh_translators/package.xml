@@ -27,6 +27,7 @@
   <depend>ipab_lwr_msgs</depend>
   <depend>ipab_msgs</depend>
   <depend>kdl_conversions</depend>
+  <depend>nav_msgs</depend>
   <depend>octomap_msgs</depend>
   <depend>roscpp</depend>
   <depend>robotiq_force_torque_sensor_msgs</depend>
