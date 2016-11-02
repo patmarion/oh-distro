@@ -1,22 +1,24 @@
-
-
 if(NOT USE_SYSTEM_LCM)
+  # This tracks master which still requires some more fixes.
+  # If we switch to this, also include CMake 3.5 as an external
+  # and turn this on by default
   set(lcm_proj lcm)
-  set(lcm_url https://github.com/lcm-proj/lcm/releases/download/v1.3.0/lcm-1.3.0.zip)
-  set(lcm_download_hash 5d46a902fe04608809af3dc526909f9b)
+  set(lcm_url https://github.com/lcm-proj/lcm.git)
+  set(lcm_revision 60f867eb80024306ce48c570b9b413f5c94f5615)
   set(lcm_depends)
   set(lcm_external_args
-    CONFIGURE_COMMAND ${source_prefix}/lcm/configure --prefix=${CMAKE_INSTALL_PREFIX}
-    BUILD_IN_SOURCE 1
+    CMAKE_CACHE_ARGS
+      ${default_cmake_args}
     )
 endif()
 
+# This is the oh-old-buildsystem branch, required until LCM master is stable (1.4.0)
 set(bot_core_lcmtypes_url https://github.com/openhumanoids/bot_core_lcmtypes.git)
 set(bot_core_lcmtypes_revision 0ccb7e6272743bdc5355ab5fff36d0ae742964e2)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 
 set(libbot_url https://github.com/openhumanoids/libbot.git)
-set(libbot_revision a238668b8e2e7ef985517716bdd4ee96e774a445)
+set(libbot_revision 88467a834f6a264bfb254ec6d9ed9f94b1b8b821)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
@@ -25,7 +27,7 @@ set(Eigen_pod_depends)
 
 if(NOT USE_SYSTEM_OPENCV)
   set(opencv_proj opencv)
-  set(opencv_url https://github.com/Itseez/opencv.git)
+  set(opencv_url https://github.com/opencv/opencv.git)
   set(opencv_revision 2.4.12.3)
   set(opencv_depends Eigen_pod)
   set(opencv_external_args
@@ -73,7 +75,7 @@ set(occ-map_revision 34ab71fa693216d2c0508f0f2680b9a68994f473)
 set(occ-map_depends libbot ${opencv_proj})
 
 set(common_utils_url https://github.com/openhumanoids/common_utils.git)
-set(common_utils_revision d887653f8e565f2b94ae96b7b411af134212ebfd)
+set(common_utils_revision 22b87377dc9176515e29dfd888f4a4bfb6a79656)
 set(common_utils_depends Eigen_pod libbot occ-map octomap)
 
 set(frsm_url https://github.com/openhumanoids/frsm.git)
@@ -81,11 +83,11 @@ set(frsm_revision 3fdf2b829cd0d6659383b228a06875ece55c6e71)
 set(frsm_depends libbot)
 
 set(kinect_url https://github.com/openhumanoids/kinect.git)
-set(kinect_revision 1b7c944c08ba4e3a488298d1cdbf6f8485fb015e)
+set(kinect_revision b5654accb30dd0017320395f2c08d25952e8080c)
 set(kinect_depends libbot)
 
 set(microstrain_url https://github.com/openhumanoids/microstrain.git)
-set(microstrain_revision 93f4582491f0cfec1c658ed3fb84ae84a13bc6c2)
+set(microstrain_revision 83fb6c215dbb56f51ae007e87c8dbeb2ded3c9e5)
 set(microstrain_depends common_utils)
 
 set(bullet_url https://github.com/RobotLocomotion/bullet-pod.git)
@@ -133,7 +135,7 @@ set(gurobi_environment_args GUROBI_DISTRO=${gurobi_distro_file})
 set(gurobi_depends gurobi-private)
 
 set(atlas-driver_url ssh://git@github.com/openhumanoids/atlas-drivers.git)
-set(atlas-driver_revision 00dcdc0b247f7a4fece9b28ed10ca38fd2e92ee2)
+set(atlas-driver_revision 873208dda258051ed6c46632a8e959e042665135)
 set(atlas-driver_depends)
 set(atlas-driver_external_args
   ${download_only_args}
