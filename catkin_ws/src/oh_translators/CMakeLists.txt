@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
-# needed for string arrays
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated-declarations")
-
-if (NOT COMMAND pods_use_pkg_config_packages)
-  include(cmake/pods.cmake)
-endif()
-set(POD_NAME oh_translators)
-
 project(oh_translators)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated-declarations")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -23,12 +17,15 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   kdl_conversions
   roslint
+  pods
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs ipab_msgs ihmc_msgs tf trajectory_msgs sensor_msgs image_transport geometry_msgs kdl_conversions
+  CATKIN_DEPENDS roscpp std_msgs ipab_msgs ihmc_msgs tf trajectory_msgs sensor_msgs image_transport geometry_msgs kdl_conversions pods
   DEPENDS system_lib
 )
+
+set(POD_NAME oh_translators)
 
 ###########
 ## Build ##

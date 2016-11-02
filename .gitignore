@@ -15,6 +15,11 @@ jrf-client.out
 fort.15
 .idea
 
+/catkin_ws/devel/
+/catkin_ws/build/
+/catkin_ws/logs/
+/catkin_ws/.catkin_tools/
+
 #######################
 # Ignores for lcmtypes
 #
