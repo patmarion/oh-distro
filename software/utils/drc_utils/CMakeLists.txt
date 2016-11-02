@@ -30,6 +30,7 @@ pods_install_python_script(drc-move-arms-to-set-point python/move_arms_to_set_po
 pods_install_python_script(drc-plan-eval-proxi python/plan_eval_proxi.py)
 pods_install_python_script(drc-plan-to-scope python/plan_to_scope.py)
 pods_install_python_script(drc-republish-old-valkyrie-logs python/republish_old_valkyrie_logs.py)
+pods_install_python_script(drc-republish-ins-as-pose python/republish_ins_as_pose.py)
 
 # not using python interp:
 file(COPY python/drc-robot-pose-util DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
