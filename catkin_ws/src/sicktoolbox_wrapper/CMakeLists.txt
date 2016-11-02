@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 2.8.3)
-# needed for string arrays
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated-declarations")
-
+cmake_minimum_required(VERSION 2.8.12)
 project(sicktoolbox_wrapper)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated-declarations")
+set(POD_NAME sicktoolbox_wrapper)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -19,32 +19,26 @@ catkin_package(
   DEPENDS system_lib
 )
 
-set(POD_NAME sicktoolbox_wrapper)
-
 ###########
 ## Build ##
 ###########
 
 set(TARGETS
-    ros2lcm_sick
-#    sicklms5xx-app
+  ros2lcm_sick
 )
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-
 ## Driver (publishes ROS)
 #add_executable(sicklms5xx-app src/sicklms5xx.cpp)
 #target_link_libraries(sicklms5xx-app ${catkin_LIBRARIES} sicklms5xx)
 #pods_use_pkg_config_packages(sicklms5xx-app eigen3)
 
-
 ## Simple Translator:
 add_executable(ros2lcm_sick src/ros2lcm_sick.cpp)
 target_link_libraries(ros2lcm_sick ${catkin_LIBRARIES})
-#add_dependencies(ros2lcm_sick)
 pods_use_pkg_config_packages(ros2lcm_sick  eigen3 lcm  bot2-core)
 
 #############
