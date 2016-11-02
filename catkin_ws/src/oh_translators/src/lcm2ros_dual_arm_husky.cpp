@@ -115,8 +115,6 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
               - msg->plan[i2].joint_position[larm_joints_map_[larm_joints_[j]]];
       larm_goal.trajectory.points[i].velocities[j] =
           (dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0;
-      ROS_INFO_STREAM("dt1 "<<dt1<<", dt2 "<<dt2<<", dq1 "<<dq1<<", dq2 "<<dq2);
-      ROS_INFO_STREAM("A: "<<dt1 * dt2<<", B "<<dq1 / dt1 * 0.5<<", C: "<<dq2 / dt2 * 0.5<<", V: "<<larm_goal.trajectory.points[i].velocities[j]);
       (double) state.joint_velocity[larm_joints_map_[larm_joints_[j]]];
 
       larm_goal.trajectory.points[i].time_from_start = ros::Duration().fromSec(
