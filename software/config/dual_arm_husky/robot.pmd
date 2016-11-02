@@ -54,6 +54,18 @@ group "2.sensing" {
     }
 }
 
+group "3.hands" {
+    cmd "left_robotiq" {
+        exec = "robotiq_tcp_node left 192.168.1.17";
+        host = "localhost";
+    }
+
+    cmd "right_robotiq" {
+        exec = "robotiq_tcp_node right 192.168.1.19";
+        host = "localhost";
+    }
+}
+
 
 script "start_exotica" {
     start group "0.params_and_model_pub";
