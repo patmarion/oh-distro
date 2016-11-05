@@ -6,6 +6,7 @@
  */
 
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 #include <ros/ros.h>
@@ -15,9 +16,6 @@
 #include "lcmtypes/drc/plan_control_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <trajectory_msgs/JointTrajectory.h>
-#include <ipab_msgs/PlannerRequest.h>
-#include <std_srvs/Empty.h>
-#include <std_msgs/String.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
@@ -26,13 +24,13 @@
 class LCM2ROS
 {
   public:
-    LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in);
+    LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in);
     ~LCM2ROS()
     {
     }
 
   private:
-    boost::shared_ptr<lcm::LCM> lcm_;
+    std::shared_ptr<lcm::LCM> lcm_;
     ros::NodeHandle nh_;
 
     void robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
@@ -50,7 +48,7 @@ class LCM2ROS
     bool hasIdx_;
 };
 
-LCM2ROS::LCM2ROS(boost::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
+LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
     : lcm_(lcm_in), nh_(nh_in), larm_ac_(
         "/husky_left_ur5/follow_joint_trajectory", true), rarm_ac_(
         "/husky_right_ur5/follow_joint_trajectory", true), hasIdx_(false)
@@ -198,8 +196,8 @@ bool LCM2ROS::findIdx(const drc::robot_plan_t* msg)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "lcm2ros", ros::init_options::NoSigintHandler);
-  boost::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
+  ros::init(argc, argv, "lcm2ros_dual_arm_husky", ros::init_options::NoSigintHandler);
+  std::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
   if (!lcm->good())
   {
     std::cerr << "ERROR: lcm is not good()" << std::endl;
@@ -207,8 +205,7 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
 
   LCM2ROS handlerObject(lcm, nh);
-  ROS_INFO_STREAM("lcm2ros translator ready");
-  ROS_ERROR_STREAM("LCM2ROS Translator Ready");
+  ROS_INFO_STREAM("LCM2ROS Dual Arm Husky Translator Ready");
 
   while (0 == lcm->handle())
   {
