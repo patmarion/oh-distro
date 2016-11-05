@@ -78,6 +78,6 @@
   "pelvisLink": "base_link",
   "headLink": "bumblebee2",
 
-  "disableComponents": ["useFootsteps", "useHumanoidDRCDemos", "useAtlasDriver", "useRandomWalk", "useCameraFrustumVisualizer"],
-  "enableComponents": ["useKinect"]
+  "disableComponents": ["useFootsteps", "useNavigationPanel", "useHumanoidDRCDemos", "useAtlasDriver", "useRandomWalk", "useCameraFrustumVisualizer", "useMultisense"],
+  "enableComponents": ["useKinect", "useFeetlessRobot"]
 }
