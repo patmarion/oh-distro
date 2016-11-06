@@ -10,24 +10,18 @@ group "0.params_and_model_pub" {
 }
  
 cmd "director" {
-    exec = "director --dual_arm_husky -c $DRC_BASE/software/config/husky/robot.cfg --startup $DRC_BASE/software/modules/dualarmhuskydirector/runstartup.py";
+    exec = "director --dual_arm_husky -c $DRC_BASE/software/config/dual_arm_husky/robot.cfg --startup $DRC_BASE/software/modules/dualarmhuskydirector/runstartup.py";
     host = "localhost";
 }
 
 
 group "1.ros_communication_translators" {
-    cmd "roscore" {
-        exec = "roscore";
-        host = "localhost";
-    }
-
-    cmd "translator_husky" {
+    cmd "ros2lcm_translator_husky" {
         exec = "rosrun oh_translators ros2lcm_dual_arm_husky";
         host = "localhost";
     }
-
-    cmd "rviz" {
-        exec = "rosrun rviz rviz";
+    cmd "lcm2ros_translator_husky" {
+        exec = "rosrun oh_translators lcm2ros_dual_arm_husky";
         host = "localhost";
     }
 }
@@ -39,6 +33,23 @@ group "2.exotica_planning" {
     }
     cmd "exotica_husky_planning" {
         exec = "roslaunch exotica_json Husky.launch";
+        host = "localhost";
+    }
+}
+
+group "2.sensing" {
+    cmd "kinect" {
+        exec = "kinect-openni-lcm -j -z";
+        host = "localhost";
+    }
+
+    cmd "kinect-view" {
+        exec = "kinect-glview";
+        host = "localhost";
+    }
+
+    cmd "kinect-rgb-tool" {
+        exec = "kinect-rgb-tool";
         host = "localhost";
     }
 }
@@ -56,4 +67,9 @@ script "start" {
     start group "0.params_and_model_pub";
     wait ms 1000;
     start cmd "director";
+}
+
+script "real_robot_communication" {
+    start cmd "ros2lcm_translator_husky";
+    start cmd "lcm2ros_translator_husky";
 }

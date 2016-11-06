@@ -76,6 +76,6 @@
       }
   ],
 
-  "userConfig" : ["useKuka","fixedBaseArm"]
-
+  "userConfig" : ["useKuka", "fixedBaseArm"],
+  "enableComponents": ["useKinect"]
 }
