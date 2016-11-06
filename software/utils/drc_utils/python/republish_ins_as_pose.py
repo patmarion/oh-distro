@@ -6,12 +6,12 @@ from lcm import LCM
 from math import *
 import numpy  as np
 
-home_dir =os.getenv("HOME")
-sys.path.append(home_dir + "/drc/software/build/lib/python2.7/site-packages")
-sys.path.append(home_dir + "/drc/software/build/lib/python2.7/dist-packages")
+drc_base_dir = os.getenv("DRC_BASE")
+sys.path.append(drc_base_dir + "/software/build/lib/python2.7/site-packages")
+sys.path.append(drc_base_dir + "/software/build/lib/python2.7/dist-packages")
 
-from pronto.pose_t import pose_t
-from pronto.ins_t import ins_t
+from bot_core.pose_t import pose_t
+from bot_core.ins_t import ins_t
 
 def on_ms(channel, data):
   m = ins_t.decode(data)

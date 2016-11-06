@@ -1,32 +1,30 @@
 #include <stdio.h>
 #include <inttypes.h>
-#include <lcm/lcm.h>
 #include <iostream>
 #include <limits>
+#include <memory>
 
 #include "joints2frames_kuka.hpp"
 #include <ConciseArgs>
 
 using namespace std;
-using namespace boost;
-using namespace boost::assign;
 
 // false usually, set true to disable the limiting:
 #define DONT_LIMIT_FREQUENCY FALSE
 
-joints2frames::joints2frames(boost::shared_ptr<lcm::LCM> &lcm_, bool show_labels_, bool show_triads_):
+joints2frames::joints2frames(std::shared_ptr<lcm::LCM> &lcm_, bool show_labels_, bool show_triads_):
           lcm_(lcm_), show_labels_(show_labels_), show_triads_(show_triads_){
             
   botparam_ = bot_param_new_from_server(lcm_->getUnderlyingLCM(), 0);
             
             
-  model_ = boost::shared_ptr<ModelClient>(new ModelClient(lcm_->getUnderlyingLCM(), 0));
+  model_ = std::shared_ptr<ModelClient>(new ModelClient(lcm_->getUnderlyingLCM(), 0));
   KDL::Tree tree;
   if (!kdl_parser::treeFromString( model_->getURDFString() ,tree)){
     cerr << "ERROR: Failed to extract kdl tree from xml robot description" << endl;
     exit(-1);
   }
-  fksolver_ = boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive>(new KDL::TreeFkSolverPosFull_recursive(tree));
+  fksolver_ = std::shared_ptr<KDL::TreeFkSolverPosFull_recursive>(new KDL::TreeFkSolverPosFull_recursive(tree));
   
   // Vis Config:
   pc_vis_ = new pronto_vis( lcm_->getUnderlyingLCM());
@@ -216,7 +214,7 @@ main(int argc, char ** argv){
   std::cout << "triads: " << triads << "\n";
   std::cout << "labels: " << labels << "\n";
 
-  boost::shared_ptr<lcm::LCM> lcm(new lcm::LCM("") );
+  std::shared_ptr<lcm::LCM> lcm(new lcm::LCM("") );
   if(!lcm->good())
     return 1;  
   

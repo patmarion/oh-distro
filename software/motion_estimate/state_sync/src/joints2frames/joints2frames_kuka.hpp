@@ -3,11 +3,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/assign/std/vector.hpp>
+#include <memory>
 
 #include <map>
 
@@ -41,7 +37,7 @@ struct FrequencyLimit {
 ///////////////////////////////////////////////////////////////
 class joints2frames{
   public:
-    joints2frames(boost::shared_ptr<lcm::LCM> &lcm_, bool show_labels_, 
+    joints2frames(std::shared_ptr<lcm::LCM> &lcm_, bool show_labels_, 
                   bool show_triads_);
     
     ~joints2frames(){
@@ -49,10 +45,10 @@ class joints2frames{
     void Identity();
     
   private:
-    boost::shared_ptr<lcm::LCM> lcm_;
+    std::shared_ptr<lcm::LCM> lcm_;
     BotParam* botparam_;
-    boost::shared_ptr<ModelClient> model_;
-    boost::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
+    std::shared_ptr<ModelClient> model_;
+    std::shared_ptr<KDL::TreeFkSolverPosFull_recursive> fksolver_;
     pronto_vis* pc_vis_;
     
     std::map<std::string, FrequencyLimit > pub_frequency_;
