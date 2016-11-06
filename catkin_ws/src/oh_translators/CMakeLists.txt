@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   ipab_msgs
   ihmc_msgs
   geometry_msgs
+  nav_msgs
   octomap_msgs
   tf
   trajectory_msgs
@@ -17,12 +18,13 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   std_srvs
   kdl_conversions
+  robotiq_force_torque_sensor_msgs
   roslint
   pods
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs ipab_msgs ihmc_msgs tf trajectory_msgs sensor_msgs image_transport geometry_msgs kdl_conversions pods
+  CATKIN_DEPENDS roscpp std_msgs ipab_msgs ihmc_msgs tf trajectory_msgs sensor_msgs image_transport geometry_msgs nav_msgs kdl_conversions pods robotiq_force_torque_sensor_msgs
   DEPENDS system_lib
 )
 

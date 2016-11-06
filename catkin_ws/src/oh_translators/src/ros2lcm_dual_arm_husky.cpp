@@ -4,7 +4,8 @@
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Imu.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 
 // ### Standard includes
 #include <cstdlib>
@@ -46,6 +47,18 @@ struct Pose {
   }
 };
 
+struct ForceTorque {
+  double force[3];
+  double torque[3];
+
+  ForceTorque() {
+    for (int i = 0; i < 3; i++) {
+      force[i] = 0.0;
+      torque[i] = 0.0;
+    }
+  }
+};
+
 class App {
  public:
   explicit App(ros::NodeHandle node);
@@ -56,48 +69,67 @@ class App {
   ros::NodeHandle node_;
 
   ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_;
-  void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg);
-  void spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg);
-  void publishLidar(const sensor_msgs::LaserScanConstPtr& msg,
+  void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
+  void spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
+  void publishLidar(const sensor_msgs::LaserScanConstPtr &msg,
                     std::string channel);
 
   ros::Subscriber ekf_odom_sub_;
-  void ekf_odom_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+  void odometry_cb(const nav_msgs::OdometryConstPtr &msg);
 
   ros::Subscriber imuSensorSub_;
-  void imuSensorCallback(const sensor_msgs::ImuConstPtr& msg);
+  void imuSensorCallback(const sensor_msgs::ImuConstPtr &msg);
 
   ros::Subscriber jointStatesSub_;
-  void jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
+  void jointStatesCallback(const sensor_msgs::JointStateConstPtr &msg);
 
   ros::Subscriber left_robotiq_sub_, right_robotiq_sub_;
-  void leftRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
-  void rightRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
+  void leftRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr &msg);
+  void rightRobotiqStatesCallback(const sensor_msgs::JointStateConstPtr &msg);
+
+  ros::Subscriber left_ft_sub_, right_ft_sub_;
+  void leftRobotiqForceTorqueCallback(
+      const robotiq_force_torque_sensor_msgs::ft_sensor &msg);
+  void rightRobotiqForceTorqueCallback(
+      const robotiq_force_torque_sensor_msgs::ft_sensor &msg);
 
   // Store joint states internally and compose EST_ROBOT_STATE
   void UpdateInternalStateFromJointStatesMsg(
-      const sensor_msgs::JointStateConstPtr& msg, std::string prefix);
+      const sensor_msgs::JointStateConstPtr &msg, std::string prefix);
   void UpdateInternalStateFromJointStatesMsg(
-      const sensor_msgs::JointStateConstPtr& msg);
+      const sensor_msgs::JointStateConstPtr &msg);
   void PublishEstRobotStateFromInternalState(int64_t utime);
   void PublishJointState(int64_t utime, std::string channel,
-                         const sensor_msgs::JointStateConstPtr& ros_msg,
+                         const sensor_msgs::JointStateConstPtr &ros_msg,
                          std::string prefix);
   void PublishJointState(int64_t utime, std::string channel,
-                         const sensor_msgs::JointStateConstPtr& ros_msg);
+                         const sensor_msgs::JointStateConstPtr &ros_msg);
 
   // Joint names
   std::vector<std::string> dual_arm_husky_joints_ = {
-      "front_left_wheel", "front_right_wheel", "rear_left_wheel",
-      "rear_right_wheel", "husky_ptu_pan", "husky_ptu_tilt",
-      "l_ur5_arm_shoulder_pan_joint", "l_ur5_arm_shoulder_lift_joint",
-      "l_ur5_arm_elbow_joint", "l_ur5_arm_wrist_1_joint",
-      "l_ur5_arm_wrist_2_joint", "l_ur5_arm_wrist_3_joint",
-      "r_ur5_arm_shoulder_pan_joint", "r_ur5_arm_shoulder_lift_joint",
-      "r_ur5_arm_elbow_joint", "r_ur5_arm_wrist_1_joint",
-      "r_ur5_arm_wrist_2_joint", "r_ur5_arm_wrist_3_joint",
-      "l_palm_finger_1_joint", "l_finger_1_joint_1", "l_finger_1_joint_2",
-      "l_finger_1_joint_3", "l_finger_1_joint_proximal_actuating_hinge",
+      "front_left_wheel",
+      "front_right_wheel",
+      "rear_left_wheel",
+      "rear_right_wheel",
+      "husky_ptu_pan",
+      "husky_ptu_tilt",
+      "l_ur5_arm_shoulder_pan_joint",
+      "l_ur5_arm_shoulder_lift_joint",
+      "l_ur5_arm_elbow_joint",
+      "l_ur5_arm_wrist_1_joint",
+      "l_ur5_arm_wrist_2_joint",
+      "l_ur5_arm_wrist_3_joint",
+      "r_ur5_arm_shoulder_pan_joint",
+      "r_ur5_arm_shoulder_lift_joint",
+      "r_ur5_arm_elbow_joint",
+      "r_ur5_arm_wrist_1_joint",
+      "r_ur5_arm_wrist_2_joint",
+      "r_ur5_arm_wrist_3_joint",
+      "l_palm_finger_1_joint",
+      "l_finger_1_joint_1",
+      "l_finger_1_joint_2",
+      "l_finger_1_joint_3",
+      "l_finger_1_joint_proximal_actuating_hinge",
       "l_finger_1_joint_paraproximal_actuating_hinge",
       "l_finger_1_joint_proximal_actuating_bar",
       "l_finger_1_joint_paraproximal_bar",
@@ -105,8 +137,11 @@ class App {
       "l_finger_1_joint_median_actuating_hinge_median_bar",
       "l_finger_1_joint_paramedian_hinge",
       "l_finger_1_joint_paramedian_hinge_median_bar_underactuated",
-      "l_finger_1_joint_paradistal_hinge", "l_palm_finger_2_joint",
-      "l_finger_2_joint_1", "l_finger_2_joint_2", "l_finger_2_joint_3",
+      "l_finger_1_joint_paradistal_hinge",
+      "l_palm_finger_2_joint",
+      "l_finger_2_joint_1",
+      "l_finger_2_joint_2",
+      "l_finger_2_joint_3",
       "l_finger_2_joint_proximal_actuating_hinge",
       "l_finger_2_joint_paraproximal_actuating_hinge",
       "l_finger_2_joint_proximal_actuating_bar",
@@ -115,8 +150,10 @@ class App {
       "l_finger_2_joint_median_actuating_hinge_median_bar",
       "l_finger_2_joint_paramedian_hinge",
       "l_finger_2_joint_paramedian_hinge_median_bar_underactuated",
-      "l_finger_2_joint_paradistal_hinge", "l_palm_finger_middle_joint",
-      "l_finger_middle_joint_1", "l_finger_middle_joint_2",
+      "l_finger_2_joint_paradistal_hinge",
+      "l_palm_finger_middle_joint",
+      "l_finger_middle_joint_1",
+      "l_finger_middle_joint_2",
       "l_finger_middle_joint_3",
       "l_finger_middle_joint_proximal_actuating_hinge",
       "l_finger_middle_joint_paraproximal_actuating_hinge",
@@ -126,8 +163,11 @@ class App {
       "l_finger_middle_joint_median_actuating_hinge_median_bar",
       "l_finger_middle_joint_paramedian_hinge",
       "l_finger_middle_joint_paramedian_hinge_median_bar_underactuated",
-      "l_finger_middle_joint_paradistal_hinge", "r_palm_finger_1_joint",
-      "r_finger_1_joint_1", "r_finger_1_joint_2", "r_finger_1_joint_3",
+      "l_finger_middle_joint_paradistal_hinge",
+      "r_palm_finger_1_joint",
+      "r_finger_1_joint_1",
+      "r_finger_1_joint_2",
+      "r_finger_1_joint_3",
       "r_finger_1_joint_proximal_actuating_hinge",
       "r_finger_1_joint_paraproximal_actuating_hinge",
       "r_finger_1_joint_proximal_actuating_bar",
@@ -136,8 +176,11 @@ class App {
       "r_finger_1_joint_median_actuating_hinge_median_bar",
       "r_finger_1_joint_paramedian_hinge",
       "r_finger_1_joint_paramedian_hinge_median_bar_underactuated",
-      "r_finger_1_joint_paradistal_hinge", "r_palm_finger_2_joint",
-      "r_finger_2_joint_1", "r_finger_2_joint_2", "r_finger_2_joint_3",
+      "r_finger_1_joint_paradistal_hinge",
+      "r_palm_finger_2_joint",
+      "r_finger_2_joint_1",
+      "r_finger_2_joint_2",
+      "r_finger_2_joint_3",
       "r_finger_2_joint_proximal_actuating_hinge",
       "r_finger_2_joint_paraproximal_actuating_hinge",
       "r_finger_2_joint_proximal_actuating_bar",
@@ -146,8 +189,10 @@ class App {
       "r_finger_2_joint_median_actuating_hinge_median_bar",
       "r_finger_2_joint_paramedian_hinge",
       "r_finger_2_joint_paramedian_hinge_median_bar_underactuated",
-      "r_finger_2_joint_paradistal_hinge", "r_palm_finger_middle_joint",
-      "r_finger_middle_joint_1", "r_finger_middle_joint_2",
+      "r_finger_2_joint_paradistal_hinge",
+      "r_palm_finger_middle_joint",
+      "r_finger_middle_joint_1",
+      "r_finger_middle_joint_2",
       "r_finger_middle_joint_3",
       "r_finger_middle_joint_proximal_actuating_hinge",
       "r_finger_middle_joint_paraproximal_actuating_hinge",
@@ -160,12 +205,15 @@ class App {
       "r_finger_middle_joint_paradistal_hinge"};
   std::map<std::string, JointState> joint_states_;
   Pose pose_;
+  ForceTorque left_force_torque_, right_force_torque_;
+  double base_link_offset_ = 0.15;  // 0.17775; - according to URDF it should be
+                                    // .17775, but that isn't working
 };
 
 App::App(ros::NodeHandle node) : node_(node) {
   if (!lcmPublish_.good()) std::cerr << "ERROR: lcm is not good()" << std::endl;
 
-  for (auto& joint : dual_arm_husky_joints_)
+  for (auto &joint : dual_arm_husky_joints_)
     joint_states_.insert(std::make_pair(joint, JointState()));
 
   left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states", 100,
@@ -174,12 +222,22 @@ App::App(ros::NodeHandle node) : node_(node) {
   right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states", 100,
                                        &App::rightRobotiqStatesCallback, this);
 
-  sick_lidar_sub_ = node_.subscribe(std::string("/sick_scan"), 100,
-                                    &App::sick_lidar_cb, this);
+  left_ft_sub_ =
+      node_.subscribe("/husky_left_gripper/robotiq_force_torque_sensor", 100,
+                      &App::leftRobotiqForceTorqueCallback, this);
+  right_ft_sub_ =
+      node_.subscribe("/husky_right_gripper/robotiq_force_torque_sensor", 100,
+                      &App::rightRobotiqForceTorqueCallback, this);
+
+  sick_lidar_sub_ =
+      node_.subscribe(std::string("/scan"), 100, &App::sick_lidar_cb, this);
   spinning_lidar_sub_ = node_.subscribe(std::string("/lidar_scan"), 100,
                                         &App::spinning_lidar_cb, this);
-  ekf_odom_sub_ = node_.subscribe(std::string("/robot_pose_ekf/odom_combined"),
-                                  100, &App::ekf_odom_cb, this);
+  // ekf_odom_sub_ = node_.subscribe(std::string("/odometry/filtered"),
+  //                                 100, &App::odometry_cb, this);
+  ekf_odom_sub_ =
+      node_.subscribe(std::string("/husky_velocity_controller/odom"), 100,
+                      &App::odometry_cb, this);
 
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
@@ -190,7 +248,7 @@ App::App(ros::NodeHandle node) : node_(node) {
 
 App::~App() {}
 
-void App::imuSensorCallback(const sensor_msgs::ImuConstPtr& msg) {
+void App::imuSensorCallback(const sensor_msgs::ImuConstPtr &msg) {
   bot_core::ins_t imu;
   imu.utime = (int64_t)floor(msg->header.stamp.toNSec() / 1000);
   imu.device_time = imu.utime;
@@ -213,16 +271,38 @@ void App::imuSensorCallback(const sensor_msgs::ImuConstPtr& msg) {
   lcmPublish_.publish("IMU_MICROSTRAIN", &imu);
 }
 
-void App::ekf_odom_cb(
-    const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg) {
-  ROS_ERROR_STREAM("ekfcp");
+void App::leftRobotiqForceTorqueCallback(
+    const robotiq_force_torque_sensor_msgs::ft_sensor &msg) {
+  left_force_torque_.force[0] = msg.Fx;
+  left_force_torque_.force[1] = msg.Fy;
+  left_force_torque_.force[2] = msg.Fz;
 
+  left_force_torque_.torque[0] = msg.Mx;
+  left_force_torque_.torque[1] = msg.My;
+  left_force_torque_.torque[2] = msg.Mz;
+}
+
+void App::rightRobotiqForceTorqueCallback(
+    const robotiq_force_torque_sensor_msgs::ft_sensor &msg) {
+  right_force_torque_.force[0] = msg.Fx;
+  right_force_torque_.force[1] = msg.Fy;
+  right_force_torque_.force[2] = msg.Fz;
+
+  right_force_torque_.torque[0] = msg.Mx;
+  right_force_torque_.torque[1] = msg.My;
+  right_force_torque_.torque[2] = msg.Mz;
+}
+
+void App::odometry_cb(const nav_msgs::OdometryConstPtr &msg) {
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+
+  // Add base offset from ground as it's not yet incorporated
   bot_core::pose_t lcm_pose_msg;
-  lcm_pose_msg.utime =
-      (int64_t)msg->header.stamp.toNSec() / 1000;  // from nsec to usec
+  lcm_pose_msg.utime = utime;
   lcm_pose_msg.pos[0] = msg->pose.pose.position.x;
   lcm_pose_msg.pos[1] = msg->pose.pose.position.y;
-  lcm_pose_msg.pos[2] = msg->pose.pose.position.z;
+  lcm_pose_msg.pos[2] = msg->pose.pose.position.z + base_link_offset_;
   lcm_pose_msg.orientation[0] = msg->pose.pose.orientation.w;
   lcm_pose_msg.orientation[1] = msg->pose.pose.orientation.x;
   lcm_pose_msg.orientation[2] = msg->pose.pose.orientation.y;
@@ -233,17 +313,21 @@ void App::ekf_odom_cb(
   for (int i = 0; i < 3; i++) pose_.position[i] = lcm_pose_msg.pos[i];
   for (int i = 0; i < 4; i++)
     pose_.orientation[i] = lcm_pose_msg.orientation[i];
+
+  // Publish EST_ROBOT_STATE
+  // TODO: create a dedicated state sync
+  PublishEstRobotStateFromInternalState(utime);
 }
 
-void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg) {
+void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {
   publishLidar(msg, "SICK_SCAN");
 }
 
-void App::spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg) {
+void App::spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {
   publishLidar(msg, "SCAN");
 }
 
-void App::publishLidar(const sensor_msgs::LaserScanConstPtr& msg,
+void App::publishLidar(const sensor_msgs::LaserScanConstPtr &msg,
                        std::string channel) {
   bot_core::planar_lidar_t scan_out;
   scan_out.ranges = msg->ranges;
@@ -256,7 +340,7 @@ void App::publishLidar(const sensor_msgs::LaserScanConstPtr& msg,
   lcmPublish_.publish(channel.c_str(), &scan_out);
 }
 
-void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg) {
+void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr &msg) {
   int64_t utime =
       static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
 
@@ -283,19 +367,10 @@ void App::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg) {
   if (msg->name[0].substr(msg->name[0].size() - wheel_suffix.size(),
                           wheel_suffix.size()) == wheel_suffix)
     PublishJointState(utime, "WHEEL_STATE", msg);
-
-  // We got the wheels, so publish joint state
-  // NB: We use the wheels, even though at lower frequency, to trigger the
-  // publishing of the generated message as these will always be available.
-  // Hands or arms, which might be powered down, are not generally available
-  // at
-  // all times.
-  // TODO: create a dedicated state sync
-  if (msg->name.size() == 4) PublishEstRobotStateFromInternalState(utime);
 }
 
 void App::leftRobotiqStatesCallback(
-    const sensor_msgs::JointStateConstPtr& msg) {
+    const sensor_msgs::JointStateConstPtr &msg) {
   int64_t utime =
       static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
 
@@ -307,7 +382,7 @@ void App::leftRobotiqStatesCallback(
 }
 
 void App::rightRobotiqStatesCallback(
-    const sensor_msgs::JointStateConstPtr& msg) {
+    const sensor_msgs::JointStateConstPtr &msg) {
   int64_t utime =
       static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
 
@@ -319,11 +394,11 @@ void App::rightRobotiqStatesCallback(
 }
 
 void App::UpdateInternalStateFromJointStatesMsg(
-    const sensor_msgs::JointStateConstPtr& msg) {
+    const sensor_msgs::JointStateConstPtr &msg) {
   UpdateInternalStateFromJointStatesMsg(msg, "");
 }
 void App::UpdateInternalStateFromJointStatesMsg(
-    const sensor_msgs::JointStateConstPtr& msg, std::string prefix = "") {
+    const sensor_msgs::JointStateConstPtr &msg, std::string prefix = "") {
   size_t num_joints = msg->name.size();
 
   for (size_t i = 0; i < num_joints; i++) {
@@ -343,7 +418,7 @@ void App::UpdateInternalStateFromJointStatesMsg(
       JointState new_joint_state(position, velocity, effort);
       joint_states_.insert(std::make_pair(name, new_joint_state));
     } else {
-      JointState& joint_state = joint_states_[name];
+      JointState &joint_state = joint_states_[name];
       joint_state.position = position;
       joint_state.velocity = velocity;
       joint_state.effort = effort;
@@ -377,21 +452,22 @@ void App::PublishEstRobotStateFromInternalState(int64_t utime) {
   msg.force_torque.r_foot_torque_x = 0.0;
   msg.force_torque.r_foot_torque_y = 0.0;
 
+  // Add F/T readings
   for (unsigned int i = 0; i < 3; i++) {
-    msg.force_torque.l_hand_force[i] = 0.0;
-    msg.force_torque.l_hand_torque[i] = 0.0;
-    msg.force_torque.r_hand_force[i] = 0.0;
-    msg.force_torque.r_hand_torque[i] = 0.0;
+    msg.force_torque.l_hand_force[i] = left_force_torque_.force[i];
+    msg.force_torque.l_hand_torque[i] = left_force_torque_.torque[i];
+    msg.force_torque.r_hand_force[i] = right_force_torque_.force[i];
+    msg.force_torque.r_hand_torque[i] = right_force_torque_.torque[i];
   }
 
   msg.joint_name.assign(msg.num_joints, "");
-  msg.joint_position.assign(msg.num_joints, (const float&)0.);
-  msg.joint_velocity.assign(msg.num_joints, (const float&)0.);
-  msg.joint_effort.assign(msg.num_joints, (const float&)0.);
+  msg.joint_position.assign(msg.num_joints, (const float &)0.);
+  msg.joint_velocity.assign(msg.num_joints, (const float &)0.);
+  msg.joint_effort.assign(msg.num_joints, (const float &)0.);
 
   // Iterate over joint_states_ map
   int joint_number = 0;
-  for (auto& joint : joint_states_) {
+  for (auto &joint : joint_states_) {
     msg.joint_name[joint_number] = joint.first;
     msg.joint_position[joint_number] = joint.second.position;
     msg.joint_velocity[joint_number] = joint.second.velocity;
@@ -403,20 +479,20 @@ void App::PublishEstRobotStateFromInternalState(int64_t utime) {
 }
 
 void App::PublishJointState(int64_t utime, std::string channel,
-                            const sensor_msgs::JointStateConstPtr& ros_msg) {
+                            const sensor_msgs::JointStateConstPtr &ros_msg) {
   PublishJointState(utime, channel, ros_msg, "");
 }
 void App::PublishJointState(int64_t utime, std::string channel,
-                            const sensor_msgs::JointStateConstPtr& ros_msg,
+                            const sensor_msgs::JointStateConstPtr &ros_msg,
                             std::string prefix = "") {
   bot_core::joint_state_t msg;
   msg.utime = utime;
   msg.num_joints = ros_msg->name.size();
 
   msg.joint_name.assign(msg.num_joints, "");
-  msg.joint_position.assign(msg.num_joints, (const float&)0.);
-  msg.joint_velocity.assign(msg.num_joints, (const float&)0.);
-  msg.joint_effort.assign(msg.num_joints, (const float&)0.);
+  msg.joint_position.assign(msg.num_joints, (const float &)0.);
+  msg.joint_velocity.assign(msg.num_joints, (const float &)0.);
+  msg.joint_effort.assign(msg.num_joints, (const float &)0.);
 
   // Iterate over joint_states_ map
   for (int joint_number = 0; joint_number < msg.num_joints; joint_number++) {
@@ -439,7 +515,7 @@ void App::PublishJointState(int64_t utime, std::string channel,
   lcmPublish_.publish(channel, &msg);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   ros::init(argc, argv, "ros2lcm_dual_arm_husky");
   ros::NodeHandle nh;
 
