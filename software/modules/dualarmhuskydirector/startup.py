@@ -15,9 +15,9 @@ import huskyplanningpanel
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
 
-    # Remove Atlas Panel
-    atlasPanelAction = applogic.getToolBarActions()['ActionAtlasDriverPanel']
-    applogic.getMainWindow().panelToolBar().removeAction(atlasPanelAction)
+    # Humanoid Motion Planning Panel
+    humanoidMotionPlanningPanel = applogic.getToolBarActions()['ActionMotionPlanningPanel']
+    applogic.getMainWindow().panelToolBar().removeAction(humanoidMotionPlanningPanel)
 
     # Assert that we are starting the Dual Arm Husky
     assert globalsDict is not None
