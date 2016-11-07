@@ -74,7 +74,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <geometry>
         <mesh filename="package://dual_arm_husky_description/meshes/base_link.dae"/>
       </geometry>
-      <material name="black"><color rgba="0 0 0 0" /></material>
+      <material name="black"><color rgba="0 0 0 1" /></material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.061875"/>
@@ -309,7 +309,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <geometry>
         <mesh filename="package://dual_arm_husky_description/meshes/bumper.dae"/>
       </geometry>
-      <material name="black"><color rgba="0 0 0 0" /></material>
+      <material name="black"><color rgba="0 0 0 1" /></material>
     </visual>
   </link>
   <!-- Attach front bumper -->
@@ -324,7 +324,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <geometry>
         <mesh filename="package://dual_arm_husky_description/meshes/bumper.dae"/>
       </geometry>
-      <material name="black"><color rgba="0 0 0 0" /></material>
+      <material name="black"><color rgba="0 0 0 1" /></material>
     </visual>
   </link>
   <!-- Attach rear bumper -->
@@ -523,7 +523,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <geometry>
         <mesh filename="package://ur_description/meshes/ur5/visual/wrist3.dae"/>
       </geometry>
-      <material name="black"><color rgba="0 0 0 0" /></material>
+      <material name="black"><color rgba="0 0 0 1" /></material>
     </visual>
     <collision>
       <geometry>
@@ -789,7 +789,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <geometry>
         <mesh filename="package://ur_description/meshes/ur5/visual/wrist3.dae"/>
       </geometry>
-      <material name="black"><color rgba="0 0 0 0" /></material>
+      <material name="black"><color rgba="0 0 0 1" /></material>
     </visual>
     <collision>
       <geometry>
@@ -1057,7 +1057,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <geometry>
         <mesh filename="package://dual_arm_husky_description/meshes/visual/robotiq_fts300.dae"/>
       </geometry>
-      <material name="black"><color rgba="0 0 0 0" /></material>
+      <material name="black"><color rgba="0 0 0 1" /></material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1098,7 +1098,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <geometry>
         <mesh filename="package://dual_arm_husky_description/meshes/visual/robotiq_fts300.dae"/>
       </geometry>
-      <material name="black"><color rgba="0 0 0 0" /></material>
+      <material name="black"><color rgba="0 0 0 1" /></material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
