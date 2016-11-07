@@ -206,8 +206,7 @@ class App {
   std::map<std::string, JointState> joint_states_;
   Pose pose_;
   ForceTorque left_force_torque_, right_force_torque_;
-  double base_link_offset_ = 0.15;  // 0.17775; - according to URDF it should be
-                                    // .17775, but that isn't working
+  double base_link_offset_ = 0.14493;  // 2016-11-07: from URDF
 };
 
 App::App(ros::NodeHandle node) : node_(node) {
