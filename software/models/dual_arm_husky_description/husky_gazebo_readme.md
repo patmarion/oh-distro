@@ -11,7 +11,7 @@ roslaunch husky_gazebo husky_playpen.launch dual_ur5_enabled:=true robotiq_gripp
 This assumes you've installed Gazebo 7 and the ``ros-indigo-gazebo*`` and ``ros-indigo-control*`` packages. Make sure to first remove ``ros-indigo-ur-description`` and ``ros-indigo-ur-kinematics`` and ``ros-indigo-flir-description`` if installed.
 
 ```bash
-sudo apt-get install ros-indigo-pointgrey-camera-description ros-indigo-ekf-localization ros-indigo-twist-mux ros-indigo-robot-localization ros-indigo-interactive-marker-twist-server ros-indigo-ros-controllers ros-indigo-navigation ros-indigo-move-base ros-indigo-soem ros-indigo-serial
+sudo apt-get install ros-indigo-pointgrey-camera-description ros-indigo-ekf-localization ros-indigo-twist-mux ros-indigo-robot-localization ros-indigo-interactive-marker-twist-server ros-indigo-ros-controllers ros-indigo-navigation ros-indigo-move-base ros-indigo-soem ros-indigo-serial ros-indigo-rviz-imu-plugin
 mkdir -p ~/husky_ws/src
 cd ~/husky_ws/src
 catkin_init_workspace
