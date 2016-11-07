@@ -7,13 +7,16 @@ group "0.params_and_model_pub" {
         exec = "robot_model_publisher $DRC_BASE/software/models/dual_arm_husky_description/urdf/dual_arm_husky_original.urdf";
         host = "localhost";
     }
+    cmd "joints2frames" {
+        exec = "oh-joints2frames-dual-arm-husky";
+        host = "localhost";
+    }
 }
  
 cmd "director" {
     exec = "director --dual_arm_husky -c $DRC_BASE/software/config/dual_arm_husky/robot.cfg --startup $DRC_BASE/software/modules/dualarmhuskydirector/runstartup.py";
     host = "localhost";
 }
-
 
 group "1.ros_communication_translators" {
     cmd "ros2lcm_translator_husky" {
@@ -37,7 +40,7 @@ group "2.exotica_planning" {
     }
 }
 
-group "2.sensing" {
+group "3.sensing" {
     cmd "kinect" {
         exec = "kinect-openni-lcm -j -z";
         host = "localhost";
@@ -54,7 +57,7 @@ group "2.sensing" {
     }
 }
 
-group "3.hands" {
+group "4.hands" {
     cmd "left_robotiq" {
         exec = "robotiq_tcp_node left 192.168.1.17";
         host = "localhost";
@@ -69,8 +72,6 @@ group "3.hands" {
 
 script "start_exotica" {
     start group "0.params_and_model_pub";
-	start cmd "roscore";
-    wait ms 1000;
     start group "2.exotica_planning";
     start cmd "director";
 }
