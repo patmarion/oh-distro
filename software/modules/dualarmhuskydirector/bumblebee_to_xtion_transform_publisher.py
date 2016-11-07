@@ -9,6 +9,6 @@ lc = lcm.LCM()
 msg = rigid_transform_t();
 msg.utime = 0;
 msg.trans = [float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])]
-msg.quat = botpy.euler_to_quat([90*np.pi/180.0, 0, 90*np.pi/180.0])
+msg.quat = botpy.euler_to_quat([float(sys.argv[4])*np.pi/180.0, 0, float(sys.argv[5])*np.pi/180.0])
 
 lc.publish("BUMBLEBEE2_TO_XTION", msg.encode())
