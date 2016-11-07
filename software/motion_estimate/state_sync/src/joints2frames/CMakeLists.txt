@@ -29,14 +29,3 @@ pods_use_pkg_config_packages(drc-joints2frames-kuka
 pods_install_executables(drc-joints2frames-kuka )
 
 
-add_executable(oh-joints2frames-dual-arm-husky joints2frames_dual_arm_husky.cpp)
-target_link_libraries(oh-joints2frames-dual-arm-husky boost_system)
-pods_use_pkg_config_packages(oh-joints2frames-dual-arm-husky
-    path-util
-    model-client
-    bot2-param-client
-    pronto_lcm
-    pronto_vis
-    lcmtypes_bot2-core
-    ${REQUIRED_PACKAGES})
-pods_install_executables(oh-joints2frames-dual-arm-husky )
