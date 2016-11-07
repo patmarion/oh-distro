@@ -4,7 +4,7 @@ group "0.params_and_model_pub" {
         host = "localhost";
     }
     cmd "model" {
-        exec = "robot_model_publisher $DRC_BASE/software/models/dual_arm_husky_description/urdf/dual_arm_husky.urdf";
+        exec = "robot_model_publisher $DRC_BASE/software/models/dual_arm_husky_description/urdf/dual_arm_husky_original.urdf";
         host = "localhost";
     }
 }
