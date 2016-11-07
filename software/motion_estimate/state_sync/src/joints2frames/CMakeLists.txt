@@ -29,3 +29,4 @@ pods_use_pkg_config_packages(drc-joints2frames-kuka
 pods_install_executables(drc-joints2frames-kuka )
 
 
+pods_install_python_script(oh-joints2frames-dual-arm-husky joints2frames_dual_arm_husky.py)
