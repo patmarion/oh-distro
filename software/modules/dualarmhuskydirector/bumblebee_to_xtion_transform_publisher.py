@@ -8,7 +8,7 @@ from bot_core.rigid_transform_t import rigid_transform_t
 lc = lcm.LCM()
 msg = rigid_transform_t();
 msg.utime = 0;
-msg.trans = [float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])]
-msg.quat = botpy.euler_to_quat([float(sys.argv[4])*np.pi/180.0, 0, float(sys.argv[5])*np.pi/180.0])
+msg.trans = [ 0, -0.048, 0.03 ]
+msg.quat = botpy.euler_to_quat([float(sys.argv[1])*np.pi/180.0, float(sys.argv[2])*np.pi/180.0, float(sys.argv[3])*np.pi/180.0])
 
 lc.publish("BUMBLEBEE2_TO_XTION", msg.encode())
