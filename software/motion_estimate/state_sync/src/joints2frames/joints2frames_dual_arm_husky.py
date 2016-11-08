@@ -28,8 +28,8 @@ for i, name in enumerate(positionNames):
 
 # Hard-coded config
 base_offset = 0.14493
-bumblebee2_to_xtion_translation = [0, -0.048, 0.03]
-bumblebee2_to_xtion_rpy = [86.0*numpy.pi/180.0, 0.0, 92.0*numpy.pi/180.0]
+bumblebee2_to_xtion_translation = [-0.048, -0.03, 0]
+bumblebee2_to_xtion_rpy = [0,0,0] #[86.0*numpy.pi/180.0, 0.0, 92.0*numpy.pi/180.0]
 
 
 # Automatically retrieved
