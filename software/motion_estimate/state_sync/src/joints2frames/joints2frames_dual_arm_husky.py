@@ -28,9 +28,6 @@ for i, name in enumerate(positionNames):
 
 # Hard-coded config
 base_offset = 0.14493
-bumblebee2_to_xtion_translation = [0, -0.048, 0.03]
-bumblebee2_to_xtion_rpy = [86.0*numpy.pi/180.0, 0.0, 92.0*numpy.pi/180.0]
-
 
 # Automatically retrieved
 pan_joint = positionNameToId["husky_ptu_pan"]
@@ -102,12 +99,6 @@ def publish_rigid_transform(utime, translation, quaternion):
     msg.trans = translation
     msg.quat = quaternion
     lc.publish("BODY_TO_BUMBLEBEE2", msg.encode())
-
-    msg2 = rigid_transform_t()
-    msg2.utime = utime
-    msg2.trans = bumblebee2_to_xtion_translation
-    msg2.quat = botpy.euler_to_quat(bumblebee2_to_xtion_rpy)
-    lc.publish("BUMBLEBEE2_TO_XTION", msg2.encode())
 
 
 # Subscribe to PTU State
