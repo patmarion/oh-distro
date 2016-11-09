@@ -15,14 +15,22 @@ import huskyplanningpanel
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
 
-    # Humanoid Motion Planning Panel
-    humanoidMotionPlanningPanel = applogic.getToolBarActions()['ActionMotionPlanningPanel']
-    applogic.getMainWindow().panelToolBar().removeAction(humanoidMotionPlanningPanel)
-
     # Assert that we are starting the Dual Arm Husky
     assert globalsDict is not None
     assert 'directorConfig' in globalsDict
     directorConfig = globalsDict['directorConfig']
+
+    # Reduce number of SICK_SCAN scan lines
+    assert 'perception' in globalsDict
+    perception = globalsDict['perception']
+    perception._lidarItem.setProperty('Number of Scan Lines', 2)
+    perception._lidarItem.setProperty('Point Size', 2)
+    perception._lidarItem.setProperty('Min Height', -1)
+    perception._lidarItem.setProperty('Max Height', 2.5)
+
+    # Remove Humanoid Motion Planning Panel
+    humanoidMotionPlanningPanel = applogic.getToolBarActions()['ActionMotionPlanningPanel']
+    applogic.getMainWindow().panelToolBar().removeAction(humanoidMotionPlanningPanel)
 
     # Dual Arm Husky Demos
     playPlans = globalsDict['playPlans']

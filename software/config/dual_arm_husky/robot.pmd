@@ -41,18 +41,18 @@ group "2.exotica_planning" {
 }
 
 group "3.sensing" {
-    cmd "kinect" {
-        exec = "kinect-openni-lcm -j -z";
+    cmd "openni2-lcm_robot" {
+        exec = "openni2-camera-lcm";
+        host = "husky";
+    }
+
+    cmd "openni2-lcm_local" {
+        exec = "openni2-camera-lcm";
         host = "localhost";
     }
 
-    cmd "kinect-view" {
-        exec = "kinect-glview";
-        host = "localhost";
-    }
-
-    cmd "kinect-rgb-tool" {
-        exec = "kinect-rgb-tool";
+    cmd "multisense-glview" {
+        exec = "multisense-glview -c OPENNI_FRAME_LEFT";
         host = "localhost";
     }
 }

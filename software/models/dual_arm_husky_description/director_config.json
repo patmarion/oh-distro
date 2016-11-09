@@ -79,5 +79,5 @@
   "headLink": "bumblebee2",
 
   "disableComponents": ["useFootsteps", "useNavigationPanel", "useHumanoidDRCDemos", "useAtlasDriver", "useRandomWalk", "useCameraFrustumVisualizer", "useMultisense"],
-  "enableComponents": ["useKinect", "useFeetlessRobot"]
+  "enableComponents": ["useOpenniDepthImage", "useFeetlessRobot"]
 }
