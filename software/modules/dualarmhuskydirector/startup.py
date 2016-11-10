@@ -28,6 +28,13 @@ def startup(robotSystem, globalsDict=None):
     perception._lidarItem.setProperty('Min Height', -1)
     perception._lidarItem.setProperty('Max Height', 2.5)
 
+    # Automatically activate and set OpenNI settings
+    assert 'openniDepthPointCloud' in globalsDict
+    openniDepthPointCloud = globalsDict['openniDepthPointCloud']
+    openniDepthPointCloud.setProperty('Target FPS', 15)
+    openniDepthPointCloud.setProperty('Visible', True)
+    openniDepthPointCloud.setProperty('Max Range', 4.0)
+
     # Remove Humanoid Motion Planning Panel
     humanoidMotionPlanningPanel = applogic.getToolBarActions()['ActionMotionPlanningPanel']
     applogic.getMainWindow().panelToolBar().removeAction(humanoidMotionPlanningPanel)

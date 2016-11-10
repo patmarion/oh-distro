@@ -185,7 +185,7 @@ class CameraListener {
         mDetector = detector;
     }
 
-    bool setup(bool show_window, bool publish_img_with_matches = false) {
+    bool setup(bool show_window, bool publish_img_with_matches = false, std::string camera_name = "CAMERA") {
         mBotWrapper.reset(new maps::BotWrapper());
 
         while (!mBotWrapper->getBotParam()) {
@@ -195,10 +195,12 @@ class CameraListener {
         
 
         mLcmWrapper.reset(new maps::LcmWrapper(mBotWrapper->getLcm()));
-        mLcmWrapper->get()->subscribe("CAMERA", &CameraListener::onCamera, this);
+        mLcmWrapper->get()->subscribe(camera_name, &CameraListener::onCamera, this);
 
-        mCamTransLeft = bot_param_get_new_camtrans(mBotWrapper->getBotParam(),"CAMERA_LEFT");
-        
+        mCamTransLeft = bot_param_get_new_camtrans(
+            mBotWrapper->getBotParam(),
+            std::string(camera_name + "_LEFT").c_str());
+
         K = Eigen::Matrix3d::Identity();
 
         K(0,0) = bot_camtrans_get_focal_length_x(mCamTransLeft);
@@ -209,6 +211,7 @@ class CameraListener {
         mPublishImageWithMatches = publish_img_with_matches;
 
         mShowWindow = show_window;
+        mCameraName = camera_name;
         return true;
     }  
     
@@ -251,7 +254,7 @@ class CameraListener {
             Eigen::Isometry3d tag_to_camera = getRelativeTransform(tags[i], K, mDetector->getTagSize());
             bot_core::rigid_transform_t tag_to_camera_msg = encodeLCMFrame(tag_to_camera);
             tag_to_camera_msg.utime = msg->utime;
-            mLcmWrapper->get()->publish("APRIL_TAG_TO_CAMERA_LEFT", &tag_to_camera_msg);
+            mLcmWrapper->get()->publish("APRIL_TAG_TO_" + mCameraName + "_LEFT", &tag_to_camera_msg);
             break;
         }
         if (mShowWindow) {
@@ -308,6 +311,7 @@ class CameraListener {
     maps::BotWrapper::Ptr mBotWrapper;
     BotCamTrans* mCamTransLeft;
     Eigen::Matrix3d K;
+    std::string mCameraName;
 };
 
 
@@ -318,7 +322,7 @@ int main(int argc, char *argv[])
 
     getopt_add_bool(getopt, 'h', "help", 0, "Show this help");
     getopt_add_bool(getopt, 'd', "debug", 0, "Enable debugging output (slow)");
-    getopt_add_bool(getopt, 'w', "window", 1, "Show the detected tags in a window");
+    getopt_add_bool(getopt, 'w', "window", 0, "Show the detected tags in a window");
     getopt_add_bool(getopt, 'q', "quiet", 0, "Reduce output");
     getopt_add_int(getopt, '\0', "border", "1", "Set tag family border size");
     getopt_add_int(getopt, 't', "threads", "4", "Use this many CPU threads");
@@ -329,7 +333,8 @@ int main(int argc, char *argv[])
     getopt_add_bool(getopt, '2', "refine-pose", 0, "Spend more time trying to precisely localize tags");
     getopt_add_double(getopt, 's', "size", "0.1735", "Physical side-length of the tag (meters)");
     getopt_add_bool(getopt, 'p', "publish-img-with-match", 0, "Publish image with overlayed match(es)");
-    getopt_add_string(getopt, 'c', "publish-img-with-match-channel", "CAMERA_APRIL_TAG_MATCHES", "LCM channel for image with overlayed match(es)");
+    getopt_add_string(getopt, 'P', "publish-img-with-match-channel", "CAMERA_APRIL_TAG_MATCHES", "LCM channel for image with overlayed match(es)");
+    getopt_add_string(getopt, 'c', "camera-channel-name", "CAMERA", "LCM channel for images_t topic to subscribe to");
     
 
     if (!getopt_parse(getopt, argc, argv, 1) || getopt_get_bool(getopt, "help")) {
@@ -343,9 +348,12 @@ int main(int argc, char *argv[])
 
     camera_listener.publish_img_with_matches_channel = getopt_get_string(getopt, "publish-img-with-match-channel");
 
-    if (camera_listener.setup(getopt_get_bool(getopt, "window"), getopt_get_bool(getopt, "publish-img-with-match"))) {
-        camera_listener.setDetector(&tag_detector);
-        camera_listener.start();
+    if (camera_listener.setup(
+            getopt_get_bool(getopt, "window"),
+            getopt_get_bool(getopt, "publish-img-with-match"),
+            getopt_get_string(getopt, "camera-channel-name"))) {
+      camera_listener.setDetector(&tag_detector);
+      camera_listener.start();
     }
 
     return 0;

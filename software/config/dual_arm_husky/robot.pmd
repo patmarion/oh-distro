@@ -69,6 +69,12 @@ group "4.hands" {
     }
 }
 
+group "9.demo" {
+    cmd "april_tags" {
+        exec = "drc-car-tags -q -c OPENNI_FRAME";
+        host = "localhost";
+    }
+}
 
 script "start_exotica" {
     start group "0.params_and_model_pub";
