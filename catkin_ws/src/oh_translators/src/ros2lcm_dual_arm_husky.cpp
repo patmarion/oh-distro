@@ -256,8 +256,11 @@ App::App(ros::NodeHandle node) : node_(node) {
 App::~App() {}
 
 void App::imuSensorCallback(const sensor_msgs::ImuConstPtr &msg) {
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+
   bot_core::ins_t imu;
-  imu.utime = (int64_t)floor(msg->header.stamp.toNSec() / 1000);
+  imu.utime = utime;
   imu.device_time = imu.utime;
   imu.gyro[0] = msg->angular_velocity.x;
   imu.gyro[1] = msg->angular_velocity.y;
@@ -276,6 +279,10 @@ void App::imuSensorCallback(const sensor_msgs::ImuConstPtr &msg) {
   imu.rel_alt = 0;
 
   lcmPublish_.publish("IMU_MICROSTRAIN", &imu);
+
+  // Publish EST_ROBOT_STATE - this is the highest frequency signal
+  // TODO: create a dedicated state sync
+  PublishEstRobotStateFromInternalState(utime);
 }
 
 void App::leftRobotiqForceTorqueCallback(
@@ -357,10 +364,6 @@ void App::odometry_cb(const nav_msgs::OdometryConstPtr &msg) {
   for (int i = 0; i < 3; i++) pose_.position[i] = lcm_pose_msg.pos[i];
   for (int i = 0; i < 4; i++)
     pose_.orientation[i] = lcm_pose_msg.orientation[i];
-
-  // Publish EST_ROBOT_STATE
-  // TODO: create a dedicated state sync
-  PublishEstRobotStateFromInternalState(utime);
 }
 
 void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {

@@ -8,6 +8,7 @@ import lcm
 import botpy
 from bot_core.rigid_transform_t import rigid_transform_t
 from bot_core.joint_state_t import joint_state_t
+from bot_core.robot_state_t import robot_state_t
 
 # Set up Drake Plant
 base_dir = os.getenv("DRC_BASE")
@@ -28,9 +29,6 @@ for i, name in enumerate(positionNames):
 
 # Hard-coded config
 base_offset = 0.14493
-bumblebee2_to_xtion_translation = [-0.048, -0.03, 0]
-bumblebee2_to_xtion_rpy = [0,0,0] #[86.0*numpy.pi/180.0, 0.0, 92.0*numpy.pi/180.0]
-
 
 # Automatically retrieved
 pan_joint = positionNameToId["husky_ptu_pan"]
@@ -38,6 +36,11 @@ tilt_joint = positionNameToId["husky_ptu_tilt"]
 
 base_link = r.findLinkId("base_link")
 bumblebee2_link = r.findLinkId("bumblebee2")
+
+# Global variables to store the computed transform
+global frame_translation, frame_rotation
+frame_translation = [0, 0, 0]
+frame_rotation = [1, 0, 0, 0]
 
 
 def quaternion_from_matrix(matrix):
@@ -72,11 +75,19 @@ def quaternion_from_matrix(matrix):
 
 
 def ptu_state_handler(channel, data):
+    global frame_rotation, frame_translation
     msg = joint_state_t.decode(data)
-    utime = msg.utime
     [translation, rotation] = compute_rigid_transform(
         msg.joint_position[0], msg.joint_position[1])
-    publish_rigid_transform(utime, translation, rotation)
+    frame_translation = translation
+    frame_rotation = rotation
+
+
+def robot_state_handler(channel, data):
+    # Use EST_ROBOT_STATE only as the trigger
+    # The transform is still computed in the ptu_state_handler
+    msg = robot_state_t.decode(data)
+    publish_rigid_transform(msg.utime)
 
 
 def compute_rigid_transform(pan, tilt):
@@ -96,23 +107,20 @@ def compute_rigid_transform(pan, tilt):
     return translation, quaternion
 
 
-def publish_rigid_transform(utime, translation, quaternion):
+def publish_rigid_transform(utime):
+    global frame_rotation, frame_translation
+
     msg = rigid_transform_t()
     msg.utime = utime
-    msg.trans = translation
-    msg.quat = quaternion
+    msg.trans = frame_translation
+    msg.quat = frame_rotation
     lc.publish("BODY_TO_BUMBLEBEE2", msg.encode())
-
-    msg2 = rigid_transform_t()
-    msg2.utime = utime
-    msg2.trans = bumblebee2_to_xtion_translation
-    msg2.quat = botpy.euler_to_quat(bumblebee2_to_xtion_rpy)
-    lc.publish("BUMBLEBEE2_TO_XTION", msg2.encode())
 
 
 # Subscribe to PTU State
 lc = lcm.LCM()
 subscription = lc.subscribe("PTU_STATE", ptu_state_handler)
+robot_state_subscription = lc.subscribe("EST_ROBOT_STATE", robot_state_handler)
 try:
     while True:
         lc.handle()
