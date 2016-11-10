@@ -150,6 +150,7 @@ int main() {
   
   sendCollection(pg1_nodes,12,"Map - loop, optimized");
 
+  std::cout << "Exiting simple_isam_demo\n";
 
   return 0;
 }
