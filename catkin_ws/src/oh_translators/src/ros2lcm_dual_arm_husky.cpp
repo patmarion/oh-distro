@@ -6,6 +6,7 @@
 #include <sensor_msgs/Imu.h>
 #include <nav_msgs/Odometry.h>
 #include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
+#include <husky_msgs/HuskyStatus.h>
 
 // ### Standard includes
 #include <cstdlib>
@@ -15,7 +16,8 @@
 #include <map>
 #include <string>
 
-#include <lcmtypes/bot_core.hpp>
+#include <lcmtypes/bot_core.hpp>  // TODO replace with correct ones
+#include <lcmtypes/husky/husky_status_t.hpp>
 #include <lcm/lcm-cpp.hpp>
 
 struct JointState {
@@ -92,6 +94,9 @@ class App {
       const robotiq_force_torque_sensor_msgs::ft_sensor &msg);
   void rightRobotiqForceTorqueCallback(
       const robotiq_force_torque_sensor_msgs::ft_sensor &msg);
+
+  ros::Subscriber husky_status_sub_;
+  void huskyStatusCallback(const husky_msgs::HuskyStatusConstPtr &msg);
 
   // Store joint states internally and compose EST_ROBOT_STATE
   void UpdateInternalStateFromJointStatesMsg(
@@ -228,6 +233,9 @@ App::App(ros::NodeHandle node) : node_(node) {
       node_.subscribe("/husky_right_gripper/robotiq_force_torque_sensor", 100,
                       &App::rightRobotiqForceTorqueCallback, this);
 
+  husky_status_sub_ =
+      node_.subscribe("/status", 100, &App::huskyStatusCallback, this);
+
   sick_lidar_sub_ =
       node_.subscribe(std::string("/scan"), 100, &App::sick_lidar_cb, this);
   spinning_lidar_sub_ = node_.subscribe(std::string("/lidar_scan"), 100,
@@ -290,6 +298,43 @@ void App::rightRobotiqForceTorqueCallback(
   right_force_torque_.torque[0] = msg.Mx;
   right_force_torque_.torque[1] = msg.My;
   right_force_torque_.torque[2] = msg.Mz;
+}
+
+void App::huskyStatusCallback(const husky_msgs::HuskyStatusConstPtr &msg) {
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+
+  husky::husky_status_t lcm_msg;
+  lcm_msg.utime = utime;
+
+  lcm_msg.uptime = msg->uptime;
+
+  lcm_msg.ros_control_loop_freq = msg->ros_control_loop_freq;
+
+  lcm_msg.mcu_and_user_port_current = msg->mcu_and_user_port_current;
+  lcm_msg.left_driver_current = msg->left_driver_current;
+  lcm_msg.right_driver_current = msg->right_driver_current;
+
+  lcm_msg.battery_voltage = msg->battery_voltage;
+  lcm_msg.left_driver_voltage = msg->left_driver_voltage;
+  lcm_msg.right_driver_voltage = msg->right_driver_voltage;
+
+  lcm_msg.left_driver_temp = msg->left_driver_temp;
+  lcm_msg.right_driver_temp = msg->right_driver_temp;
+  lcm_msg.left_motor_temp = msg->left_motor_temp;
+  lcm_msg.right_motor_temp = msg->right_motor_temp;
+
+  lcm_msg.capacity_estimate = msg->capacity_estimate;
+  lcm_msg.charge_estimate = msg->charge_estimate;
+
+  lcm_msg.timeout = msg->timeout;
+  lcm_msg.lockout = msg->lockout;
+  lcm_msg.e_stop = msg->e_stop;
+  lcm_msg.ros_pause = msg->ros_pause;
+  lcm_msg.no_battery = msg->no_battery;
+  lcm_msg.current_limit = msg->current_limit;
+
+  lcmPublish_.publish("HUSKY_STATUS", &lcm_msg);
 }
 
 void App::odometry_cb(const nav_msgs::OdometryConstPtr &msg) {

@@ -274,6 +274,10 @@ set(yaml_cpp_external_args
     -DBUILD_SHARED_LIBS:BOOL=ON
   )
 
+set(husky_lcmtypes_url https://github.com/openhumanoids/husky_lcmtypes.git)
+set(husky_lcmtypes_revision 3ae91bc01135e15343af291babd67052fb939f1d)
+set(husky_lcmtypes_depends ${lcm_proj})
+
 set(externals
   Eigen_pod
   ${lcm_proj}
@@ -304,6 +308,7 @@ set(externals
   PointCloudLibraryPlugin
   isam
   yaml_cpp
+  husky_lcmtypes
   )
 
 if(BUILD_PRIVATE_EXTERNALS)
