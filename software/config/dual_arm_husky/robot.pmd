@@ -30,8 +30,16 @@ group "2.state_estimation" {
         exec = "oh-joints2frames-dual-arm-husky";
         host = "localhost";
     }
-    cmd "state-sync" {
+    cmd "state-sync_with_wheel_odometry" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_WHEEL_ODOMETRY";
+        host = "localhost";
+    }
+    cmd "state-sync_with_lidar_odometry" {
+        exec = "oh-state-sync-dual-arm-husky POSE_BODY_SCAN_MATCHER";
+        host = "localhost";
+    }
+    cmd "lidar-odometry" {
+        exec = "rpg-scan-matcher -T -S -l SICK_SCAN -p -pc POSE_BODY_SCAN_MATCHER -d";
         host = "localhost";
     }
 }
