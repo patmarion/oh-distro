@@ -184,7 +184,8 @@ def on_pose_body(channel, data):
     # Republish as POSE_BODY to fill in the bot_frames tree
     if channel != "POSE_BODY":
         if "SCAN_MATCHER" in channel:
-            pose.pos[2] += scan_matcher_z_offset
+            pose.pos = [
+                pose.pos[0], pose.pos[1], pose.pos[2] + scan_matcher_z_offset]
         lc.publish("POSE_BODY", pose.encode())
 
     global robot_state
