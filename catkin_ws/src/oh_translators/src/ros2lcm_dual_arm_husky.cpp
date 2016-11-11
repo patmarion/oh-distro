@@ -109,7 +109,7 @@ App::App(ros::NodeHandle node) : node_(node) {
 
   wheel_odom_sub_ =
       node_.subscribe(std::string("/husky_velocity_controller/odom"), 100,
-                      &App::odometry_cb, this);
+                      &App::wheel_odometry_cb, this);
 
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
