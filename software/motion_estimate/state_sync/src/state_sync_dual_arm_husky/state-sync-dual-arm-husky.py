@@ -13,6 +13,7 @@ from bot_core.six_axis_force_torque_t import six_axis_force_torque_t
 ###############################################################################
 # Hard-coded parameters
 base_link_offset = 0.14493
+scan_matcher_z_offset = 0.14
 husky_joints = ["front_left_wheel",
                 "front_right_wheel",
                 "rear_left_wheel",
@@ -181,7 +182,9 @@ def on_pose_body(channel, data):
     pose = pose_t.decode(data)
 
     # Republish as POSE_BODY to fill in the bot_frames tree
-    if (channel != "POSE_BODY"):
+    if channel != "POSE_BODY":
+        if "SCAN_MATCHER" in channel:
+            pose.pos[2] += scan_matcher_z_offset
         lc.publish("POSE_BODY", pose.encode())
 
     global robot_state
