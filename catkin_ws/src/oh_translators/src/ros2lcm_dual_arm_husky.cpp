@@ -77,7 +77,6 @@ class App {
                          std::string prefix);
   void PublishJointState(int64_t utime, std::string channel,
                          const sensor_msgs::JointStateConstPtr &ros_msg);
-
 };
 
 App::App(ros::NodeHandle node) : node_(node) {
@@ -117,9 +116,9 @@ App::App(ros::NodeHandle node) : node_(node) {
   jointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
                                     &App::jointStatesCallback, this);
 
-  cost_map_sub_ = node_.subscribe(
-      std::string("/move_base/global_costmap/costmap"), 10, &App::cost_map_cb,
-      this);
+  cost_map_sub_ =
+      node_.subscribe(std::string("/move_base/global_costmap/costmap"), 10,
+                      &App::cost_map_cb, this);
 }
 
 App::~App() {}
@@ -353,43 +352,35 @@ void App::PublishJointState(int64_t utime, std::string channel,
   lcmPublish_.publish(channel, &msg);
 }
 
-void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg)
-{
-  static bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcmPublish_.getUnderlyingLCM(),
-      "NavigationCostMap");
-  int size = msg->info.width*msg->info.height;
+void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
+  static bot_lcmgl_t *lcmgl =
+      bot_lcmgl_init(lcmPublish_.getUnderlyingLCM(), "NavigationCostMap");
+  int size = msg->info.width * msg->info.height;
   int cnt = 0;
   int reduce_size = 3, reduce_w = 0, reduce_h = 0;
-  for(int w=0;w<msg->info.width;w++)
-  {
-    if (reduce_w < reduce_size)
-    {
+  for (int w = 0; w < msg->info.width; w++) {
+    if (reduce_w < reduce_size) {
       reduce_w++;
-      cnt+=msg->info.height;
-    }
-    else
-    {
+      cnt += msg->info.height;
+    } else {
       reduce_w = 0;
-      for (int h = 0; h < msg->info.height; h++)
-      {
-        if(reduce_h<reduce_size)
-        {
+      for (int h = 0; h < msg->info.height; h++) {
+        if (reduce_h < reduce_size) {
           reduce_h++;
-        }
-        else
-        {
+        } else {
           reduce_h = 0;
-          if (msg->data[cnt] > 0)
-          {
+          if (msg->data[cnt] > 0) {
             bot_lcmgl_color4f(lcmgl, msg->data[cnt] / 100.0,
-                (100.0 - msg->data[cnt]) / 100.0,
-                (100.0 - msg->data[cnt]) / 100.0,
-                msg->data[cnt] > 50 ? 1.0 : 0.5);
-            double xyz[3] = { msg->info.origin.position.x
-                + (double) h * msg->info.resolution, msg->info.origin.position.y
-                + (double) w * msg->info.resolution, msg->data[cnt] / 400.0 };
-            float size[3] = { msg->info.resolution * reduce_size,
-                msg->info.resolution * reduce_size, msg->info.resolution *reduce_size };
+                              (100.0 - msg->data[cnt]) / 100.0,
+                              (100.0 - msg->data[cnt]) / 100.0,
+                              msg->data[cnt] > 50 ? 1.0 : 0.5);
+            double xyz[3] = {
+                msg->info.origin.position.x + (double)h * msg->info.resolution,
+                msg->info.origin.position.y + (double)w * msg->info.resolution,
+                msg->data[cnt] / 400.0};
+            float size[3] = {msg->info.resolution * reduce_size,
+                             msg->info.resolution * reduce_size,
+                             msg->info.resolution * reduce_size};
             bot_lcmgl_box(lcmgl, xyz, size);
           }
         }
