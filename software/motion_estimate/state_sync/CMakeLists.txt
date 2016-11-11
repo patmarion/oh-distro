@@ -15,6 +15,7 @@ add_subdirectory(src/joints2frames)
 #add_subdirectory(src/state_sync)
 add_subdirectory(src/state_sync_nasa)
 add_subdirectory(src/state_sync_kuka)
+add_subdirectory(src/state_sync_dual_arm_husky)
 
 add_subdirectory(src/artificial_drift)
 
