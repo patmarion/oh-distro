@@ -11,6 +11,7 @@ import tabledemo
 import mappingpanel
 import mappingdemo
 import huskyplanningpanel
+import huskynavigationpanel
 
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
@@ -64,11 +65,13 @@ def startup(robotSystem, globalsDict=None):
             rs.view, rs.robotStateJointController, playPlans, playbackPanel, jointLimitChecker)
     tableTaskPanel = tabledemo.TableTaskPanel(tableDemo)
     
+    huskyNavigationPanel = huskynavigationpanel.init(rs.robotStateModel, rs.teleopRobotModel, rs.teleopJointController)
+    
     huskyPlanningPlanel = huskyplanningpanel.init(planningUtils, rs.robotStateModel, 
             rs.robotStateJointController, rs.teleopRobotModel, rs.teleopJointController, 
             rs.ikPlanner, rs.manipPlanner, rs.affordanceManager, playbackPanel.setPlan, 
             playbackPanel.hidePlan)
-
+    
     tasklaunchpanel.panel.addTaskPanel('Clearing Demo', tableTaskPanel.widget)
     tasklaunchpanel.panel.addTaskPanel('Mapping Demo', mappingTaskPanel.widget)
 
@@ -78,4 +81,5 @@ def startup(robotSystem, globalsDict=None):
     globalsDict['mappingDemo'] = mappingDemo
     globalsDict['mappingPanel'] = mappingPanel
     globalsDict['mappingTaskPanel'] = mappingTaskPanel
+    globalsDict['huskyNavigationPanel'] = huskyNavigationPanel
     globalsDict['huskyPlanningPlanel'] = huskyPlanningPlanel

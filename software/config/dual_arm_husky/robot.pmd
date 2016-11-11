@@ -7,10 +7,6 @@ group "0.params_and_model_pub" {
         exec = "robot_model_publisher $DRC_BASE/software/models/dual_arm_husky_description/urdf/dual_arm_husky_original.urdf";
         host = "localhost";
     }
-    cmd "joints2frames" {
-        exec = "oh-joints2frames-dual-arm-husky";
-        host = "localhost";
-    }
 }
  
 cmd "director" {
@@ -29,13 +25,13 @@ group "1.ros_communication_translators" {
     }
 }
 
-group "2.exotica_planning" {
-    cmd "exotica_bridge" {
-        exec = "roslaunch oh_translators exotica_bridge.launch mode:=sim_robot";
+group "2.state_estimation" {
+    cmd "joints2frames" {
+        exec = "oh-joints2frames-dual-arm-husky";
         host = "localhost";
     }
-    cmd "exotica_husky_planning" {
-        exec = "roslaunch exotica_json Husky.launch";
+    cmd "state-sync" {
+        exec = "oh-state-sync-dual-arm-husky POSE_BODY_WHEEL_ODOMETRY";
         host = "localhost";
     }
 }
@@ -58,6 +54,7 @@ group "3.sensing" {
 }
 
 group "4.hands" {
+    # TODO: move to robot
     cmd "left_robotiq" {
         exec = "robotiq_tcp_node left 192.168.1.17";
         host = "localhost";
@@ -65,6 +62,17 @@ group "4.hands" {
 
     cmd "right_robotiq" {
         exec = "robotiq_tcp_node right 192.168.1.19";
+        host = "localhost";
+    }
+}
+
+group "5.exotica_planning" {
+    cmd "exotica_bridge" {
+        exec = "roslaunch oh_translators exotica_bridge.launch mode:=sim_robot";
+        host = "localhost";
+    }
+    cmd "exotica_husky_planning" {
+        exec = "roslaunch exotica_json Husky.launch";
         host = "localhost";
     }
 }
