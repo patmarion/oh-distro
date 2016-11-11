@@ -5,6 +5,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Imu.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 #include <husky_msgs/HuskyStatus.h>
 
@@ -24,6 +25,7 @@
 
 #include <lcmtypes/husky/husky_status_t.hpp>
 #include <lcm/lcm-cpp.hpp>
+#include <bot_lcmgl_client/lcmgl.h>
 
 inline int64_t timestamp_now() {
   struct timeval tv;
@@ -40,9 +42,10 @@ class App {
   lcm::LCM lcmPublish_;
   ros::NodeHandle node_;
 
-  ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_;
+  ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_, cost_map_sub_;
   void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
   void spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
+  void cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg);
   void publishLidar(const sensor_msgs::LaserScanConstPtr &msg,
                     std::string channel);
 
@@ -74,6 +77,7 @@ class App {
                          std::string prefix);
   void PublishJointState(int64_t utime, std::string channel,
                          const sensor_msgs::JointStateConstPtr &ros_msg);
+
 };
 
 App::App(ros::NodeHandle node) : node_(node) {
@@ -105,13 +109,17 @@ App::App(ros::NodeHandle node) : node_(node) {
 
   wheel_odom_sub_ =
       node_.subscribe(std::string("/husky_velocity_controller/odom"), 100,
-                      &App::wheel_odometry_cb, this);
+                      &App::odometry_cb, this);
 
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
 
   jointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
                                     &App::jointStatesCallback, this);
+
+  cost_map_sub_ = node_.subscribe(
+      std::string("/move_base/global_costmap/costmap"), 10, &App::cost_map_cb,
+      this);
 }
 
 App::~App() {}
@@ -343,6 +351,53 @@ void App::PublishJointState(int64_t utime, std::string channel,
   }
 
   lcmPublish_.publish(channel, &msg);
+}
+
+void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg)
+{
+  static bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcmPublish_.getUnderlyingLCM(),
+      "NavigationCostMap");
+  int size = msg->info.width*msg->info.height;
+  int cnt = 0;
+  int reduce_size = 3, reduce_w = 0, reduce_h = 0;
+  for(int w=0;w<msg->info.width;w++)
+  {
+    if (reduce_w < reduce_size)
+    {
+      reduce_w++;
+      cnt+=msg->info.height;
+    }
+    else
+    {
+      reduce_w = 0;
+      for (int h = 0; h < msg->info.height; h++)
+      {
+        if(reduce_h<reduce_size)
+        {
+          reduce_h++;
+        }
+        else
+        {
+          reduce_h = 0;
+          if (msg->data[cnt] > 0)
+          {
+            bot_lcmgl_color4f(lcmgl, msg->data[cnt] / 100.0,
+                (100.0 - msg->data[cnt]) / 100.0,
+                (100.0 - msg->data[cnt]) / 100.0,
+                msg->data[cnt] > 50 ? 1.0 : 0.5);
+            double xyz[3] = { msg->info.origin.position.x
+                + (double) h * msg->info.resolution, msg->info.origin.position.y
+                + (double) w * msg->info.resolution, msg->data[cnt] / 400.0 };
+            float size[3] = { msg->info.resolution * reduce_size,
+                msg->info.resolution * reduce_size, msg->info.resolution *reduce_size };
+            bot_lcmgl_box(lcmgl, xyz, size);
+          }
+        }
+        cnt++;
+      }
+    }
+  }
+  bot_lcmgl_switch_buffer(lcmgl);
 }
 
 int main(int argc, char **argv) {

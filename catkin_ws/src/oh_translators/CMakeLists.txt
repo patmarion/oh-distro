@@ -139,12 +139,12 @@ pods_use_pkg_config_packages(ros2lcm_husky lcm bot2-core eigen3)
 
 add_executable(ros2lcm_dual_arm_husky src/ros2lcm_dual_arm_husky.cpp)
 target_link_libraries(ros2lcm_dual_arm_husky ${catkin_LIBRARIES})
-#add_dependencies(ros2lcm_dual_arm_husky )
-pods_use_pkg_config_packages(ros2lcm_dual_arm_husky lcm bot2-core eigen3)
+add_dependencies(ros2lcm_dual_arm_husky robotiq_force_torque_sensor_msgs)
+pods_use_pkg_config_packages(ros2lcm_dual_arm_husky lcm bot2-core eigen3 bot2-lcmgl-client)
 
 add_executable(lcm2ros_dual_arm_husky src/lcm2ros_dual_arm_husky.cpp)
 target_link_libraries(lcm2ros_dual_arm_husky ${catkin_LIBRARIES})
-#add_dependencies(lcm2ros_dual_arm_husky )
+add_dependencies(lcm2ros_dual_arm_husky robotiq_force_torque_sensor_msgs ipab_msgs)
 pods_use_pkg_config_packages(lcm2ros_dual_arm_husky lcm bot2-core eigen3)
 
 #############
