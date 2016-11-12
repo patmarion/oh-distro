@@ -5,6 +5,7 @@
 
 import numpy as np
 
+
 from director import transformUtils
 from director import visualization as vis
 from director import objectmodel as om
@@ -196,7 +197,9 @@ class segScene(object):
 		for i in range(3):
 			for j in range(3):
 				fobj1m.SetElement(i,j,fobjBasem.GetElement(i,j))
- 
+ 		for i in range(3):
+ 			fobj1m.SetElement(i,3,0.)
+
 		newFrame.transform.SetMatrix(fobj1m)
 		newFrame.transform.Translate(pobj1)
 
