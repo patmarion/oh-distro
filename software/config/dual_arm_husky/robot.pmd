@@ -38,8 +38,12 @@ group "2.state_estimation" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_SCAN_MATCHER";
         host = "localhost";
     }
+    cmd "state-sync_with_ekf" {
+        exec = "oh-state-sync-dual-arm-husky POSE_BODY_EKF";
+        host = "localhost";
+    }
     cmd "lidar-odometry" {
-        exec = "rpg-scan-matcher -T -S -l SICK_SCAN -p -pc POSE_BODY_SCAN_MATCHER -d";
+        exec = "rpg-scan-matcher -S -R 18.0 -l SICK_SCAN -p -pc POSE_BODY_SCAN_MATCHER -d";
         host = "localhost";
     }
 }
