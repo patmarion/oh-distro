@@ -13,6 +13,8 @@ import mappingdemo
 import huskyplanningpanel
 import huskynavigationpanel
 
+import rospy
+
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
 
@@ -20,6 +22,9 @@ def startup(robotSystem, globalsDict=None):
     assert globalsDict is not None
     assert 'directorConfig' in globalsDict
     directorConfig = globalsDict['directorConfig']
+
+    # Initialise global rosNode
+    rospy.init_node('director')
 
     # Reduce number of SICK_SCAN scan lines
     assert 'perception' in globalsDict

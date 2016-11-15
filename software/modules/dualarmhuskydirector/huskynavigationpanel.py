@@ -54,7 +54,6 @@ class HuskyNavigationPanel(object):
         self.cmdVelPub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         #Some unknown lags in getting live status, TODO
         self.statusSub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.statusCallback, queue_size=1)
-        rospy.init_node('husky_navigation', anonymous=True)
         
         # Manual control
         self.ui.forwardButton.connect('clicked()', self.onMoveForward)
