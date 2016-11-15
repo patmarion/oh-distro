@@ -28,6 +28,7 @@ def startup(robotSystem, globalsDict=None):
     perception._lidarItem.setProperty('Point Size', 2)
     perception._lidarItem.setProperty('Min Height', -1)
     perception._lidarItem.setProperty('Max Height', 2.5)
+    perception._lidarItem.setProperty('Min Range', 0.4)
 
     # Automatically activate and set OpenNI settings
     assert 'openniDepthPointCloud' in globalsDict

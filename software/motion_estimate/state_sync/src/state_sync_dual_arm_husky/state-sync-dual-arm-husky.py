@@ -181,7 +181,7 @@ def on_pose_body(channel, data):
     pose = pose_t.decode(data)
 
     # Republish as POSE_BODY to fill in the bot_frames tree
-    if (channel != "POSE_BODY"):
+    if channel != "POSE_BODY":
         lc.publish("POSE_BODY", pose.encode())
 
     global robot_state

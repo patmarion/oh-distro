@@ -11,6 +11,7 @@ plane-seg
 car-tags
 registration
 octrees_difference
+scan_matcher
 
 # check of lidar self observations (uses drake)
 lidar-passthrough

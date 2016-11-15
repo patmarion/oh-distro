@@ -37,3 +37,6 @@
 [submodule "catkin_ws/src/pods"]
 	path = catkin_ws/src/pods
 	url = git@github.com:openhumanoids/pods.git
+[submodule "software/perception/scan_matcher"]
+	path = software/perception/scan_matcher
+	url = https://github.com/robotperception/scan_matcher.git
