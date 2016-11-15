@@ -154,6 +154,8 @@ lc = lcm.LCM()
 def update_internal_robot_state(joint_state_msg):
     global robot_state
     for i in range(joint_state_msg.num_joints):
+        joint_state_msg.joint_name[i] = joint_state_msg.joint_name[i].replace("left_", "l_")
+        joint_state_msg.joint_name[i] = joint_state_msg.joint_name[i].replace("right_", "r_")
         index = robot_state.joint_name.index(joint_state_msg.joint_name[i])
         robot_state.joint_position[index] = joint_state_msg.joint_position[i]
         robot_state.joint_velocity[index] = joint_state_msg.joint_velocity[i]
