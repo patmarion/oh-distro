@@ -5,7 +5,7 @@
 
 
 import numpy as np
-
+from director import objectmodel as om
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
@@ -14,7 +14,7 @@ class ReachObjects(object):
 
 	def __init__(self, ikPlanner, robotStateModel, planningUtils, teleopJointController, vis):
 
-		self.graspToPalmFrame = self.genGrasp2Palm()
+		self.graspToPalmFrame = self.genPreGrasp2Palm()
 
 		self.ikP = ikPlanner
 		self.rSM = robotStateModel
@@ -22,6 +22,9 @@ class ReachObjects(object):
 		self.pU = planningUtils
 		# teleoperation controller class
 		self.tJC = teleopJointController
+
+		# playback robotstate init
+		#self.pbSM = playbackRobotModel
 
 		self.vis = vis
 
@@ -52,6 +55,10 @@ class ReachObjects(object):
  		vis.showFrame(frame, side + '_pcpFrame') 
 
 
+ 	def setGraspFrame(self):
+ 		self.graspToPalmFrame = self.genGrasp2Palm()
+
+
 	@staticmethod 
 	def genGrasp2Palm():
 		'''
@@ -64,6 +71,26 @@ class ReachObjects(object):
 		t = vtk.vtkTransform()
 		t.RotateZ(90)
 		t.Translate([0.09,0,0])
+
+		return t
+
+
+ 	def setPreGraspFrame(self):
+ 		self.graspToPalmFrame = self.genPreGrasp2Palm()
+
+ 		
+	@staticmethod 
+	def genPreGrasp2Palm():
+		'''
+		Generate the transformation from the palm frame 
+		to the pre grasp frame
+		'''
+
+		from director import vtkAll as vtk
+
+		t = vtk.vtkTransform()
+		t.RotateZ(90)
+		t.Translate([0.17,0,0])
 
 		return t
 
@@ -82,7 +109,8 @@ class ReachObjects(object):
 		endPoseName = 'reach_end'
 
 		# get starting configuration of the robot
-		startPose = self.pU.getPlanningStartPose()
+		# startPose = self.pU.getPlanningStartPose()
+		startPose = self.configlist[-1]
 
 		# give to ik the starting pose
 		self.ikP.addPose(startPose, startPoseName)
@@ -108,7 +136,7 @@ class ReachObjects(object):
 		reach_end, info = conSet.runIk()
 		print " info of the plan " , info
 
-		#self.configlist.append(np.asarray(reach_end))
+		self.configlist.append(np.asarray(reach_end))
 		# visualise final configuration..
 		#self.tJC.setPose(endPoseName,reach_end)
 
@@ -173,12 +201,12 @@ class ReachObjects(object):
 		'''
 
 		# reach the target object
-		if rframe != None and lframe = None:
-			self.reachDualFrames(rtarFrame = om.findObjectByName(rframe), \
-								 ltarFrame = om.findObjectByName(lframe))
-		else: 
+		#if rframe != None and lframe != None:
+		self.reachDualFrames(rtarFrame = om.findObjectByName(rframe), \
+							 ltarFrame = om.findObjectByName(lframe))
+		#else: 
 
-			print "Not enough goal frames were provided!"
+		#	print "Not enough goal frames were provided!"
 
 
 	def reachLeft(self, name):
