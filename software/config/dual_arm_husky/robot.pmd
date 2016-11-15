@@ -43,7 +43,7 @@ group "2.state_estimation" {
         host = "localhost";
     }
     cmd "lidar-odometry" {
-        exec = "rpg-scan-matcher -S -l SICK_SCAN -f -R 18.0 -p -pc POSE_BODY_SCAN_MATCHER -d -v -P dual_arm_husky/robot.cfg -a .6";
+        exec = "rpg-scan-matcher -S -l SICK_SCAN -f -R 18.0 -p -pc POSE_BODY_SCAN_MATCHER -v -P dual_arm_husky/robot.cfg -a .9";
         host = "localhost";
     }
 }
