@@ -14,6 +14,11 @@ cmd "director" {
     host = "localhost";
 }
 
+cmd "roscore" {
+	exec = "roscore";
+	host = "localhost";
+}
+
 group "1.ros_communication_translators" {
     cmd "ros2lcm_translator_husky" {
         exec = "rosrun oh_translators ros2lcm_dual_arm_husky";
@@ -96,6 +101,13 @@ group "6.navigation" {
 	}
 }
 
+group "7.gazebo" {
+	cmd "gazebo" {
+		exec = "FLIR_PTU_ENABLED=true HUSKY_DUAL_UR5_ENABLED=true ROBOTIQ_GRIPPERS_ENABLED=true HUSKY_LASER_ENABLED=false DUAL_ARM_BULKHEAD=true HUSKY_TOP_PLATE_ENABLED=false ROBOTIQ_FT_300_ENABLED=true roslaunch husky_gazebo husky_playpen.launch dual_ur5_enabled:=true robotiq_grippers_enabled:=true laser_enabled:=false";
+		host = "localhost";
+	}
+}
+
 group "9.demo" {
     cmd "april_tags" {
         exec = "drc-car-tags -q -c OPENNI_FRAME";
@@ -135,4 +147,18 @@ script "start_everything_for_real_robot" {
     wait ms 2500;
     start cmd "director";
 
+}
+
+script "start_gazebo" {
+    start cmd "roscore";
+    wait ms 2500;
+    start group "7.gazebo";
+    wait ms 15000;
+    start group "0.params_and_model_pub";
+    start group "1.ros_communication_translators";
+    start cmd "joints2frames";
+    start cmd "state-sync_with_ekf";
+    start cmd "director";
+    start group "5.exotica_planning";
+    start group "6.navigation";
 }
