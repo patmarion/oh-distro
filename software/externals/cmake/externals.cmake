@@ -180,7 +180,7 @@ set(libmultisense_external_args
   )
 
 set(multisense-lcm_url http://github.com/openhumanoids/multisense-lcm.git)
-set(multisense-lcm_revision b05368f47219642fdebe06f93fe8193f740ed34f)
+set(multisense-lcm_revision 8ed4d60ef90cefd42b52be0146f5190d191b43c2)
 set(multisense-lcm_depends libmultisense)
 
 set(libnabo_url https://github.com/ethz-asl/libnabo.git)
