@@ -12,6 +12,7 @@ import mappingpanel
 import mappingdemo
 import huskyplanningpanel
 import huskynavigationpanel
+import PTU
 
 import rospy
 
@@ -25,6 +26,10 @@ def startup(robotSystem, globalsDict=None):
 
     # Initialise global rosNode
     rospy.init_node('director')
+
+    # Initialise the PTU
+    ptu = PTU.PTU()
+    globalsDict['ptu'] = ptu
 
     # Reduce number of SICK_SCAN scan lines
     assert 'perception' in globalsDict
