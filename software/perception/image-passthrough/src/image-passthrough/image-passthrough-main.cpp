@@ -56,7 +56,7 @@ Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_,
     lcm::Subscription* sub = lcm_->subscribe("CAMERA_LEFT",&Main::cameraHandler,this);  
     sub->setQueueCapacity(1);
   }else{
-    lcm::Subscription* sub = lcm_->subscribe("CAMERA",&Main::multisenseHandler,this);
+    lcm::Subscription* sub = lcm_->subscribe("MULTISENSE_CAMERA",&Main::multisenseHandler,this);
     sub->setQueueCapacity(1);
   }
   

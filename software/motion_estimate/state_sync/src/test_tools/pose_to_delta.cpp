@@ -55,8 +55,8 @@ App::App(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& ca_cfg_):
 //  std::cout << "POSE_BODY body_linear_rate_to_local_linear_rate\n";
 //  lcm_->subscribe( ca_cfg_.channel,&App::poseHandler,this);  
 
-  std::cout << "CAMERA\n";
-  lcm_->subscribe( "CAMERA",&App::cameraHandler,this);  
+  std::cout << "MULTISENSE_CAMERA\n";
+  lcm_->subscribe( "MULTISENSE_CAMERA",&App::cameraHandler,this);  
 }
 
 
@@ -70,7 +70,7 @@ void App::publishOutput(Isometry3dTime currentPoseT, std::string channel_root)
 
   // Convert delta distance into a rate
   int64_t dt = (currentPoseT.utime - previousPoseT_.utime);
-  Eigen::Isometry3d ratePose = pronto::getTransAsVelocityTrans(deltaPoseT.pose, dt);
+  Eigen::Isometry3d ratePose = pronto::getDeltaAsVelocity(deltaPoseT.pose, dt);
   bot_core::pose_t msg_out_rate = pronto::getIsometry3dAsBotPoseVelocity(ratePose, deltaPoseT.utime);
   lcm_->publish(std::string(channel_root + "_VELOCITY"),&msg_out_rate);
 }
