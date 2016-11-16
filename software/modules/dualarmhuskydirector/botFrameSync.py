@@ -104,7 +104,7 @@ def createGraspFrameAboveBox(boxFrame,vis):
     
     ## Transform to box position and orientation
     ### Form desired point in box frame
-    ptB = np.zeros((4,1)); ptB[1,0] = -0.69; ptB[3] = 1
+    ptB = np.zeros((4,1)); ptB[1,0] = -0.46; ptB[3] = 1
 
     ### Get box transformation
     T = transformUtils.getNumpyFromTransform(boxFrameTransform)
