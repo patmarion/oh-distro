@@ -144,6 +144,14 @@ class ReachObjects(object):
         plan = conSet.runIkTraj()
 
 
+    def synchRobot(self):
+    	'''
+    	To synch the class with the actual robot state 
+    	'''
+
+    	self.configlist.append(np.asarray(self.pU.getPlanningStartPose()))
+
+
     def plan_q1_q2(self, startq = None, endq = None):
         '''
         Init all planning parameters and perform the planning
@@ -186,7 +194,7 @@ class ReachObjects(object):
         graspToHandLinkFrame = self.ikP.newGraspToHandFrame(side, self.graspToPalmFrame)
         posCon, orientCon = self.ikP.createPositionOrientationGraspConstraints(side, \
                 targetFrame, graspToHandLinkFrame, \
-                positionTolerance=0.0, angleToleranceInDegrees=0.0)
+                positionTolerance=0.0, angleToleranceInDegrees=5.0)
     
         posCon.tspan = [1.0, 1.0]
         orientCon.tspan = [1.0, 1.0]
