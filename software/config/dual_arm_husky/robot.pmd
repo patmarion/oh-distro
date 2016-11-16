@@ -89,6 +89,13 @@ group "5.exotica_planning" {
     }
 }
 
+group "6.navigation" {
+	cmd "husky-navigation" {
+		exec = "roslaunch husky_navigation move_base_mapless_demo.launch";
+		host = "localhost";
+	}
+}
+
 group "9.demo" {
     cmd "april_tags" {
         exec = "drc-car-tags -q -c OPENNI_FRAME";
