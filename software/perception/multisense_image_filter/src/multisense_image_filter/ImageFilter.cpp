@@ -121,6 +121,9 @@ Main::Main(int argc, char** argv, boost::shared_ptr<lcm::LCM> &lcm_,
     double translation[3];
 
     bot_param_get_double_array_or_fail(botparam_, "cameras.CAMERA_LEFT.intrinsic_cal.pinhole", pinhole, 5);
+
+    std::cout << "this code needs to be fixed to find the translation between CAMERA_LEFT AND CAMERA_RIGHT\n";
+    exit(-1);
     bot_param_get_double_array_or_fail(botparam_, "cameras.CAMERA.translation", translation, 3);
 
     double fx = pinhole[0];

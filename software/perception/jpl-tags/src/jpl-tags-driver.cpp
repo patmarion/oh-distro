@@ -82,7 +82,7 @@ struct State {
     mStereoDetector = NULL;
     mCamTransLeft = NULL;
     mCamTransRight = NULL;
-    mCameraChannel = "CAMERA";
+    mCameraChannel = "MULTISENSE_CAMERA";
     mTagChannel = "JPL_TAGS";
     mRunStereoAlgorithm = false;
     mDoTracking = false;

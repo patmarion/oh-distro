@@ -55,8 +55,8 @@ App::App(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& ca_cfg_):
 //  std::cout << "POSE_BODY body_linear_rate_to_local_linear_rate\n";
 //  lcm_->subscribe( ca_cfg_.channel,&App::poseHandler,this);  
 
-  std::cout << "CAMERA\n";
-  lcm_->subscribe( "CAMERA",&App::cameraHandler,this);  
+  std::cout << "MULTISENSE_CAMERA\n";
+  lcm_->subscribe( "MULTISENSE_CAMERA",&App::cameraHandler,this);  
 }
 
 
