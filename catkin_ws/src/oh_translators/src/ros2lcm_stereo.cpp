@@ -157,7 +157,7 @@ void App::head_stereo_cb(const sensor_msgs::ImageConstPtr& image_a_ros,
                          const sensor_msgs::CameraInfoConstPtr& info_b_ros)
 {
   int64_t current_utime = (int64_t)floor(image_a_ros->header.stamp.toNSec() / 1000);
-  publishStereo(image_a_ros, info_a_ros, image_b_ros, info_b_ros, "CAMERA");
+  publishStereo(image_a_ros, info_a_ros, image_b_ros, info_b_ros, "MULTISENSE_CAMERA");
 
   if (stereo_counter % 30 == 0)
   {
@@ -179,7 +179,7 @@ void App::publishStereo(const sensor_msgs::ImageConstPtr& image_a_ros,
 
   images_msg_out_.n_images = images_msg_out_.images.size();
   images_msg_out_.utime = (int64_t)floor(image_a_ros->header.stamp.toNSec() / 1000);
-  lcm_publish_.publish("CAMERA", &images_msg_out_);
+  lcm_publish_.publish("MULTISENSE_CAMERA", &images_msg_out_);
   return;
 }
 

@@ -78,7 +78,7 @@ void App::headLeftImageCallback(const sensor_msgs::ImageConstPtr& msg)
     ROS_ERROR("CAMLT [%d]", head_l_image_counter);
   }
   head_l_image_counter++;
-  publishImage(msg, "CAMERA_LEFT");
+  publishImage(msg, "MULTISENSE_CAMERA_LEFT");
 }
 
 void App::publishImage(const sensor_msgs::ImageConstPtr& msg, std::string channel)

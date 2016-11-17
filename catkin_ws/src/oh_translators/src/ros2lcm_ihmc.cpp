@@ -375,10 +375,10 @@ void App::laserScanCallback(const sensor_msgs::LaserScanConstPtr& msg)
   if (scan_counter % 80 == 0)
   {
     ROS_ERROR("LSCAN [%d]", scan_counter);
-    // std::cout << "SCAN " << scan_counter << "\n";
+    // std::cout << "MULTISENSE_SCAN " << scan_counter << "\n";
   }
   scan_counter++;
-  publishLidar(msg, "SCAN");
+  publishLidar(msg, "MULTISENSE_SCAN");
 }
 
 void App::publishLidar(const sensor_msgs::LaserScanConstPtr& msg, std::string channel)
