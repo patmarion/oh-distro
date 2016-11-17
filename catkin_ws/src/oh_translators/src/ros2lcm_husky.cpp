@@ -191,7 +191,7 @@ void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg)
 
 void App::spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr& msg)
 {
-  publishLidar(msg, "SCAN");
+  publishLidar(msg, "MULTISENSE_SCAN");
 }
 
 
