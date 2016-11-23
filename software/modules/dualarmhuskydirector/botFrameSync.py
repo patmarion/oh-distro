@@ -54,11 +54,12 @@ def createBoxAndSync(getBotFrame,affordancePanel,vis):
     botFrame = bot.getChildFrame()
 
     # Spawn slave box affordance
-    box = affordancePanel.onSpawnSphere()
+    #box = affordancePanel.onSpawnSphere()
+    box = affordancePanel.onSpawnBox()
     boxFrame = box.getChildFrame()
     boxFrameTransform = boxFrame.transform
-    #box.setProperty('Dimensions', (0.46, 0.56, 0.46))
-    box.setProperty('Radius', 0.35)
+    box.setProperty('Dimensions', [0.46, 0.56, 0.46])
+    #box.setProperty('Radius', 0.35)
 
 
     # Send box to world origin
