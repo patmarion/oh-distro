@@ -7,7 +7,6 @@ image-passthrough
 # particle-filter based tracking
 particle_filter
 jpl-tags
-plane-seg
 car-tags
 registration
 octrees_difference
