@@ -22,6 +22,7 @@
   <build_depend>roslint</build_depend>
 
   <depend>geometry_msgs</depend>
+  <depend>husky_msgs</depend>
   <depend>ihmc_msgs</depend>
   <depend>image_transport</depend>
   <depend>ipab_lwr_msgs</depend>

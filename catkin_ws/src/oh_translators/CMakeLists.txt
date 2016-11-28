@@ -5,26 +5,43 @@ set(POD_NAME oh_translators)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated-declarations")
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  ipab_msgs
-  ihmc_msgs
   geometry_msgs
+  husky_msgs
+  ihmc_msgs
+  image_transport
+  ipab_lwr_msgs
+  ipab_msgs
+  kdl_conversions
   nav_msgs
   octomap_msgs
+  pods
+  robotiq_force_torque_sensor_msgs
+  roscpp
+  roslint
+  sensor_msgs
+  std_msgs
+  std_srvs
   tf
   trajectory_msgs
-  sensor_msgs
-  image_transport
-  std_srvs
-  kdl_conversions
-  robotiq_force_torque_sensor_msgs
-  roslint
-  pods
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs ipab_msgs ihmc_msgs tf trajectory_msgs sensor_msgs image_transport geometry_msgs nav_msgs kdl_conversions pods robotiq_force_torque_sensor_msgs
+  CATKIN_DEPENDS
+    geometry_msgs
+    husky_msgs
+    ihmc_msgs
+    image_transport
+    ipab_lwr_msgs
+    ipab_msgs
+    kdl_conversions
+    nav_msgs
+    pods
+    robotiq_force_torque_sensor_msgs
+    roscpp
+    sensor_msgs
+    std_msgs
+    tf
+    trajectory_msgs
   DEPENDS system_lib
 )
 
