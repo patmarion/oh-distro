@@ -44,10 +44,16 @@ class HuskyNavigationPanel(object):
         self.widget.setWindowTitle('Husky Navigation Panel')
         self.ui = WidgetDict(self.widget.children())
         
+        # Activate/Deactivate different panels
+        self.ui.navigationPanel.enabled = False
+        self.ui.manualPanel.enabled = False
+        self.ui.navigationControlButton.connect('clicked()', self.onActivateNavigationControl)
+        self.ui.manualControlButton.connect('clicked()', self.onActivateManualControl)
+
+        # Navigation panel control
         self.ui.newGoalButton.connect('clicked()', self.onNewNavigationGoal)
         self.ui.moveButton.connect('clicked()', self.moveToGoal)
         self.ui.stopButton.connect('clicked()', self.cancelGoal)
-        self.currentGoal = None
         
         self.goalPub = rospy.Publisher('/move_base/goal', MoveBaseActionGoal, queue_size=10)
         self.cancelPub = rospy.Publisher('/move_base/cancel', GoalID, queue_size=1)
@@ -64,6 +70,19 @@ class HuskyNavigationPanel(object):
         self.ui.forwardLeftButton.connect('clicked()', self.onMoveForwardLeft)
         self.ui.backwardRightButton.connect('clicked()', self.onMoveBackwardRight)
         self.ui.backwardLeftButton.connect('clicked()', self.onMoveBackwardLeft)
+
+    def removeNavGoal(self):
+        obj = om.findObjectByName('navigation goal')
+        if obj:
+            om.removeFromObjectModel(obj)
+
+    def onActivateNavigationControl(self):
+        self.cancelGoal()
+        self.removeNavGoal()
+        self.ui.navigationPanel.enabled = self.ui.navigationControlButton.checked
+
+    def onActivateManualControl(self):
+        self.ui.manualPanel.enabled = self.ui.manualControlButton.checked
 
     def newNavGoalFrame(self, robotStateModel, distanceForward=1.0):
         t = robotStateModel.getLinkFrame('base_footprint')
