@@ -2,7 +2,7 @@
  * lcm2ros_dual_arm_husky.cpp
  *
  *  Created on: 12 Oct 2016
- *      Author: yiming
+ *      Author: yiming and theo
  */
 
 #include <cstdlib>
@@ -14,6 +14,7 @@
 
 #include "lcmtypes/drc/robot_plan_t.hpp"
 #include "lcmtypes/drc/plan_control_t.hpp"
+#include <lcmtypes/bot_core/joint_state_t.hpp>
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <trajectory_msgs/JointTrajectory.h>
 
@@ -33,11 +34,19 @@ class LCM2ROS
     std::shared_ptr<lcm::LCM> lcm_;
     ros::NodeHandle nh_;
 
+    lcm::LCM lcmPublish_;
+
+
     void robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
         const std::string &channel, const drc::robot_plan_t* msg);
     void robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
         const std::string &channel, const drc::plan_control_t* msg);
     bool findIdx(const drc::robot_plan_t* msg);
+
+    void PublishArmJointState(int64_t utime, std::string channel,
+                         const control_msgs::FollowJointTrajectoryGoal msg,
+                         const drc::robot_plan_t* robot_msg);
+
 
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> larm_ac_;
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> rarm_ac_;
@@ -46,6 +55,8 @@ class LCM2ROS
     std::vector<std::string> larm_joints_;
     std::vector<std::string> rarm_joints_;
     bool hasIdx_;
+
+  	
 };
 
 LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
@@ -133,15 +144,16 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
       double dt1 = (msg->plan[i2].utime - msg->plan[i1].utime) * 1e-6;
       double dt2 = (msg->plan[i3].utime - msg->plan[i2].utime) * 1e-6;
       double dq1 =
-          msg->plan[i2].joint_position[larm_joints_map_[rarm_joints_[j]]]
-              - msg->plan[i1].joint_position[larm_joints_map_[rarm_joints_[j]]];
+          msg->plan[i2].joint_position[rarm_joints_map_[rarm_joints_[j]]]
+              - msg->plan[i1].joint_position[rarm_joints_map_[rarm_joints_[j]]];
       double dq2 =
-          msg->plan[i3].joint_position[larm_joints_map_[rarm_joints_[j]]]
-              - msg->plan[i2].joint_position[larm_joints_map_[rarm_joints_[j]]];
+          msg->plan[i3].joint_position[rarm_joints_map_[rarm_joints_[j]]]
+              - msg->plan[i2].joint_position[rarm_joints_map_[rarm_joints_[j]]];
+
       rarm_goal.trajectory.points[i].velocities[j] =
           (dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0;
-      (double) state.joint_velocity[larm_joints_map_[rarm_joints_[j]]];
-
+      (double) state.joint_velocity[rarm_joints_map_[rarm_joints_[j]]];
+      
       rarm_goal.trajectory.points[i].time_from_start = ros::Duration().fromSec(
           state.utime * 1E-6);
     }
@@ -150,6 +162,16 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
   larm_goal.trajectory.header.stamp = ros::Time::now();
   rarm_goal.trajectory.header.stamp = ros::Time::now();
 
+  // DEBUG BY THEO: Publish larm_goal and rarm_goal (position and velocities)so we can analyse them
+  int64_t lutime = static_cast<int64_t>(floor(larm_goal.trajectory.header.stamp.toNSec() / 1000));
+  int64_t rutime = static_cast<int64_t>(floor(rarm_goal.trajectory.header.stamp.toNSec() / 1000));
+
+  // left arm
+  PublishArmJointState(lutime, "LEFT_UR5_EXECUTE", larm_goal, msg);
+  // right arm
+  //PublishArmJointState(rutime, "RIGHT_UR5_EXECUTE", rarm_goal, msg);
+
+
   larm_ac_.sendGoal(larm_goal);
   rarm_ac_.sendGoal(rarm_goal);
   ROS_INFO_STREAM(
@@ -157,6 +179,7 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
   ROS_INFO_STREAM(
       "Sending right arm plan with "<<rarm_goal.trajectory.points.size()<<" waypoints");
   ros::spinOnce();
+
 }
 
 void LCM2ROS::robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
@@ -192,6 +215,69 @@ bool LCM2ROS::findIdx(const drc::robot_plan_t* msg)
     }
   hasIdx_ = true;
   return hasIdx_;
+}
+
+
+
+void LCM2ROS::PublishArmJointState(int64_t utime, std::string channel,
+                          const control_msgs::FollowJointTrajectoryGoal msg,
+                          const drc::robot_plan_t* robot_msg) {
+  	
+	// arm
+  	size_t num_waypoints = msg.trajectory.points.size();
+
+	bot_core::joint_state_t lcm_msg;
+	
+	int64_t secs =
+      static_cast<int64_t>(floor(msg.trajectory.header.stamp.toNSec() / 1000));
+
+  	// waypoints in the trajectory
+   	for (int i = 0; i < num_waypoints; i++){
+
+		// debugging
+
+   		// ROS_INFO_STREAM(
+        // 	"Publisher right arm plan with "<<floor(msg.trajectory.points[i].time_from_start.toSec())<<" waypoints");
+   		// ROS_INFO_STREAM(
+        // 	"Utime "<< utime << " ros time "<< secs );
+        // 	ROS_INFO_STREAM(
+        //	"Utime plan "<<robot_msg->plan[i].utime);
+
+   		// time of the message exactly the same as the time-indexing of the planned motion
+	  	lcm_msg.utime = secs + robot_msg->plan[i].utime; 
+		
+		// set the number of joints for the message	    
+	    lcm_msg.num_joints = msg.trajectory.joint_names.size();
+  		
+  		// initialisations
+	    lcm_msg.joint_name.assign(lcm_msg.num_joints, "");
+		lcm_msg.joint_position.assign(lcm_msg.num_joints, (const float &)0.);
+		lcm_msg.joint_velocity.assign(lcm_msg.num_joints, (const float &)0.);
+		lcm_msg.joint_effort.assign(lcm_msg.num_joints, (const float &)0.);
+
+	    // Iterate over joints and set positions and velocities
+		for (int joint_number = 0; joint_number < lcm_msg.num_joints; joint_number++) {
+		    
+		    std::string name = msg.trajectory.joint_names[joint_number];
+
+		    double position = 
+		        (msg.trajectory.points.size() > 0) ? msg.trajectory.points[i].positions[joint_number] : 0.0;
+		    double velocity = 
+		        (msg.trajectory.points.size() > 0) ? msg.trajectory.points[i].velocities[joint_number] : 0.0;
+		    double effort = 
+		        (msg.trajectory.points.size() > 0) ? 0.0 : 0.0;
+
+
+		    lcm_msg.joint_name[joint_number] = name;
+		    lcm_msg.joint_position[joint_number] = position;
+		    lcm_msg.joint_velocity[joint_number] = velocity;
+		    lcm_msg.joint_effort[joint_number] = effort;
+		}
+
+	// publish the message
+	lcmPublish_.publish(channel, &lcm_msg);
+	
+	}
 }
 
 int main(int argc, char** argv)

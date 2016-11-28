@@ -11,7 +11,7 @@ class demo(object):
         self.segsc = segmentScene.segScene(view)
 
         # tolerance limits
-        self.flexangTol = 60
+        self.flexangTol = 90
         self.stricktangTol = 5
 
         # configuration list
@@ -72,7 +72,5 @@ class demo(object):
 
         # append in a list the current configuration
         self.qs.append(self.motionplan.pU.getPlanningStartPose())
-
-    
 
     
