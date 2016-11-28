@@ -45,9 +45,11 @@ class App {
   ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_, cost_map_sub_;
   void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
   void spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
-  void cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg);
   void publishLidar(const sensor_msgs::LaserScanConstPtr &msg,
                     std::string channel);
+
+  void cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg);
+  bot_lcmgl_t *lcmgl_navcostmap_;
 
   ros::Subscriber wheel_odom_sub_, ekf_odom_sub_;
   void wheel_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
@@ -119,6 +121,8 @@ App::App(ros::NodeHandle node) : node_(node) {
   cost_map_sub_ =
       node_.subscribe(std::string("/move_base/global_costmap/costmap"), 10,
                       &App::cost_map_cb, this);
+  lcmgl_navcostmap_ =
+      bot_lcmgl_init(lcmPublish_.getUnderlyingLCM(), "NavigationCostMap");
 }
 
 App::~App() {}
@@ -353,8 +357,6 @@ void App::PublishJointState(int64_t utime, std::string channel,
 }
 
 void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
-  static bot_lcmgl_t *lcmgl =
-      bot_lcmgl_init(lcmPublish_.getUnderlyingLCM(), "NavigationCostMap");
   int size = msg->info.width * msg->info.height;
   int cnt = 0;
   int reduce_size = 3, reduce_w = 0, reduce_h = 0;
@@ -370,7 +372,7 @@ void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
         } else {
           reduce_h = 0;
           if (msg->data[cnt] > 0) {
-            bot_lcmgl_color4f(lcmgl, msg->data[cnt] / 100.0,
+            bot_lcmgl_color4f(lcmgl_navcostmap_, msg->data[cnt] / 100.0,
                               (100.0 - msg->data[cnt]) / 100.0,
                               (100.0 - msg->data[cnt]) / 100.0,
                               msg->data[cnt] > 50 ? 1.0 : 0.5);
@@ -381,14 +383,14 @@ void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
             float size[3] = {msg->info.resolution * reduce_size,
                              msg->info.resolution * reduce_size,
                              msg->info.resolution * reduce_size};
-            bot_lcmgl_box(lcmgl, xyz, size);
+            bot_lcmgl_box(lcmgl_navcostmap_, xyz, size);
           }
         }
         cnt++;
       }
     }
   }
-  bot_lcmgl_switch_buffer(lcmgl);
+  bot_lcmgl_switch_buffer(lcmgl_navcostmap_);
 }
 
 int main(int argc, char **argv) {
