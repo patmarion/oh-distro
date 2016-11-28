@@ -88,7 +88,7 @@ class HuskyNavigationPanel(object):
         t = robotStateModel.getLinkFrame('base_footprint')
         t.PreMultiply()
         t.Translate(distanceForward, 0.0, 0.0)
-        #t.PostMultiply()
+        t.Update()
         return t
     
     def onNewNavigationGoal(self, navGoal=None):
@@ -105,22 +105,17 @@ class HuskyNavigationPanel(object):
     def moveToGoal(self):
         frameObj = om.findObjectByName('navigation goal')
         t = frameObj.transform
+        [pos, quat] = transformUtils.poseFromTransform(t)
         goal_msg = MoveBaseActionGoal()
-        goal_msg.goal.target_pose.header.frame_id = 'odom' # 'base_link' and relative might be an option!
-        goal_msg.goal.target_pose.pose.position.x = t.GetPosition()[0]
-        goal_msg.goal.target_pose.pose.position.y = t.GetPosition()[1]
+        goal_msg.goal.target_pose.header.frame_id = 'odom'
+        goal_msg.goal.target_pose.pose.position.x = pos[0]
+        goal_msg.goal.target_pose.pose.position.y = pos[1]
         goal_msg.goal.target_pose.pose.position.z = 0
 
-        quat = t.GetOrientationWXYZ()
-        print t.GetOrientationWXYZ()
-        # goal_msg.goal.target_pose.pose.orientation.x = quat[1]
-        # goal_msg.goal.target_pose.pose.orientation.y = quat[2]
-        # goal_msg.goal.target_pose.pose.orientation.z = quat[3]
-        # goal_msg.goal.target_pose.pose.orientation.w = quat[0]
-        goal_msg.goal.target_pose.pose.orientation.x = 0
-        goal_msg.goal.target_pose.pose.orientation.y = 0
-        goal_msg.goal.target_pose.pose.orientation.z = 0 # 1
-        goal_msg.goal.target_pose.pose.orientation.w = 1 # t.GetOrientation()[2]/180.0
+        goal_msg.goal.target_pose.pose.orientation.x = quat[1]
+        goal_msg.goal.target_pose.pose.orientation.y = quat[2]
+        goal_msg.goal.target_pose.pose.orientation.z = quat[3]
+        goal_msg.goal.target_pose.pose.orientation.w = quat[0]
         
         self.goalPub.publish(goal_msg)
         
