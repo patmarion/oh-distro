@@ -123,7 +123,7 @@ class HuskyNavigationPanel(object):
         self.cancelPub.publish(cancel_msg)
         
     def statusCallback(self, data):
-        if data.status_list[0]:
+        if data.status_list and data.status_list[0]:
             self.ui.status.setText(navigationStatusStrings[data.status_list[0].status])
     
     def getLinearSpeed(self):
