@@ -14,12 +14,14 @@
 
 #include "lcmtypes/drc/robot_plan_t.hpp"
 #include "lcmtypes/drc/plan_control_t.hpp"
+#include "lcmtypes/bot_core/joint_state_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <trajectory_msgs/JointTrajectory.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
+#include <sensor_msgs/JointState.h>
 
 class LCM2ROS
 {
@@ -38,6 +40,11 @@ class LCM2ROS
     void robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
         const std::string &channel, const drc::plan_control_t* msg);
     bool findIdx(const drc::robot_plan_t* msg);
+
+    void ptuCommandHandler(const lcm::ReceiveBuffer* rbuf,
+                           const std::string& channel,
+                           const bot_core::joint_state_t* msg);
+    ros::Publisher ptu_command_pub_;
 
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> larm_ac_;
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> rarm_ac_;
@@ -58,6 +65,9 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
   lcm_->subscribe("COMMITTED_PLAN_PAUSE", &LCM2ROS::robotPlanPauseHandler,
       this);
 
+  lcm_->subscribe("PTU_COMMAND", &LCM2ROS::ptuCommandHandler, this);
+  ptu_command_pub_ = nh_.advertise<sensor_msgs::JointState>("/cmd", 1);
+
   larm_joints_ =
   { "l_ur5_arm_shoulder_pan_joint",
     "l_ur5_arm_shoulder_lift_joint", "l_ur5_arm_elbow_joint",
@@ -72,6 +82,25 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
     larm_joints_map_[larm_joints_[i]] = -1;
   for (int i = 0; i < rarm_joints_.size(); i++)
     rarm_joints_map_[rarm_joints_[i]] = -1;
+}
+
+void LCM2ROS::ptuCommandHandler(const lcm::ReceiveBuffer* rbuf,
+    const std::string &channel, const bot_core::joint_state_t* msg) {
+  sensor_msgs::JointState ros_msg;
+  ros_msg.header.stamp = ros::Time().fromSec(msg->utime * 1e-6);
+
+  ros_msg.name.resize(msg->num_joints);
+  ros_msg.position.resize(msg->num_joints);
+  ros_msg.velocity.resize(msg->num_joints);
+
+  for (int i = 0; i < msg->num_joints; i++) {
+    ros_msg.name[i] = msg->joint_name[i];
+    ros_msg.position[i] = msg->joint_position[i];
+    ros_msg.velocity[i] = msg->joint_velocity[i];
+  }
+
+  ROS_INFO_STREAM("Commanding PTU to [" << ros_msg.position[0] << ", " << ros_msg.position[1] << "]");
+  ptu_command_pub_.publish(ros_msg);
 }
 
 void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
