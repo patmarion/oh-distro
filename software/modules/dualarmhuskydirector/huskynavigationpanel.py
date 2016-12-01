@@ -63,7 +63,6 @@ class HuskyNavigationPanel(object):
         self.ui.stopButton.connect('clicked()', self.cancelGoal)
         
         self.goalPub = rospy.Publisher('/move_base/goal', MoveBaseActionGoal, queue_size=10)
-        self.cancelPub = rospy.Publisher('/move_base/cancel', GoalID, queue_size=1)
         #Some unknown lags in getting live status, TODO
         self.statusSub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.statusCallback, queue_size=1)
         
@@ -126,8 +125,9 @@ class HuskyNavigationPanel(object):
         self.goalPub.publish(goal_msg)
         
     def cancelGoal(self):
-        cancel_msg = GoalID()
-        self.cancelPub.publish(cancel_msg)
+        cancel_msg = lcmbot.utime_t()
+        cancel_msg.utime = getUtime()
+        lcmUtils.publish("HUSKY_MOVE_BASE_CANCEL", cancel_msg)
         
     def statusCallback(self, data):
         if data.status_list and data.status_list[0]:

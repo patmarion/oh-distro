@@ -17,10 +17,12 @@
 #include "lcmtypes/bot_core/joint_state_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 #include "lcmtypes/bot_core/twist_t.hpp"
+#include "lcmtypes/bot_core/utime_t.hpp"
 #include <trajectory_msgs/JointTrajectory.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
+#include <actionlib_msgs/GoalID.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
@@ -48,6 +50,10 @@ class LCM2ROS
                            const bot_core::joint_state_t* msg);
     ros::Publisher ptu_command_pub_;
 
+    void moveBaseCancelGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                                   const std::string& channel,
+                                   const bot_core::utime_t* msg);
+    ros::Publisher move_base_cancel_pub_;
 
     void cmdVelHandler(const lcm::ReceiveBuffer* rbuf,
                        const std::string& channel,
@@ -79,6 +85,11 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
   lcm_->subscribe("HUSKY_CMD_VEL", &LCM2ROS::cmdVelHandler, this);
   cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
+  lcm_->subscribe("HUSKY_MOVE_BASE_CANCEL", &LCM2ROS::moveBaseCancelGoalHandler,
+                  this);
+  move_base_cancel_pub_ =
+      nh_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
+
   larm_joints_ =
   { "l_ur5_arm_shoulder_pan_joint",
     "l_ur5_arm_shoulder_lift_joint", "l_ur5_arm_elbow_joint",
@@ -93,6 +104,23 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
     larm_joints_map_[larm_joints_[i]] = -1;
   for (int i = 0; i < rarm_joints_.size(); i++)
     rarm_joints_map_[rarm_joints_[i]] = -1;
+}
+
+/**
+ * @brief      Receives bot_core::utime_t trigger to cancel current move_base
+ *goal published as an empty actionlib_msgs::GoalID message
+ *
+ * @param[in]  rbuf     LCM Receive Buffer
+ * @param[in]  channel  LCM Channel (should be "HUSKY_MOVE_BASE_CANCEL")
+ * @param[in]  msg      bot_core::utime_t message used as trigger
+ */
+void LCM2ROS::moveBaseCancelGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                                        const std::string& channel,
+                                        const bot_core::utime_t* msg) {
+  ROS_WARN_STREAM("Cancelling move_base goal");
+  actionlib_msgs::GoalID ros_msg;
+  ros_msg.stamp = ros::Time().fromSec(msg->utime * 1e-6);
+  move_base_cancel_pub_.publish(ros_msg);
 }
 
 /**
