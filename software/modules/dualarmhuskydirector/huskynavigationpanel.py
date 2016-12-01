@@ -62,8 +62,6 @@ class HuskyNavigationPanel(object):
         self.ui.newGoalButton.connect('clicked()', self.onNewNavigationGoal)
         self.ui.moveButton.connect('clicked()', self.moveToGoal)
         self.ui.stopButton.connect('clicked()', self.cancelGoal)
-        
-        self.goalPub = rospy.Publisher('/move_base/goal', MoveBaseActionGoal, queue_size=10)
 
         # Move Base Status
         lcmUtils.addSubscriber("HUSKY_MOVE_BASE_STATUS", lcmdrc.int64_stamped_t, self.statusCallback)
@@ -113,18 +111,17 @@ class HuskyNavigationPanel(object):
         frameObj = om.findObjectByName('navigation goal')
         t = frameObj.transform
         [pos, quat] = transformUtils.poseFromTransform(t)
-        goal_msg = MoveBaseActionGoal()
-        goal_msg.goal.target_pose.header.frame_id = 'odom'
-        goal_msg.goal.target_pose.pose.position.x = pos[0]
-        goal_msg.goal.target_pose.pose.position.y = pos[1]
-        goal_msg.goal.target_pose.pose.position.z = 0
 
-        goal_msg.goal.target_pose.pose.orientation.x = quat[1]
-        goal_msg.goal.target_pose.pose.orientation.y = quat[2]
-        goal_msg.goal.target_pose.pose.orientation.z = quat[3]
-        goal_msg.goal.target_pose.pose.orientation.w = quat[0]
-        
-        self.goalPub.publish(goal_msg)
+        msg = lcmbot.pose_t()
+        msg.utime = getUtime()
+        msg.pos = [pos[0], pos[1], 0]
+        msg.orientation = quat
+
+        msg.vel = [0,0,0]
+        msg.rotation_rate = [0,0,0]
+        msg.accel = [0,0,0]
+
+        lcmUtils.publish("HUSKY_MOVE_BASE_GOAL", msg)
         
     def cancelGoal(self):
         cancel_msg = lcmbot.utime_t()

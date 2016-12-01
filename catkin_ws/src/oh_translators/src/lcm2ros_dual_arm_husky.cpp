@@ -19,6 +19,7 @@
 
 // Bot-Core LCM-Types
 #include <lcmtypes/bot_core/joint_state_t.hpp>
+#include <lcmtypes/bot_core/pose_t.hpp>
 #include <lcmtypes/bot_core/robot_state_t.hpp>
 #include <lcmtypes/bot_core/twist_t.hpp>
 #include <lcmtypes/bot_core/utime_t.hpp>
@@ -28,6 +29,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <actionlib_msgs/GoalID.h>
+#include <move_base_msgs/MoveBaseActionGoal.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
@@ -54,6 +56,11 @@ class LCM2ROS
                            const std::string& channel,
                            const bot_core::joint_state_t* msg);
     ros::Publisher ptu_command_pub_;
+
+    void moveBaseGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                             const std::string& channel,
+                             const bot_core::pose_t* msg);
+    ros::Publisher move_base_goal_pub_;
 
     void moveBaseCancelGoalHandler(const lcm::ReceiveBuffer* rbuf,
                                    const std::string& channel,
@@ -95,6 +102,10 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
   move_base_cancel_pub_ =
       nh_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
 
+  lcm_->subscribe("HUSKY_MOVE_BASE_GOAL", &LCM2ROS::moveBaseGoalHandler, this);
+  move_base_goal_pub_ =
+      nh_.advertise<move_base_msgs::MoveBaseActionGoal>("/move_base/goal", 1);
+
   larm_joints_ =
   { "l_ur5_arm_shoulder_pan_joint",
     "l_ur5_arm_shoulder_lift_joint", "l_ur5_arm_elbow_joint",
@@ -109,6 +120,34 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
     larm_joints_map_[larm_joints_[i]] = -1;
   for (int i = 0; i < rarm_joints_.size(); i++)
     rarm_joints_map_[rarm_joints_[i]] = -1;
+}
+
+/**
+ * @brief      Receives bot_core::pose_t base goals in odom-frame, translates
+ *them into move_base_msgs::MoveBaseActionGoal ROS messages and publishes them
+ *to /move_base/goal
+ *
+ * @param[in]  rbuf     LCM Receive Buffer
+ * @param[in]  channel  LCM Channel
+ * @param[in]  msg      bot_core::pose_t message
+ */
+void LCM2ROS::moveBaseGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                                  const std::string& channel,
+                                  const bot_core::pose_t* msg) {
+  move_base_msgs::MoveBaseActionGoal goal_msg;
+  goal_msg.header.stamp = ros::Time().fromSec(msg->utime * 1e-6);
+  goal_msg.goal.target_pose.header.frame_id = "odom";
+
+  goal_msg.goal.target_pose.pose.position.x = msg->pos[0];
+  goal_msg.goal.target_pose.pose.position.y = msg->pos[1];
+  goal_msg.goal.target_pose.pose.position.z = msg->pos[2];
+
+  goal_msg.goal.target_pose.pose.orientation.w = msg->orientation[0];
+  goal_msg.goal.target_pose.pose.orientation.x = msg->orientation[1];
+  goal_msg.goal.target_pose.pose.orientation.y = msg->orientation[2];
+  goal_msg.goal.target_pose.pose.orientation.z = msg->orientation[3];
+
+  move_base_goal_pub_.publish(goal_msg);
 }
 
 /**
