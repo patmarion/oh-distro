@@ -1,25 +1,30 @@
 /*
  * lcm2ros_dual_arm_husky.cpp
  *
- *  Created on: 12 Oct 2016
- *      Author: yiming
+ * Created on: 12 Oct 2016 
+ * Author: yiming, wolfgang
  */
 
 #include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
+
 #include <ros/ros.h>
 #include <lcm/lcm-cpp.hpp>
 
-#include "lcmtypes/drc/robot_plan_t.hpp"
-#include "lcmtypes/drc/plan_control_t.hpp"
-#include "lcmtypes/bot_core/joint_state_t.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
-#include "lcmtypes/bot_core/twist_t.hpp"
-#include "lcmtypes/bot_core/utime_t.hpp"
-#include <trajectory_msgs/JointTrajectory.h>
+// DRC LCM-Types
+#include <lcmtypes/drc/robot_plan_t.hpp>
+#include <lcmtypes/drc/plan_control_t.hpp>
 
+// Bot-Core LCM-Types
+#include <lcmtypes/bot_core/joint_state_t.hpp>
+#include <lcmtypes/bot_core/robot_state_t.hpp>
+#include <lcmtypes/bot_core/twist_t.hpp>
+#include <lcmtypes/bot_core/utime_t.hpp>
+
+// ROS-Messages
+#include <trajectory_msgs/JointTrajectory.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <actionlib_msgs/GoalID.h>

@@ -15,6 +15,7 @@ import time
 from director import lcmUtils
 from director.utime import getUtime
 import bot_core as lcmbot
+import drc as lcmdrc
 
 # ROS
 import rospy
@@ -63,8 +64,9 @@ class HuskyNavigationPanel(object):
         self.ui.stopButton.connect('clicked()', self.cancelGoal)
         
         self.goalPub = rospy.Publisher('/move_base/goal', MoveBaseActionGoal, queue_size=10)
-        #Some unknown lags in getting live status, TODO
-        self.statusSub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.statusCallback, queue_size=1)
+
+        # Move Base Status
+        lcmUtils.addSubscriber("HUSKY_MOVE_BASE_STATUS", lcmdrc.int64_stamped_t, self.statusCallback)
         
         # Manual control
         self.ui.forwardButton.connect('clicked()', self.onMoveForward)
@@ -129,9 +131,8 @@ class HuskyNavigationPanel(object):
         cancel_msg.utime = getUtime()
         lcmUtils.publish("HUSKY_MOVE_BASE_CANCEL", cancel_msg)
         
-    def statusCallback(self, data):
-        if data.status_list and data.status_list[0]:
-            self.ui.status.setText(navigationStatusStrings[data.status_list[0].status])
+    def statusCallback(self, msg):
+        self.ui.status.setText(navigationStatusStrings[msg.data])
     
     def getLinearSpeed(self):
         return self.ui.linearSpeedBox.value

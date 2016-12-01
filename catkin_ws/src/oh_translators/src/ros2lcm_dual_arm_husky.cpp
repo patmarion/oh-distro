@@ -8,6 +8,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 #include <husky_msgs/HuskyStatus.h>
+#include <actionlib_msgs/GoalStatusArray.h>
 
 // ### Standard includes
 #include <cstdlib>
@@ -17,13 +18,19 @@
 #include <map>
 #include <string>
 
+// Bot-Core LCM-Types
 #include <lcmtypes/bot_core/ins_t.hpp>
 #include <lcmtypes/bot_core/joint_state_t.hpp>
 #include <lcmtypes/bot_core/planar_lidar_t.hpp>
 #include <lcmtypes/bot_core/pose_t.hpp>
 #include <lcmtypes/bot_core/six_axis_force_torque_t.hpp>
 
+// Husky LCM-Types
 #include <lcmtypes/husky/husky_status_t.hpp>
+
+// DRC LCM-Types
+#include <lcmtypes/drc/int64_stamped_t.hpp>
+
 #include <lcm/lcm-cpp.hpp>
 #include <bot_lcmgl_client/lcmgl.h>
 
@@ -42,12 +49,13 @@ class App {
   lcm::LCM lcmPublish_;
   ros::NodeHandle node_;
 
-  ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_, cost_map_sub_;
+  ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_;
   void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
   void spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
   void publishLidar(const sensor_msgs::LaserScanConstPtr &msg,
                     std::string channel);
 
+  ros::Subscriber cost_map_sub_;
   void cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg);
   bot_lcmgl_t *lcmgl_navcostmap_;
 
@@ -57,6 +65,10 @@ class App {
 
   ros::Subscriber imuSensorSub_;
   void imuSensorCallback(const sensor_msgs::ImuConstPtr &msg);
+
+  ros::Subscriber moveBaseStatusSub_;
+  void moveBaseStatusCallback(
+      const actionlib_msgs::GoalStatusArrayConstPtr &msg);
 
   ros::Subscriber jointStatesSub_;
   void jointStatesCallback(const sensor_msgs::JointStateConstPtr &msg);
@@ -115,6 +127,9 @@ App::App(ros::NodeHandle node) : node_(node) {
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
 
+  moveBaseStatusSub_ = node_.subscribe(std::string("/move_base/status"), 1,
+                                       &App::moveBaseStatusCallback, this);
+
   jointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
                                     &App::jointStatesCallback, this);
 
@@ -126,6 +141,27 @@ App::App(ros::NodeHandle node) : node_(node) {
 }
 
 App::~App() {}
+
+/**
+ * @brief      Receives actionlib_msgs::GoalStatusArray messages and translates
+ *them to drc::int64_stamped_t if it pertains to a goal. Current limitations
+ *include support for only one goal (not an array). TODO: e.g. convert to
+ *drc::double_array_t or create new type
+ *
+ * @param[in]  msg   actionlib_msgs::GoalStatusArray message
+ */
+void App::moveBaseStatusCallback(
+    const actionlib_msgs::GoalStatusArrayConstPtr &msg) {
+  if (msg->status_list.size() == 0) return;
+
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+  drc::int64_stamped_t lcm_msg = drc::int64_stamped_t();
+  lcm_msg.utime = utime;
+  lcm_msg.data = msg->status_list[0].status;
+
+  lcmPublish_.publish("HUSKY_MOVE_BASE_STATUS", &lcm_msg);
+}
 
 void App::imuSensorCallback(const sensor_msgs::ImuConstPtr &msg) {
   int64_t utime =
