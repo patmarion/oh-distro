@@ -23,6 +23,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   tf
   trajectory_msgs
+  actionlib_msgs
+  move_base_msgs
 )
 
 catkin_package(
@@ -42,6 +44,7 @@ catkin_package(
     std_msgs
     tf
     trajectory_msgs
+    move_base_msgs
   DEPENDS system_lib
 )
 

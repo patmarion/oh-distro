@@ -16,12 +16,14 @@
 #include "lcmtypes/drc/plan_control_t.hpp"
 #include "lcmtypes/bot_core/joint_state_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "lcmtypes/bot_core/twist_t.hpp"
 #include <trajectory_msgs/JointTrajectory.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <sensor_msgs/JointState.h>
+#include <geometry_msgs/Twist.h>
 
 class LCM2ROS
 {
@@ -46,6 +48,12 @@ class LCM2ROS
                            const bot_core::joint_state_t* msg);
     ros::Publisher ptu_command_pub_;
 
+
+    void cmdVelHandler(const lcm::ReceiveBuffer* rbuf,
+                       const std::string& channel,
+                       const bot_core::twist_t* msg);
+    ros::Publisher cmd_vel_pub_;
+
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> larm_ac_;
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> rarm_ac_;
     std::map<std::string, int> larm_joints_map_;
@@ -68,6 +76,9 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
   lcm_->subscribe("PTU_COMMAND", &LCM2ROS::ptuCommandHandler, this);
   ptu_command_pub_ = nh_.advertise<sensor_msgs::JointState>("/cmd", 1);
 
+  lcm_->subscribe("HUSKY_CMD_VEL", &LCM2ROS::cmdVelHandler, this);
+  cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+
   larm_joints_ =
   { "l_ur5_arm_shoulder_pan_joint",
     "l_ur5_arm_shoulder_lift_joint", "l_ur5_arm_elbow_joint",
@@ -82,6 +93,36 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
     larm_joints_map_[larm_joints_[i]] = -1;
   for (int i = 0; i < rarm_joints_.size(); i++)
     rarm_joints_map_[rarm_joints_[i]] = -1;
+}
+
+/**
+ * @brief      Receives bot_core::twist_t LCM messages, translates them to
+ *geometry_msgs::Twist ROS messages and publishes them on the /cmd_vel topic.
+ *
+ * @param[in]  rbuf     LCM Receive Buffer
+ * @param[in]  channel  LCM Channel (should be "HUSKY_CMD_VEL")
+ * @param[in]  msg      bot_core::twist_t message
+ */
+void LCM2ROS::cmdVelHandler(const lcm::ReceiveBuffer* rbuf,
+                            const std::string& channel,
+                            const bot_core::twist_t* msg) {
+  if (channel != "HUSKY_CMD_VEL") return;
+
+  geometry_msgs::Twist ros_msg;
+  ros_msg.linear.x = msg->linear_velocity.x;
+  ros_msg.linear.y = msg->linear_velocity.y;
+  ros_msg.linear.z = msg->linear_velocity.z;
+  ros_msg.angular.x = msg->angular_velocity.x;
+  ros_msg.angular.y = msg->angular_velocity.y;
+  ros_msg.angular.z = msg->angular_velocity.z;
+
+  ROS_INFO_STREAM("Base: Commanding linear velocity ("
+                  << ros_msg.linear.x << ", " << ros_msg.linear.y << ", "
+                  << ros_msg.linear.z << "), angular velocity ("
+                  << ros_msg.angular.x << ", " << ros_msg.angular.y << ", "
+                  << ros_msg.angular.z << ")");
+
+  cmd_vel_pub_.publish(ros_msg);
 }
 
 void LCM2ROS::ptuCommandHandler(const lcm::ReceiveBuffer* rbuf,
@@ -242,4 +283,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-

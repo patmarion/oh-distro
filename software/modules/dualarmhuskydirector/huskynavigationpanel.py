@@ -9,7 +9,14 @@ from director import footstepsdriver
 from director import lcmUtils
 from director import visualization as vis
 import os
+import time
 
+# LCM
+from director import lcmUtils
+from director.utime import getUtime
+import bot_core as lcmbot
+
+# ROS
 import rospy
 from move_base_msgs.msg import MoveBaseActionGoal
 from actionlib_msgs.msg import GoalStatusArray
@@ -57,7 +64,6 @@ class HuskyNavigationPanel(object):
         
         self.goalPub = rospy.Publisher('/move_base/goal', MoveBaseActionGoal, queue_size=10)
         self.cancelPub = rospy.Publisher('/move_base/cancel', GoalID, queue_size=1)
-        self.cmdVelPub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         #Some unknown lags in getting live status, TODO
         self.statusSub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.statusCallback, queue_size=1)
         
@@ -132,78 +138,71 @@ class HuskyNavigationPanel(object):
     
     def getAngularSpeed(self):
         return self.ui.angularSpeedBox.value
+
+    ##
+    ## @brief      Publishes a bot_core::twist_t message to HUSKY_CMD_VEL
+    ##
+    ## @param      linear_velocity   The linear velocity
+    ## @param      angular_velocity  The angular velocity
+    ##
+    def publishCmdVel(self, linear_velocity=0, angular_velocity=0):
+        assert abs(linear_velocity) < 0.6
+        assert abs(angular_velocity) < 0.6
+
+        msg = lcmbot.twist_t()
+        msg.linear_velocity = lcmbot.vector_3d_t()
+        msg.angular_velocity = lcmbot.vector_3d_t()
+
+        msg.linear_velocity.x = linear_velocity
+        msg.linear_velocity.y = 0
+        msg.linear_velocity.z = 0
+
+        msg.angular_velocity.x = 0
+        msg.angular_velocity.y = 0
+        msg.angular_velocity.z = angular_velocity
+
+        lcmUtils.publish("HUSKY_CMD_VEL", msg)
+
     
     def onMoveForward(self):
-        new_msg = Twist()
-        new_msg.linear.x = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=self.getLinearSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onMoveBackward(self):
-        new_msg = Twist()
-        new_msg.linear.x = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=-self.getLinearSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onTurnRight(self):
-        new_msg = Twist()
-        new_msg.angular.z = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(2.0)
-        new_msg.angular.z = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(angular_velocity=-self.getAngularSpeed())
+        time.sleep(2.0)
+        self.publishCmdVel()
         
     def onTurnLeft(self):
-        new_msg = Twist()
-        new_msg.angular.z = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(2.0)
-        new_msg.angular.z = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(angular_velocity=self.getAngularSpeed())
+        time.sleep(2.0)
+        self.publishCmdVel()
         
     def onMoveForwardRight(self):
-        new_msg = Twist()
-        new_msg.linear.x = self.getLinearSpeed()
-        new_msg.angular.z = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=self.getLinearSpeed(), angular_velocity=-self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
     
     def onMoveForwardLeft(self):
-        new_msg = Twist()
-        new_msg.linear.x = self.getLinearSpeed()
-        new_msg.angular.z = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=self.getLinearSpeed(), angular_velocity=self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onMoveBackwardRight(self):
-        new_msg = Twist()
-        new_msg.linear.x = -self.getLinearSpeed()
-        new_msg.angular.z = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=-self.getLinearSpeed(), angular_velocity=self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onMoveBackwardLeft(self):
-        new_msg = Twist()
-        new_msg.linear.x = -self.getLinearSpeed()
-        new_msg.angular.z = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=-self.getLinearSpeed(), angular_velocity=-self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
 def _getAction():
 
