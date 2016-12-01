@@ -38,7 +38,7 @@ def startup(robotSystem, globalsDict=None):
     # Automatically activate and set OpenNI settings
     assert 'openniDepthPointCloud' in globalsDict
     openniDepthPointCloud = globalsDict['openniDepthPointCloud']
-    openniDepthPointCloud.setProperty('Target FPS', 15)
+    openniDepthPointCloud.setProperty('Target FPS', 5)
     openniDepthPointCloud.setProperty('Visible', True)
     openniDepthPointCloud.setProperty('Max Range', 4.0)
 
