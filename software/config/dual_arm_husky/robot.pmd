@@ -54,13 +54,8 @@ group "2.state_estimation" {
 }
 
 group "3.sensing" {
-    cmd "openni2-lcm_robot" {
-        exec = "openni2-camera-lcm";
-        host = "husky";
-    }
-
     cmd "openni2-lcm_local" {
-        exec = "openni2-camera-lcm";
+        exec = "openni2-camera-lcm -d 2"; # Skips every 2nd frame for now
         host = "localhost";
     }
 
