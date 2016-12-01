@@ -139,7 +139,7 @@ script "start_everything_for_real_robot" {
     start cmd "openni2-lcm_local";
     start group "4.hands";
     start group "5.exotica_planning";
-    start group "6.navigation";r
+    start group "6.navigation";
     #start cmd "april_tags";
     wait ms 2500;
     start cmd "director";
