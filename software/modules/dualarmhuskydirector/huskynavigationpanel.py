@@ -17,13 +17,6 @@ from director.utime import getUtime
 import bot_core as lcmbot
 import drc as lcmdrc
 
-# ROS
-import rospy
-from move_base_msgs.msg import MoveBaseActionGoal
-from actionlib_msgs.msg import GoalStatusArray
-from actionlib_msgs.msg import GoalID
-from geometry_msgs.msg import Twist
-
 navigationStatusStrings = ['PENDING', 'ACTIVE', 'PREEMPTED', 'SUCCEEDED', 'ABORTED', 'REJECTED', 'PREEMPTING', 'RECALLING', 'RECALLED', 'LOST']
 
 def addWidgetsToDict(widgets, d):

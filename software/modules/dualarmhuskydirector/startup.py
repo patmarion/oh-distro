@@ -14,8 +14,6 @@ import huskyplanningpanel
 import huskynavigationpanel
 import PTU
 
-import rospy # TODO(ros): Remove ROS dependency
-
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
 
@@ -23,10 +21,6 @@ def startup(robotSystem, globalsDict=None):
     assert globalsDict is not None
     assert 'directorConfig' in globalsDict
     directorConfig = globalsDict['directorConfig']
-
-    # Initialise global rosNode
-    # TODO(ros): Remove ROS dependency
-    rospy.init_node('director')
 
     # Initialise the PTU
     ptu = PTU.PTU()
