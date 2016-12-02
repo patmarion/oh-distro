@@ -168,7 +168,7 @@ set(pypolyhedron_revision 1f110addf89398f62644830bf69a69930db8c4d0)
 set(pypolyhedron_depends)
 
 set(kinematics-utils_url https://github.com/ipab-slmc/kinematics-utils.git)
-set(kinematics-utils_revision 4c828062d6412f9b58278a5fa22cfbff4dff2ac6)
+set(kinematics-utils_revision 160b8bf9b11604978185bc46e27336571bf33df1)
 set(kinematics-utils_depends Eigen_pod)
 
 set(libmultisense_url https://bitbucket.org/crl/libmultisense)
