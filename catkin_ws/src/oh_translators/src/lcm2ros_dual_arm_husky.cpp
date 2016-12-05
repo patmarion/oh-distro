@@ -22,63 +22,59 @@
 #include <actionlib/client/terminal_state.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 
-class LCM2ROS
-{
-  public:
-    LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in);
-    ~LCM2ROS()
-    {
-    }
+class LCM2ROS {
+ public:
+  LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in);
+  ~LCM2ROS() {}
 
-  private:
-    std::shared_ptr<lcm::LCM> lcm_;
-    ros::NodeHandle nh_;
+ private:
+  std::shared_ptr<lcm::LCM> lcm_;
+  ros::NodeHandle nh_;
 
-    lcm::LCM lcmPublish_;
+  lcm::LCM lcmPublish_;
 
+  void robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
+                        const std::string& channel,
+                        const drc::robot_plan_t* msg);
+  void robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
+                             const std::string& channel,
+                             const drc::plan_control_t* msg);
+  bool findIdx(const drc::robot_plan_t* msg);
 
-    void robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
-        const std::string &channel, const drc::robot_plan_t* msg);
-    void robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
-        const std::string &channel, const drc::plan_control_t* msg);
-    bool findIdx(const drc::robot_plan_t* msg);
+  void PublishArmJointState(int64_t utime, std::string channel,
+                            const control_msgs::FollowJointTrajectoryGoal msg,
+                            const drc::robot_plan_t* robot_msg);
 
-    void PublishArmJointState(int64_t utime, std::string channel,
-                         const control_msgs::FollowJointTrajectoryGoal msg,
-                         const drc::robot_plan_t* robot_msg);
-
-
-    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> larm_ac_;
-    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> rarm_ac_;
-    std::map<std::string, int> larm_joints_map_;
-    std::map<std::string, int> rarm_joints_map_;
-    std::vector<std::string> larm_joints_;
-    std::vector<std::string> rarm_joints_;
-    bool hasIdx_;
-
-  	
+  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
+      larm_ac_;
+  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
+      rarm_ac_;
+  std::map<std::string, int> larm_joints_map_;
+  std::map<std::string, int> rarm_joints_map_;
+  std::vector<std::string> larm_joints_;
+  std::vector<std::string> rarm_joints_;
+  bool hasIdx_;
 };
 
-LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
-    : lcm_(lcm_in), nh_(nh_in), larm_ac_(
-        "/husky_left_ur5/follow_joint_trajectory", true), rarm_ac_(
-        "/husky_right_ur5/follow_joint_trajectory", true), hasIdx_(false)
-{
+LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
+    : lcm_(lcm_in),
+      nh_(nh_in),
+      larm_ac_("/husky_left_ur5/follow_joint_trajectory", true),
+      rarm_ac_("/husky_right_ur5/follow_joint_trajectory", true),
+      hasIdx_(false) {
   lcm_->subscribe("COMMITTED_ROBOT_PLAN", &LCM2ROS::robotPlanHandler, this);
 
   lcm_->subscribe("COMMITTED_PLAN_PAUSE", &LCM2ROS::robotPlanPauseHandler,
-      this);
+                  this);
 
-  larm_joints_ =
-  { "l_ur5_arm_shoulder_pan_joint",
-    "l_ur5_arm_shoulder_lift_joint", "l_ur5_arm_elbow_joint",
-    "l_ur5_arm_wrist_1_joint", "l_ur5_arm_wrist_2_joint",
-    "l_ur5_arm_wrist_3_joint"};
-  rarm_joints_ =
-  { "r_ur5_arm_shoulder_pan_joint",
-    "r_ur5_arm_shoulder_lift_joint", "r_ur5_arm_elbow_joint",
-    "r_ur5_arm_wrist_1_joint", "r_ur5_arm_wrist_2_joint",
-    "r_ur5_arm_wrist_3_joint"};
+  larm_joints_ = {
+      "l_ur5_arm_shoulder_pan_joint", "l_ur5_arm_shoulder_lift_joint",
+      "l_ur5_arm_elbow_joint",        "l_ur5_arm_wrist_1_joint",
+      "l_ur5_arm_wrist_2_joint",      "l_ur5_arm_wrist_3_joint"};
+  rarm_joints_ = {
+      "r_ur5_arm_shoulder_pan_joint", "r_ur5_arm_shoulder_lift_joint",
+      "r_ur5_arm_elbow_joint",        "r_ur5_arm_wrist_1_joint",
+      "r_ur5_arm_wrist_2_joint",      "r_ur5_arm_wrist_3_joint"};
   for (int i = 0; i < larm_joints_.size(); i++)
     larm_joints_map_[larm_joints_[i]] = -1;
   for (int i = 0; i < rarm_joints_.size(); i++)
@@ -86,8 +82,8 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM> &lcm_in, ros::NodeHandle &nh_in)
 }
 
 void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
-    const std::string &channel, const drc::robot_plan_t* msg)
-{
+                               const std::string& channel,
+                               const drc::robot_plan_t* msg) {
   ROS_ERROR("LCM2ROS got plan");
 
   if (!hasIdx_ && !findIdx(msg)) return;
@@ -100,15 +96,13 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
 
   larm_goal.trajectory.points.resize(msg->num_states);
   rarm_goal.trajectory.points.resize(msg->num_states);
-  for (int i = 0; i < msg->num_states; i++)
-  {
+  for (int i = 0; i < msg->num_states; i++) {
     bot_core::robot_state_t state = msg->plan[i];
     larm_goal.trajectory.points[i].positions.resize(larm_joints_.size());
     larm_goal.trajectory.points[i].velocities.resize(larm_joints_.size());
-    for (int j = 0; j < larm_joints_.size(); j++)
-    {
+    for (int j = 0; j < larm_joints_.size(); j++) {
       larm_goal.trajectory.points[i].positions[j] =
-          (double) state.joint_position[larm_joints_map_[larm_joints_[j]]];
+          (double)state.joint_position[larm_joints_map_[larm_joints_[j]]];
 
       int i1 = (i > 0) ? (i - 1) : 0;
       int i2 = i;
@@ -117,26 +111,24 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
       double dt1 = (msg->plan[i2].utime - msg->plan[i1].utime) * 1e-6;
       double dt2 = (msg->plan[i3].utime - msg->plan[i2].utime) * 1e-6;
       double dq1 =
-          msg->plan[i2].joint_position[larm_joints_map_[larm_joints_[j]]]
-              - msg->plan[i1].joint_position[larm_joints_map_[larm_joints_[j]]];
+          msg->plan[i2].joint_position[larm_joints_map_[larm_joints_[j]]] -
+          msg->plan[i1].joint_position[larm_joints_map_[larm_joints_[j]]];
       double dq2 =
-          msg->plan[i3].joint_position[larm_joints_map_[larm_joints_[j]]]
-              - msg->plan[i2].joint_position[larm_joints_map_[larm_joints_[j]]];
+          msg->plan[i3].joint_position[larm_joints_map_[larm_joints_[j]]] -
+          msg->plan[i2].joint_position[larm_joints_map_[larm_joints_[j]]];
       larm_goal.trajectory.points[i].velocities[j] =
           (dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0;
-      (double) state.joint_velocity[larm_joints_map_[larm_joints_[j]]];
+      (double)state.joint_velocity[larm_joints_map_[larm_joints_[j]]];
 
-      larm_goal.trajectory.points[i].time_from_start = ros::Duration().fromSec(
-          state.utime * 1E-6);
-
+      larm_goal.trajectory.points[i].time_from_start =
+          ros::Duration().fromSec(state.utime * 1E-6);
     }
 
     rarm_goal.trajectory.points[i].positions.resize(rarm_joints_.size());
     rarm_goal.trajectory.points[i].velocities.resize(rarm_joints_.size());
-    for (int j = 0; j < rarm_joints_.size(); j++)
-    {
+    for (int j = 0; j < rarm_joints_.size(); j++) {
       rarm_goal.trajectory.points[i].positions[j] =
-          (double) state.joint_position[rarm_joints_map_[rarm_joints_[j]]];
+          (double)state.joint_position[rarm_joints_map_[rarm_joints_[j]]];
       int i1 = (i > 0) ? (i - 1) : 0;
       int i2 = i;
       int i3 = (i < msg->num_states - 1) ? (i + 1) : (msg->num_states - 1);
@@ -144,148 +136,146 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
       double dt1 = (msg->plan[i2].utime - msg->plan[i1].utime) * 1e-6;
       double dt2 = (msg->plan[i3].utime - msg->plan[i2].utime) * 1e-6;
       double dq1 =
-          msg->plan[i2].joint_position[rarm_joints_map_[rarm_joints_[j]]]
-              - msg->plan[i1].joint_position[rarm_joints_map_[rarm_joints_[j]]];
+          msg->plan[i2].joint_position[rarm_joints_map_[rarm_joints_[j]]] -
+          msg->plan[i1].joint_position[rarm_joints_map_[rarm_joints_[j]]];
       double dq2 =
-          msg->plan[i3].joint_position[rarm_joints_map_[rarm_joints_[j]]]
-              - msg->plan[i2].joint_position[rarm_joints_map_[rarm_joints_[j]]];
+          msg->plan[i3].joint_position[rarm_joints_map_[rarm_joints_[j]]] -
+          msg->plan[i2].joint_position[rarm_joints_map_[rarm_joints_[j]]];
 
       rarm_goal.trajectory.points[i].velocities[j] =
           (dt1 * dt2 != 0) ? (dq1 / dt1 * 0.5 + dq2 / dt2 * 0.5) : 0.0;
-      (double) state.joint_velocity[rarm_joints_map_[rarm_joints_[j]]];
-      
-      rarm_goal.trajectory.points[i].time_from_start = ros::Duration().fromSec(
-          state.utime * 1E-6);
+      (double)state.joint_velocity[rarm_joints_map_[rarm_joints_[j]]];
+
+      rarm_goal.trajectory.points[i].time_from_start =
+          ros::Duration().fromSec(state.utime * 1E-6);
     }
   }
 
   larm_goal.trajectory.header.stamp = ros::Time::now();
   rarm_goal.trajectory.header.stamp = ros::Time::now();
 
-  // DEBUG BY THEO: Publish larm_goal and rarm_goal (position and velocities)so we can analyse them
-  int64_t lutime = static_cast<int64_t>(floor(larm_goal.trajectory.header.stamp.toNSec() / 1000));
-  int64_t rutime = static_cast<int64_t>(floor(rarm_goal.trajectory.header.stamp.toNSec() / 1000));
+  // DEBUG BY THEO: Publish larm_goal and rarm_goal (position and velocities)so
+  // we can analyse them
+  int64_t lutime = static_cast<int64_t>(
+      floor(larm_goal.trajectory.header.stamp.toNSec() / 1000));
+  int64_t rutime = static_cast<int64_t>(
+      floor(rarm_goal.trajectory.header.stamp.toNSec() / 1000));
 
   // left arm
   PublishArmJointState(lutime, "LEFT_UR5_EXECUTE", larm_goal, msg);
   // right arm
-  //PublishArmJointState(rutime, "RIGHT_UR5_EXECUTE", rarm_goal, msg);
-
+  // PublishArmJointState(rutime, "RIGHT_UR5_EXECUTE", rarm_goal, msg);
 
   larm_ac_.sendGoal(larm_goal);
   rarm_ac_.sendGoal(rarm_goal);
-  ROS_INFO_STREAM(
-      "Sending left arm plan with "<<larm_goal.trajectory.points.size()<<" waypoints");
-  ROS_INFO_STREAM(
-      "Sending right arm plan with "<<rarm_goal.trajectory.points.size()<<" waypoints");
+  ROS_INFO_STREAM("Sending left arm plan with "
+                  << larm_goal.trajectory.points.size() << " waypoints");
+  ROS_INFO_STREAM("Sending right arm plan with "
+                  << rarm_goal.trajectory.points.size() << " waypoints");
   ros::spinOnce();
-
 }
 
 void LCM2ROS::robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
-    const std::string &channel, const drc::plan_control_t* msg)
-{
+                                    const std::string& channel,
+                                    const drc::plan_control_t* msg) {
   ROS_WARN("Cancelling left and right arm goals.");
   larm_ac_.cancelGoal();
   rarm_ac_.cancelGoal();
 }
 
-bool LCM2ROS::findIdx(const drc::robot_plan_t* msg)
-{
-  for (int i = 0; i < msg->plan[0].joint_name.size(); i++)
-  {
-    if (larm_joints_map_.find(msg->plan[0].joint_name[i])
-        != larm_joints_map_.end())
+bool LCM2ROS::findIdx(const drc::robot_plan_t* msg) {
+  for (int i = 0; i < msg->plan[0].joint_name.size(); i++) {
+    if (larm_joints_map_.find(msg->plan[0].joint_name[i]) !=
+        larm_joints_map_.end())
       larm_joints_map_[msg->plan[0].joint_name[i]] = i;
-    else if (rarm_joints_map_.find(msg->plan[0].joint_name[i])
-        != rarm_joints_map_.end())
+    else if (rarm_joints_map_.find(msg->plan[0].joint_name[i]) !=
+             rarm_joints_map_.end())
       rarm_joints_map_[msg->plan[0].joint_name[i]] = i;
   }
-  for (auto &it : larm_joints_map_)
-    if (it.second == -1)
-    {
-      ROS_ERROR_STREAM("Joint "<<it.first<<" does not exist in LCM plan");
+  for (auto& it : larm_joints_map_)
+    if (it.second == -1) {
+      ROS_ERROR_STREAM("Joint " << it.first << " does not exist in LCM plan");
       return false;
     }
-  for (auto &it : rarm_joints_map_)
-    if (it.second == -1)
-    {
-      ROS_ERROR_STREAM("Joint "<<it.first<<" does not exist in LCM plan");
+  for (auto& it : rarm_joints_map_)
+    if (it.second == -1) {
+      ROS_ERROR_STREAM("Joint " << it.first << " does not exist in LCM plan");
       return false;
     }
   hasIdx_ = true;
   return hasIdx_;
 }
 
+void LCM2ROS::PublishArmJointState(
+    int64_t utime, std::string channel,
+    const control_msgs::FollowJointTrajectoryGoal msg,
+    const drc::robot_plan_t* robot_msg) {
 
+  // arm
+  size_t num_waypoints = msg.trajectory.points.size();
 
-void LCM2ROS::PublishArmJointState(int64_t utime, std::string channel,
-                          const control_msgs::FollowJointTrajectoryGoal msg,
-                          const drc::robot_plan_t* robot_msg) {
-  	
-	// arm
-  	size_t num_waypoints = msg.trajectory.points.size();
+  bot_core::joint_state_t lcm_msg;
 
-	bot_core::joint_state_t lcm_msg;
-	
-	int64_t secs =
+  int64_t secs =
       static_cast<int64_t>(floor(msg.trajectory.header.stamp.toNSec() / 1000));
 
-  	// waypoints in the trajectory
-   	for (int i = 0; i < num_waypoints; i++){
+  // waypoints in the trajectory
+  for (int i = 0; i < num_waypoints; i++) {
 
-		// debugging
+    // debugging
 
-   		// ROS_INFO_STREAM(
-        // 	"Publisher right arm plan with "<<floor(msg.trajectory.points[i].time_from_start.toSec())<<" waypoints");
-   		// ROS_INFO_STREAM(
-        // 	"Utime "<< utime << " ros time "<< secs );
-        // 	ROS_INFO_STREAM(
-        //	"Utime plan "<<robot_msg->plan[i].utime);
+    // ROS_INFO_STREAM(
+    // 	"Publisher right arm plan with
+    // "<<floor(msg.trajectory.points[i].time_from_start.toSec())<<"
+    // waypoints");
+    // ROS_INFO_STREAM(
+    // 	"Utime "<< utime << " ros time "<< secs );
+    // 	ROS_INFO_STREAM(
+    //	"Utime plan "<<robot_msg->plan[i].utime);
 
-   		// time of the message exactly the same as the time-indexing of the planned motion
-	  	lcm_msg.utime = secs + robot_msg->plan[i].utime; 
-		
-		// set the number of joints for the message	    
-	    lcm_msg.num_joints = msg.trajectory.joint_names.size();
-  		
-  		// initialisations
-	    lcm_msg.joint_name.assign(lcm_msg.num_joints, "");
-		lcm_msg.joint_position.assign(lcm_msg.num_joints, (const float &)0.);
-		lcm_msg.joint_velocity.assign(lcm_msg.num_joints, (const float &)0.);
-		lcm_msg.joint_effort.assign(lcm_msg.num_joints, (const float &)0.);
+    // time of the message exactly the same as the time-indexing of the planned
+    // motion
+    lcm_msg.utime = secs + robot_msg->plan[i].utime;
 
-	    // Iterate over joints and set positions and velocities
-		for (int joint_number = 0; joint_number < lcm_msg.num_joints; joint_number++) {
-		    
-		    std::string name = msg.trajectory.joint_names[joint_number];
+    // set the number of joints for the message
+    lcm_msg.num_joints = msg.trajectory.joint_names.size();
 
-		    double position = 
-		        (msg.trajectory.points.size() > 0) ? msg.trajectory.points[i].positions[joint_number] : 0.0;
-		    double velocity = 
-		        (msg.trajectory.points.size() > 0) ? msg.trajectory.points[i].velocities[joint_number] : 0.0;
-		    double effort = 
-		        (msg.trajectory.points.size() > 0) ? 0.0 : 0.0;
+    // initialisations
+    lcm_msg.joint_name.assign(lcm_msg.num_joints, "");
+    lcm_msg.joint_position.assign(lcm_msg.num_joints, (const float&)0.);
+    lcm_msg.joint_velocity.assign(lcm_msg.num_joints, (const float&)0.);
+    lcm_msg.joint_effort.assign(lcm_msg.num_joints, (const float&)0.);
 
+    // Iterate over joints and set positions and velocities
+    for (int joint_number = 0; joint_number < lcm_msg.num_joints;
+         joint_number++) {
 
-		    lcm_msg.joint_name[joint_number] = name;
-		    lcm_msg.joint_position[joint_number] = position;
-		    lcm_msg.joint_velocity[joint_number] = velocity;
-		    lcm_msg.joint_effort[joint_number] = effort;
-		}
+      std::string name = msg.trajectory.joint_names[joint_number];
 
-	// publish the message
-	lcmPublish_.publish(channel, &lcm_msg);
-	
-	}
+      double position = (msg.trajectory.points.size() > 0)
+                            ? msg.trajectory.points[i].positions[joint_number]
+                            : 0.0;
+      double velocity = (msg.trajectory.points.size() > 0)
+                            ? msg.trajectory.points[i].velocities[joint_number]
+                            : 0.0;
+      double effort = (msg.trajectory.points.size() > 0) ? 0.0 : 0.0;
+
+      lcm_msg.joint_name[joint_number] = name;
+      lcm_msg.joint_position[joint_number] = position;
+      lcm_msg.joint_velocity[joint_number] = velocity;
+      lcm_msg.joint_effort[joint_number] = effort;
+    }
+
+    // publish the message
+    lcmPublish_.publish(channel, &lcm_msg);
+  }
 }
 
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "lcm2ros_dual_arm_husky", ros::init_options::NoSigintHandler);
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "lcm2ros_dual_arm_husky",
+            ros::init_options::NoSigintHandler);
   std::shared_ptr<lcm::LCM> lcm(new lcm::LCM);
-  if (!lcm->good())
-  {
+  if (!lcm->good()) {
     std::cerr << "ERROR: lcm is not good()" << std::endl;
   }
   ros::NodeHandle nh;
@@ -293,10 +283,8 @@ int main(int argc, char** argv)
   LCM2ROS handlerObject(lcm, nh);
   ROS_INFO_STREAM("LCM2ROS Dual Arm Husky Translator Ready");
 
-  while (0 == lcm->handle())
-  {
+  while (0 == lcm->handle()) {
   }
 
   return 0;
 }
-
