@@ -415,7 +415,7 @@ void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
             double xyz[3] = {
                 msg->info.origin.position.x + (double)h * msg->info.resolution,
                 msg->info.origin.position.y + (double)w * msg->info.resolution,
-                msg->data[cnt] / 400.0};
+                -msg->info.resolution * reduce_size / 2};
             float size[3] = {msg->info.resolution * reduce_size,
                              msg->info.resolution * reduce_size,
                              msg->info.resolution * reduce_size};
