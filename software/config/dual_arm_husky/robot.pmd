@@ -58,8 +58,15 @@ group "2.state_estimation" {
 }
 
 group "3.sensing" {
-    cmd "openni2-lcm_local" {
-        exec = "openni2-camera-lcm -d 2"; # Skips every 2nd frame for now
+    #cmd "openni2-lcm_local" {
+    #    exec = "openni2-camera-lcm -d 2"; # Skips every 2nd frame for now
+    #    host = "localhost";
+    #}
+
+
+    # TODO: need translator!
+    cmd "ros_openni" {
+        exec = "roslaunch openni_launch openni.launch camera:=xtion";
         host = "localhost";
     }
 
@@ -140,7 +147,7 @@ script "start_everything_for_real_robot" {
     #wait ms 1000;
     #start cmd "state-sync_with_lidar_odometry";
     start cmd "state-sync_with_ekf";
-    start cmd "openni2-lcm_local";
+    start cmd "ros_openni";
     start group "4.hands";
     start group "5.exotica_planning";
     start group "6.navigation";
