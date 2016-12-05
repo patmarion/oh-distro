@@ -8,6 +8,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 #include <husky_msgs/HuskyStatus.h>
+#include <actionlib_msgs/GoalStatusArray.h>
 
 // ### Standard includes
 #include <cstdlib>
@@ -17,13 +18,19 @@
 #include <map>
 #include <string>
 
+// Bot-Core LCM-Types
 #include <lcmtypes/bot_core/ins_t.hpp>
 #include <lcmtypes/bot_core/joint_state_t.hpp>
 #include <lcmtypes/bot_core/planar_lidar_t.hpp>
 #include <lcmtypes/bot_core/pose_t.hpp>
 #include <lcmtypes/bot_core/six_axis_force_torque_t.hpp>
 
+// Husky LCM-Types
 #include <lcmtypes/husky/husky_status_t.hpp>
+
+// DRC LCM-Types
+#include <lcmtypes/drc/int64_stamped_t.hpp>
+
 #include <lcm/lcm-cpp.hpp>
 #include <bot_lcmgl_client/lcmgl.h>
 
@@ -42,12 +49,15 @@ class App {
   lcm::LCM lcmPublish_;
   ros::NodeHandle node_;
 
-  ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_, cost_map_sub_;
+  ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_;
   void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
   void spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
-  void cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg);
   void publishLidar(const sensor_msgs::LaserScanConstPtr &msg,
                     std::string channel);
+
+  ros::Subscriber cost_map_sub_;
+  void cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg);
+  bot_lcmgl_t *lcmgl_navcostmap_;
 
   ros::Subscriber wheel_odom_sub_, ekf_odom_sub_;
   void wheel_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
@@ -55,6 +65,10 @@ class App {
 
   ros::Subscriber imuSensorSub_;
   void imuSensorCallback(const sensor_msgs::ImuConstPtr &msg);
+
+  ros::Subscriber moveBaseStatusSub_;
+  void moveBaseStatusCallback(
+      const actionlib_msgs::GoalStatusArrayConstPtr &msg);
 
   ros::Subscriber jointStatesSub_;
   void jointStatesCallback(const sensor_msgs::JointStateConstPtr &msg);
@@ -113,15 +127,41 @@ App::App(ros::NodeHandle node) : node_(node) {
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
 
+  moveBaseStatusSub_ = node_.subscribe(std::string("/move_base/status"), 1,
+                                       &App::moveBaseStatusCallback, this);
+
   jointStatesSub_ = node_.subscribe(std::string("/joint_states"), 100,
                                     &App::jointStatesCallback, this);
 
   cost_map_sub_ =
       node_.subscribe(std::string("/move_base/global_costmap/costmap"), 10,
                       &App::cost_map_cb, this);
+  lcmgl_navcostmap_ =
+      bot_lcmgl_init(lcmPublish_.getUnderlyingLCM(), "NavigationCostMap");
 }
 
 App::~App() {}
+
+/**
+ * @brief      Receives actionlib_msgs::GoalStatusArray messages and translates
+ *them to drc::int64_stamped_t if it pertains to a goal. Current limitations
+ *include support for only one goal (not an array). TODO: e.g. convert to
+ *drc::double_array_t or create new type
+ *
+ * @param[in]  msg   actionlib_msgs::GoalStatusArray message
+ */
+void App::moveBaseStatusCallback(
+    const actionlib_msgs::GoalStatusArrayConstPtr &msg) {
+  if (msg->status_list.size() == 0) return;
+
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+  drc::int64_stamped_t lcm_msg = drc::int64_stamped_t();
+  lcm_msg.utime = utime;
+  lcm_msg.data = msg->status_list[0].status;
+
+  lcmPublish_.publish("HUSKY_MOVE_BASE_STATUS", &lcm_msg);
+}
 
 void App::imuSensorCallback(const sensor_msgs::ImuConstPtr &msg) {
   int64_t utime =
@@ -353,8 +393,6 @@ void App::PublishJointState(int64_t utime, std::string channel,
 }
 
 void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
-  static bot_lcmgl_t *lcmgl =
-      bot_lcmgl_init(lcmPublish_.getUnderlyingLCM(), "NavigationCostMap");
   int size = msg->info.width * msg->info.height;
   int cnt = 0;
   int reduce_size = 3, reduce_w = 0, reduce_h = 0;
@@ -370,7 +408,7 @@ void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
         } else {
           reduce_h = 0;
           if (msg->data[cnt] > 0) {
-            bot_lcmgl_color4f(lcmgl, msg->data[cnt] / 100.0,
+            bot_lcmgl_color4f(lcmgl_navcostmap_, msg->data[cnt] / 100.0,
                               (100.0 - msg->data[cnt]) / 100.0,
                               (100.0 - msg->data[cnt]) / 100.0,
                               msg->data[cnt] > 50 ? 1.0 : 0.5);
@@ -381,14 +419,14 @@ void App::cost_map_cb(const nav_msgs::OccupancyGridConstPtr &msg) {
             float size[3] = {msg->info.resolution * reduce_size,
                              msg->info.resolution * reduce_size,
                              msg->info.resolution * reduce_size};
-            bot_lcmgl_box(lcmgl, xyz, size);
+            bot_lcmgl_box(lcmgl_navcostmap_, xyz, size);
           }
         }
         cnt++;
       }
     }
   }
-  bot_lcmgl_switch_buffer(lcmgl);
+  bot_lcmgl_switch_buffer(lcmgl_navcostmap_);
 }
 
 int main(int argc, char **argv) {

@@ -5,26 +5,46 @@ set(POD_NAME oh_translators)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated-declarations")
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  ipab_msgs
-  ihmc_msgs
   geometry_msgs
+  husky_msgs
+  ihmc_msgs
+  image_transport
+  ipab_lwr_msgs
+  ipab_msgs
+  kdl_conversions
   nav_msgs
   octomap_msgs
+  pods
+  robotiq_force_torque_sensor_msgs
+  roscpp
+  roslint
+  sensor_msgs
+  std_msgs
+  std_srvs
   tf
   trajectory_msgs
-  sensor_msgs
-  image_transport
-  std_srvs
-  kdl_conversions
-  robotiq_force_torque_sensor_msgs
-  roslint
-  pods
+  actionlib_msgs
+  move_base_msgs
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp std_msgs ipab_msgs ihmc_msgs tf trajectory_msgs sensor_msgs image_transport geometry_msgs nav_msgs kdl_conversions pods robotiq_force_torque_sensor_msgs
+  CATKIN_DEPENDS
+    geometry_msgs
+    husky_msgs
+    ihmc_msgs
+    image_transport
+    ipab_lwr_msgs
+    ipab_msgs
+    kdl_conversions
+    nav_msgs
+    pods
+    robotiq_force_torque_sensor_msgs
+    roscpp
+    sensor_msgs
+    std_msgs
+    tf
+    trajectory_msgs
+    move_base_msgs
   DEPENDS system_lib
 )
 
@@ -82,7 +102,7 @@ add_dependencies(ros2lcm_camera ipab_msgs_generate_messages_cpp ihmc_msgs_genera
 
 add_executable(ros2lcm_stereo src/ros2lcm_stereo.cpp)
 target_link_libraries(ros2lcm_stereo ${catkin_LIBRARIES} z)
-pods_use_pkg_config_packages(ros2lcm_stereo lcm bot2-core eigen3 bot2-core eigen3 image_io_utils opencv)
+pods_use_pkg_config_packages(ros2lcm_stereo lcm bot2-core eigen3 opencv)
 add_dependencies(ros2lcm_stereo ipab_msgs_generate_messages_cpp ihmc_msgs_generate_messages_cpp)
 
 add_executable(ros2lcm_test src/ros2lcm_test.cpp)
@@ -92,8 +112,7 @@ pods_use_pkg_config_packages(ros2lcm_test lcm bot2-core)
 
 add_executable(ros2lcm_kinect src/ros2lcm_kinect.cpp)
 target_link_libraries(ros2lcm_kinect ${catkin_LIBRARIES} z)
-add_dependencies(ros2lcm_kinect ipab_msgs_generate_messages_cpp ihmc_msgs_generate_messages_cpp)
-pods_use_pkg_config_packages(ros2lcm_kinect lcm bot2-core eigen3 image_io_utils opencv)
+pods_use_pkg_config_packages(ros2lcm_kinect lcm bot2-core opencv)
 
 # add_executable(lcm2ros_botframes src/lcm2ros_botframes.cpp)
 # target_link_libraries(lcm2ros_botframes ${catkin_LIBRARIES})
@@ -135,17 +154,15 @@ pods_use_pkg_config_packages(lcm2ros_sdh lcm bot2-core lcmtypes_robotiqhand std_
 ######################################################
 add_executable(ros2lcm_husky src/ros2lcm_husky.cpp)
 target_link_libraries(ros2lcm_husky ${catkin_LIBRARIES})
-#add_dependencies(ros2lcm_husky )
 pods_use_pkg_config_packages(ros2lcm_husky lcm bot2-core eigen3)
 
 add_executable(ros2lcm_dual_arm_husky src/ros2lcm_dual_arm_husky.cpp)
 target_link_libraries(ros2lcm_dual_arm_husky ${catkin_LIBRARIES})
 add_dependencies(ros2lcm_dual_arm_husky robotiq_force_torque_sensor_msgs_generate_messages_cpp nav_msgs_generate_messages_cpp sensor_msgs_generate_messages_cpp husky_msgs_generate_messages_cpp)
-pods_use_pkg_config_packages(ros2lcm_dual_arm_husky lcm lcmtypes_bot2-core bot2-lcmgl-client)
+pods_use_pkg_config_packages(ros2lcm_dual_arm_husky lcm lcmtypes_bot2-core bot2-lcmgl-client lcmtypes_drc_lcmtypes)
 
 add_executable(lcm2ros_dual_arm_husky src/lcm2ros_dual_arm_husky.cpp)
 target_link_libraries(lcm2ros_dual_arm_husky ${catkin_LIBRARIES})
-#add_dependencies(lcm2ros_dual_arm_husky )
 pods_use_pkg_config_packages(lcm2ros_dual_arm_husky lcm lcmtypes_bot2-core)
 
 #############

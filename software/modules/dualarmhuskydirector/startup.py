@@ -14,8 +14,6 @@ import huskyplanningpanel
 import huskynavigationpanel
 import PTU
 
-import rospy
-
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
 
@@ -23,9 +21,6 @@ def startup(robotSystem, globalsDict=None):
     assert globalsDict is not None
     assert 'directorConfig' in globalsDict
     directorConfig = globalsDict['directorConfig']
-
-    # Initialise global rosNode
-    rospy.init_node('director')
 
     # Initialise the PTU
     ptu = PTU.PTU()
@@ -43,7 +38,7 @@ def startup(robotSystem, globalsDict=None):
     # Automatically activate and set OpenNI settings
     assert 'openniDepthPointCloud' in globalsDict
     openniDepthPointCloud = globalsDict['openniDepthPointCloud']
-    openniDepthPointCloud.setProperty('Target FPS', 15)
+    openniDepthPointCloud.setProperty('Target FPS', 5)
     openniDepthPointCloud.setProperty('Visible', True)
     openniDepthPointCloud.setProperty('Max Range', 4.0)
 

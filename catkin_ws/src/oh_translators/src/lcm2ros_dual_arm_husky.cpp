@@ -2,25 +2,37 @@
  * lcm2ros_dual_arm_husky.cpp
  *
  *  Created on: 12 Oct 2016
- *      Author: yiming and theo
+ *      Author: yiming, theo, wolfgang
  */
 
 #include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
+
 #include <ros/ros.h>
 #include <lcm/lcm-cpp.hpp>
 
-#include "lcmtypes/drc/robot_plan_t.hpp"
-#include "lcmtypes/drc/plan_control_t.hpp"
-#include <lcmtypes/bot_core/joint_state_t.hpp>
-#include "lcmtypes/bot_core/robot_state_t.hpp"
-#include <trajectory_msgs/JointTrajectory.h>
+// DRC LCM-Types
+#include <lcmtypes/drc/robot_plan_t.hpp>
+#include <lcmtypes/drc/plan_control_t.hpp>
 
+// Bot-Core LCM-Types
+#include <lcmtypes/bot_core/joint_state_t.hpp>
+#include <lcmtypes/bot_core/pose_t.hpp>
+#include <lcmtypes/bot_core/robot_state_t.hpp>
+#include <lcmtypes/bot_core/twist_t.hpp>
+#include <lcmtypes/bot_core/utime_t.hpp>
+
+// ROS-Messages
+#include <trajectory_msgs/JointTrajectory.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
+#include <actionlib_msgs/GoalID.h>
+#include <move_base_msgs/MoveBaseActionGoal.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
+#include <sensor_msgs/JointState.h>
+#include <geometry_msgs/Twist.h>
 
 class LCM2ROS {
  public:
@@ -31,8 +43,6 @@ class LCM2ROS {
   std::shared_ptr<lcm::LCM> lcm_;
   ros::NodeHandle nh_;
 
-  lcm::LCM lcmPublish_;
-
   void robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
                         const std::string& channel,
                         const drc::robot_plan_t* msg);
@@ -40,6 +50,25 @@ class LCM2ROS {
                              const std::string& channel,
                              const drc::plan_control_t* msg);
   bool findIdx(const drc::robot_plan_t* msg);
+
+  void ptuCommandHandler(const lcm::ReceiveBuffer* rbuf,
+                         const std::string& channel,
+                         const bot_core::joint_state_t* msg);
+  ros::Publisher ptu_command_pub_;
+
+  void moveBaseGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                           const std::string& channel,
+                           const bot_core::pose_t* msg);
+  ros::Publisher move_base_goal_pub_;
+
+  void moveBaseCancelGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                                 const std::string& channel,
+                                 const bot_core::utime_t* msg);
+  ros::Publisher move_base_cancel_pub_;
+
+  void cmdVelHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel,
+                     const bot_core::twist_t* msg);
+  ros::Publisher cmd_vel_pub_;
 
   void PublishArmJointState(int64_t utime, std::string channel,
                             const control_msgs::FollowJointTrajectoryGoal msg,
@@ -67,6 +96,21 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
   lcm_->subscribe("COMMITTED_PLAN_PAUSE", &LCM2ROS::robotPlanPauseHandler,
                   this);
 
+  lcm_->subscribe("PTU_COMMAND", &LCM2ROS::ptuCommandHandler, this);
+  ptu_command_pub_ = nh_.advertise<sensor_msgs::JointState>("/cmd", 1);
+
+  lcm_->subscribe("HUSKY_CMD_VEL", &LCM2ROS::cmdVelHandler, this);
+  cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+
+  lcm_->subscribe("HUSKY_MOVE_BASE_CANCEL", &LCM2ROS::moveBaseCancelGoalHandler,
+                  this);
+  move_base_cancel_pub_ =
+      nh_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
+
+  lcm_->subscribe("HUSKY_MOVE_BASE_GOAL", &LCM2ROS::moveBaseGoalHandler, this);
+  move_base_goal_pub_ =
+      nh_.advertise<move_base_msgs::MoveBaseActionGoal>("/move_base/goal", 1);
+
   larm_joints_ = {
       "l_ur5_arm_shoulder_pan_joint", "l_ur5_arm_shoulder_lift_joint",
       "l_ur5_arm_elbow_joint",        "l_ur5_arm_wrist_1_joint",
@@ -79,6 +123,102 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
     larm_joints_map_[larm_joints_[i]] = -1;
   for (int i = 0; i < rarm_joints_.size(); i++)
     rarm_joints_map_[rarm_joints_[i]] = -1;
+}
+
+/**
+ * @brief      Receives bot_core::pose_t base goals in odom-frame, translates
+ *them into move_base_msgs::MoveBaseActionGoal ROS messages and publishes them
+ *to /move_base/goal
+ *
+ * @param[in]  rbuf     LCM Receive Buffer
+ * @param[in]  channel  LCM Channel
+ * @param[in]  msg      bot_core::pose_t message
+ */
+void LCM2ROS::moveBaseGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                                  const std::string& channel,
+                                  const bot_core::pose_t* msg) {
+  move_base_msgs::MoveBaseActionGoal goal_msg;
+  goal_msg.header.stamp = ros::Time().fromSec(msg->utime * 1e-6);
+  goal_msg.goal.target_pose.header.frame_id = "odom";
+
+  goal_msg.goal.target_pose.pose.position.x = msg->pos[0];
+  goal_msg.goal.target_pose.pose.position.y = msg->pos[1];
+  goal_msg.goal.target_pose.pose.position.z = msg->pos[2];
+
+  goal_msg.goal.target_pose.pose.orientation.w = msg->orientation[0];
+  goal_msg.goal.target_pose.pose.orientation.x = msg->orientation[1];
+  goal_msg.goal.target_pose.pose.orientation.y = msg->orientation[2];
+  goal_msg.goal.target_pose.pose.orientation.z = msg->orientation[3];
+
+  move_base_goal_pub_.publish(goal_msg);
+}
+
+/**
+ * @brief      Receives bot_core::utime_t trigger to cancel current move_base
+ *goal published as an empty actionlib_msgs::GoalID message
+ *
+ * @param[in]  rbuf     LCM Receive Buffer
+ * @param[in]  channel  LCM Channel (should be "HUSKY_MOVE_BASE_CANCEL")
+ * @param[in]  msg      bot_core::utime_t message used as trigger
+ */
+void LCM2ROS::moveBaseCancelGoalHandler(const lcm::ReceiveBuffer* rbuf,
+                                        const std::string& channel,
+                                        const bot_core::utime_t* msg) {
+  ROS_WARN_STREAM("Cancelling move_base goal");
+  actionlib_msgs::GoalID ros_msg;
+  ros_msg.stamp = ros::Time().fromSec(msg->utime * 1e-6);
+  move_base_cancel_pub_.publish(ros_msg);
+}
+
+/**
+ * @brief      Receives bot_core::twist_t LCM messages, translates them to
+ *geometry_msgs::Twist ROS messages and publishes them on the /cmd_vel topic.
+ *
+ * @param[in]  rbuf     LCM Receive Buffer
+ * @param[in]  channel  LCM Channel (should be "HUSKY_CMD_VEL")
+ * @param[in]  msg      bot_core::twist_t message
+ */
+void LCM2ROS::cmdVelHandler(const lcm::ReceiveBuffer* rbuf,
+                            const std::string& channel,
+                            const bot_core::twist_t* msg) {
+  if (channel != "HUSKY_CMD_VEL") return;
+
+  geometry_msgs::Twist ros_msg;
+  ros_msg.linear.x = msg->linear_velocity.x;
+  ros_msg.linear.y = msg->linear_velocity.y;
+  ros_msg.linear.z = msg->linear_velocity.z;
+  ros_msg.angular.x = msg->angular_velocity.x;
+  ros_msg.angular.y = msg->angular_velocity.y;
+  ros_msg.angular.z = msg->angular_velocity.z;
+
+  ROS_INFO_STREAM("Base: Commanding linear velocity ("
+                  << ros_msg.linear.x << ", " << ros_msg.linear.y << ", "
+                  << ros_msg.linear.z << "), angular velocity ("
+                  << ros_msg.angular.x << ", " << ros_msg.angular.y << ", "
+                  << ros_msg.angular.z << ")");
+
+  cmd_vel_pub_.publish(ros_msg);
+}
+
+void LCM2ROS::ptuCommandHandler(const lcm::ReceiveBuffer* rbuf,
+                                const std::string& channel,
+                                const bot_core::joint_state_t* msg) {
+  sensor_msgs::JointState ros_msg;
+  ros_msg.header.stamp = ros::Time().fromSec(msg->utime * 1e-6);
+
+  ros_msg.name.resize(msg->num_joints);
+  ros_msg.position.resize(msg->num_joints);
+  ros_msg.velocity.resize(msg->num_joints);
+
+  for (int i = 0; i < msg->num_joints; i++) {
+    ros_msg.name[i] = msg->joint_name[i];
+    ros_msg.position[i] = msg->joint_position[i];
+    ros_msg.velocity[i] = msg->joint_velocity[i];
+  }
+
+  ROS_INFO_STREAM("Commanding PTU to [" << ros_msg.position[0] << ", "
+                                        << ros_msg.position[1] << "]");
+  ptu_command_pub_.publish(ros_msg);
 }
 
 void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
@@ -267,7 +407,7 @@ void LCM2ROS::PublishArmJointState(
     }
 
     // publish the message
-    lcmPublish_.publish(channel, &lcm_msg);
+    lcm_.publish(channel, &lcm_msg);
   }
 }
 
@@ -288,3 +428,4 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+
