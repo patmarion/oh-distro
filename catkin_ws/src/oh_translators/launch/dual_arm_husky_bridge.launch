@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_base_link_optical" args="0 0 0 -0.5 0.5 -0.5 0.5 base_link base_link_optical 100"/>
+	<node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_fixed_xtion" args="-0.01 -1.225 -.225 -0.3007058 0. 0. 0.95371695 base_link_optical fixed_xtion_optical_frame 100"/>
+</launch>
