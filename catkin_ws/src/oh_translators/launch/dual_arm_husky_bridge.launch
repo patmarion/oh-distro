@@ -1,4 +1,5 @@
 <launch>
-	<node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_base_link_optical" args="0 0 0 -0.5 0.5 -0.5 0.5 base_link base_link_optical 100"/>
-	<node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_fixed_xtion" args="-0.01 -1.225 -.225 -0.3007058 0. 0. 0.95371695 base_link_optical fixed_xtion_optical_frame 100"/>
+	<node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_base_link" args="0 0 0 0 0 0 1 odom base_link 100"/>
+
+	<node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_fixed_xtion" args="-.225 0.055 1.225 0.0 0.300705799504 0.0 0.953716950748 base_link xtion_link 100"/><!-- needs to be fixed -->
 </launch>
