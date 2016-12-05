@@ -16,9 +16,6 @@
 // rosparam set /compressed_listener/image_transport compressed
 // rosrun translators  my_subscriber __name:=compressed_listener
 
-#include <boost/thread.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <cstdlib>
