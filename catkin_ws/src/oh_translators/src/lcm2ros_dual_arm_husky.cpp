@@ -407,7 +407,7 @@ void LCM2ROS::PublishArmJointState(
     }
 
     // publish the message
-    lcm_.publish(channel, &lcm_msg);
+    lcm_->publish(channel, &lcm_msg);
   }
 }
 
