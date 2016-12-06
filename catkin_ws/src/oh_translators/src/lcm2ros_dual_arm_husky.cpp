@@ -28,10 +28,9 @@
 // ROS-Messages
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
-#include <actionlib_msgs/GoalID.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <geometry_msgs/Twist.h>
-#include <move_base_msgs/MoveBaseActionGoal.h>
+#include <move_base_msgs/MoveBaseAction.h>
 #include <sensor_msgs/JointState.h>
 #include <trajectory_msgs/JointTrajectory.h>
 
@@ -45,6 +44,8 @@ enum side_t { LEFT, RIGHT };
 
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
     TrajectoryActionClient;
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>
+    MoveBaseActionClient;
 
 class LCM2ROS {
  public:
@@ -71,12 +72,15 @@ class LCM2ROS {
   void moveBaseGoalHandler(const lcm::ReceiveBuffer* rbuf,
                            const std::string& channel,
                            const bot_core::pose_t* msg);
-  ros::Publisher move_base_goal_pub_;
-
   void moveBaseCancelGoalHandler(const lcm::ReceiveBuffer* rbuf,
                                  const std::string& channel,
                                  const bot_core::utime_t* msg);
-  ros::Publisher move_base_cancel_pub_;
+  MoveBaseActionClient mb_ac_;
+  int64_t move_base_last_plan_msg_utime_,
+      move_base_last_plan_execution_start_utime_;
+  void moveBaseExecutionGoalCallback();
+  void moveBaseExecutionActiveCallback();
+  void PublishMoveBasePlanStatus(int8_t plan_type, int8_t execution_status);
 
   void cmdVelHandler(const lcm::ReceiveBuffer* rbuf, const std::string& channel,
                      const bot_core::twist_t* msg);
@@ -115,7 +119,10 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
       larm_last_plan_msg_utime_(0),
       rarm_last_plan_msg_utime_(0),
       larm_last_plan_execution_start_utime_(0),
-      rarm_last_plan_execution_start_utime_(0) {
+      rarm_last_plan_execution_start_utime_(0),
+      mb_ac_("/move_base", true),
+      move_base_last_plan_msg_utime_(0),
+      move_base_last_plan_execution_start_utime_(0) {
   lcm_->subscribe("COMMITTED_ROBOT_PLAN", &LCM2ROS::robotPlanHandler, this);
 
   lcm_->subscribe("COMMITTED_PLAN_PAUSE", &LCM2ROS::robotPlanPauseHandler,
@@ -129,12 +136,8 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
 
   lcm_->subscribe("HUSKY_MOVE_BASE_CANCEL", &LCM2ROS::moveBaseCancelGoalHandler,
                   this);
-  move_base_cancel_pub_ =
-      nh_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
 
   lcm_->subscribe("HUSKY_MOVE_BASE_GOAL", &LCM2ROS::moveBaseGoalHandler, this);
-  move_base_goal_pub_ =
-      nh_.advertise<move_base_msgs::MoveBaseActionGoal>("/move_base/goal", 1);
 
   larm_joints_ = {
       "l_ur5_arm_shoulder_pan_joint", "l_ur5_arm_shoulder_lift_joint",
@@ -152,8 +155,8 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
 
 /**
  * @brief      Receives bot_core::pose_t base goals in odom-frame, translates
- *them into move_base_msgs::MoveBaseActionGoal ROS messages and publishes them
- *to /move_base/goal
+ *them into move_base_msgs::MoveBaseGoal ROS messages and sets them as a goal
+ *using the action client.
  *
  * @param[in]  rbuf     LCM Receive Buffer
  * @param[in]  channel  LCM Channel
@@ -162,25 +165,50 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
 void LCM2ROS::moveBaseGoalHandler(const lcm::ReceiveBuffer* rbuf,
                                   const std::string& channel,
                                   const bot_core::pose_t* msg) {
-  move_base_msgs::MoveBaseActionGoal goal_msg;
-  goal_msg.header.stamp = ros::Time().fromSec(msg->utime * 1e-6);
-  goal_msg.goal.target_pose.header.frame_id = "odom";
+  move_base_msgs::MoveBaseGoal goal_msg;
+  goal_msg.target_pose.header.stamp = ros::Time().fromSec(msg->utime * 1e-6);
+  goal_msg.target_pose.header.frame_id = "odom";
 
-  goal_msg.goal.target_pose.pose.position.x = msg->pos[0];
-  goal_msg.goal.target_pose.pose.position.y = msg->pos[1];
-  goal_msg.goal.target_pose.pose.position.z = msg->pos[2];
+  goal_msg.target_pose.pose.position.x = msg->pos[0];
+  goal_msg.target_pose.pose.position.y = msg->pos[1];
+  goal_msg.target_pose.pose.position.z = msg->pos[2];
 
-  goal_msg.goal.target_pose.pose.orientation.w = msg->orientation[0];
-  goal_msg.goal.target_pose.pose.orientation.x = msg->orientation[1];
-  goal_msg.goal.target_pose.pose.orientation.y = msg->orientation[2];
-  goal_msg.goal.target_pose.pose.orientation.z = msg->orientation[3];
+  goal_msg.target_pose.pose.orientation.w = msg->orientation[0];
+  goal_msg.target_pose.pose.orientation.x = msg->orientation[1];
+  goal_msg.target_pose.pose.orientation.y = msg->orientation[2];
+  goal_msg.target_pose.pose.orientation.z = msg->orientation[3];
 
-  move_base_goal_pub_.publish(goal_msg);
+  move_base_last_plan_msg_utime_ = msg->utime;
+  mb_ac_.sendGoal(goal_msg,
+                  boost::bind(&LCM2ROS::moveBaseExecutionGoalCallback, this),
+                  boost::bind(&LCM2ROS::moveBaseExecutionActiveCallback, this));
+  ros::spinOnce();
+}
+
+/**
+ * @brief      Callback invoked upon completion of the move base action goal.
+ */
+void LCM2ROS::moveBaseExecutionGoalCallback() {
+  PublishMoveBasePlanStatus(drc::plan_status_t::WALKING,
+                            drc::plan_status_t::EXECUTION_STATUS_FINISHED);
+
+  move_base_last_plan_msg_utime_ = 0;
+  move_base_last_plan_execution_start_utime_ = 0;
+}
+
+/**
+ * @brief      Callback invoked upon start of the move base action goal.
+ */
+void LCM2ROS::moveBaseExecutionActiveCallback() {
+  move_base_last_plan_execution_start_utime_ = timestamp_now();
+
+  PublishMoveBasePlanStatus(drc::plan_status_t::WALKING,
+                            drc::plan_status_t::EXECUTION_STATUS_EXECUTING);
 }
 
 /**
  * @brief      Receives bot_core::utime_t trigger to cancel current move_base
- *goal published as an empty actionlib_msgs::GoalID message
+ *goal via the action client.
  *
  * @param[in]  rbuf     LCM Receive Buffer
  * @param[in]  channel  LCM Channel (should be "HUSKY_MOVE_BASE_CANCEL")
@@ -190,9 +218,25 @@ void LCM2ROS::moveBaseCancelGoalHandler(const lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel,
                                         const bot_core::utime_t* msg) {
   ROS_WARN_STREAM("Cancelling move_base goal");
-  actionlib_msgs::GoalID ros_msg;
-  ros_msg.stamp = ros::Time().fromSec(msg->utime * 1e-6);
-  move_base_cancel_pub_.publish(ros_msg);
+  mb_ac_.cancelAllGoals();
+}
+
+/**
+ * @brief      Publish a drc::plan_status_t message for the base with the
+ * current execution status (to be combined in another node)
+ *
+ * @param[in]  plan_type         The plan type (drc::plan_status_t enum)
+ * @param[in]  execution_status  The execution status (drc::plan_status_t enum)
+ */
+void LCM2ROS::PublishMoveBasePlanStatus(int8_t plan_type,
+                                        int8_t execution_status) {
+  drc::plan_status_t msg_out;
+  msg_out.utime = timestamp_now();
+  msg_out.plan_type = plan_type;
+  msg_out.execution_status = execution_status;
+  msg_out.last_plan_msg_utime = move_base_last_plan_msg_utime_;
+  msg_out.last_plan_start_utime = move_base_last_plan_execution_start_utime_;
+  lcm_->publish("HUSKY_MOVE_BASE_UR5_PLAN_STATUS", &msg_out);
 }
 
 /**
@@ -333,6 +377,7 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
   // PublishArmJointState(rutime, "RIGHT_UR5_EXECUTE", rarm_goal, msg);
 
   // Callbacks: &doneCb, &activeCb, &feedbackCb)
+  // TODO: Add parameters for feedback
   larm_ac_.sendGoal(
       larm_goal, boost::bind(&LCM2ROS::leftArmTrajectoryExecutionGoalCallback,
                              this),  //, _1, _2),
@@ -366,9 +411,10 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
 void LCM2ROS::robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
                                     const std::string& channel,
                                     const drc::plan_control_t* msg) {
-  ROS_WARN("Cancelling left and right arm goals.");
-  larm_ac_.cancelGoal();
-  rarm_ac_.cancelGoal();
+  ROS_WARN("Cancelling left and right arm goals as well as move base goal.");
+  larm_ac_.cancelAllGoals();
+  rarm_ac_.cancelAllGoals();
+  mb_ac_.cancelAllGoals();
 }
 
 /**
@@ -382,6 +428,8 @@ void LCM2ROS::leftArmTrajectoryExecutionGoalCallback() {
 
   PublishUR5PlanExecutionStatus(side_t::LEFT,
                                 drc::plan_status_t::EXECUTION_STATUS_FINISHED);
+  larm_last_plan_msg_utime_ = 0;
+  larm_last_plan_execution_start_utime_ = 0;
 }
 
 /**
@@ -393,6 +441,8 @@ void LCM2ROS::rightArmTrajectoryExecutionGoalCallback() {
 
   PublishUR5PlanExecutionStatus(side_t::RIGHT,
                                 drc::plan_status_t::EXECUTION_STATUS_FINISHED);
+  rarm_last_plan_msg_utime_ = 0;
+  rarm_last_plan_execution_start_utime_ = 0;
 }
 
 /**
