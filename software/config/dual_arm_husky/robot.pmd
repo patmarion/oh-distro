@@ -55,6 +55,10 @@ group "2.state_estimation" {
         exec = "rpg-scan-matcher -S -l SICK_SCAN -f -R 18.0 -p -pc POSE_BODY_SCAN_MATCHER -v -P dual_arm_husky/robot.cfg -a .9";
         host = "localhost";
     }
+    cmd "plan-execution-status-sync" {
+        exec = "oh-plan-execution-status-dual-arm-husky";
+        host = "localhost";
+    }
 }
 
 group "3.sensing" {
