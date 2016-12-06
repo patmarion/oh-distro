@@ -236,7 +236,7 @@ void LCM2ROS::PublishMoveBasePlanStatus(int8_t plan_type,
   msg_out.execution_status = execution_status;
   msg_out.last_plan_msg_utime = move_base_last_plan_msg_utime_;
   msg_out.last_plan_start_utime = move_base_last_plan_execution_start_utime_;
-  lcm_->publish("HUSKY_MOVE_BASE_UR5_PLAN_STATUS", &msg_out);
+  lcm_->publish("HUSKY_MOVE_BASE_PLAN_STATUS", &msg_out);
 }
 
 /**
