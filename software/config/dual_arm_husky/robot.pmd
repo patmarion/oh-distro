@@ -111,7 +111,18 @@ group "6.navigation" {
 	}
 }
 
-group "7.gazebo" {
+group "7.control" {
+    cmd "set-payload-right" {
+        exec = "rosservice call /husky_right_ur5/ur_driver/set_payload 2.5";
+        host = "localhost";
+    }
+    cmd "set-payload-left" {
+        exec = "rosservice call /husky_left_ur5/ur_driver/set_payload 2.5";
+        host = "localhost";
+    }
+}
+
+group "8.gazebo" {
 	cmd "gazebo" {
 		exec = "FLIR_PTU_ENABLED=true HUSKY_DUAL_UR5_ENABLED=true ROBOTIQ_GRIPPERS_ENABLED=true HUSKY_LASER_ENABLED=false DUAL_ARM_BULKHEAD=true HUSKY_TOP_PLATE_ENABLED=false ROBOTIQ_FT_300_ENABLED=true roslaunch husky_gazebo husky_playpen.launch dual_ur5_enabled:=true robotiq_grippers_enabled:=true laser_enabled:=false";
 		host = "localhost";
@@ -151,6 +162,7 @@ script "start_everything_for_real_robot" {
     #wait ms 1000;
     #start cmd "state-sync_with_lidar_odometry";
     start cmd "state-sync_with_ekf";
+    start cmd "plan-execution-status-sync";
     start cmd "ros_openni";
     start group "4.hands";
     start group "5.exotica_planning";
@@ -164,7 +176,7 @@ script "start_everything_for_real_robot" {
 script "start_gazebo" {
     start cmd "roscore";
     wait ms 2500;
-    start group "7.gazebo";
+    start group "8.gazebo";
     wait ms 15000;
     start group "0.params_and_model_pub";
     start group "1.ros_communication_translators";
