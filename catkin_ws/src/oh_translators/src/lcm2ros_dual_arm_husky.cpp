@@ -14,8 +14,9 @@
 #include <lcm/lcm-cpp.hpp>
 
 // DRC LCM-Types
-#include <lcmtypes/drc/robot_plan_t.hpp>
 #include <lcmtypes/drc/plan_control_t.hpp>
+#include <lcmtypes/drc/plan_status_t.hpp>
+#include <lcmtypes/drc/robot_plan_t.hpp>
 
 // Bot-Core LCM-Types
 #include <lcmtypes/bot_core/joint_state_t.hpp>
@@ -25,14 +26,25 @@
 #include <lcmtypes/bot_core/utime_t.hpp>
 
 // ROS-Messages
-#include <trajectory_msgs/JointTrajectory.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <actionlib_msgs/GoalID.h>
-#include <move_base_msgs/MoveBaseActionGoal.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
-#include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
+#include <move_base_msgs/MoveBaseActionGoal.h>
+#include <sensor_msgs/JointState.h>
+#include <trajectory_msgs/JointTrajectory.h>
+
+inline int64_t timestamp_now() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (int64_t)tv.tv_sec * 1e6 + tv.tv_usec;
+}
+
+enum side_t { LEFT, RIGHT };
+
+typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
+    TrajectoryActionClient;
 
 class LCM2ROS {
  public:
@@ -74,15 +86,24 @@ class LCM2ROS {
                             const control_msgs::FollowJointTrajectoryGoal msg,
                             const drc::robot_plan_t* robot_msg);
 
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
-      larm_ac_;
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
-      rarm_ac_;
+  TrajectoryActionClient larm_ac_;
+  TrajectoryActionClient rarm_ac_;
   std::map<std::string, int> larm_joints_map_;
   std::map<std::string, int> rarm_joints_map_;
   std::vector<std::string> larm_joints_;
   std::vector<std::string> rarm_joints_;
   bool hasIdx_;
+
+  void leftArmTrajectoryExecutionGoalCallback();
+  void rightArmTrajectoryExecutionGoalCallback();
+  void leftArmTrajectoryExecutionActiveCallback();
+  void rightArmTrajectoryExecutionActiveCallback();
+  void leftArmTrajectoryExecutionPreemptCallback();
+  void rightArmTrajectoryExecutionPreemptCallback();
+  int64_t larm_last_plan_msg_utime_, rarm_last_plan_msg_utime_;
+  int64_t larm_last_plan_execution_start_utime_,
+      rarm_last_plan_execution_start_utime_;
+  void PublishUR5PlanExecutionStatus(int8_t side, int8_t execution_status);
 };
 
 LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
@@ -90,7 +111,11 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
       nh_(nh_in),
       larm_ac_("/husky_left_ur5/follow_joint_trajectory", true),
       rarm_ac_("/husky_right_ur5/follow_joint_trajectory", true),
-      hasIdx_(false) {
+      hasIdx_(false),
+      larm_last_plan_msg_utime_(0),
+      rarm_last_plan_msg_utime_(0),
+      larm_last_plan_execution_start_utime_(0),
+      rarm_last_plan_execution_start_utime_(0) {
   lcm_->subscribe("COMMITTED_ROBOT_PLAN", &LCM2ROS::robotPlanHandler, this);
 
   lcm_->subscribe("COMMITTED_PLAN_PAUSE", &LCM2ROS::robotPlanPauseHandler,
@@ -224,7 +249,7 @@ void LCM2ROS::ptuCommandHandler(const lcm::ReceiveBuffer* rbuf,
 void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
                                const std::string& channel,
                                const drc::robot_plan_t* msg) {
-  ROS_ERROR("LCM2ROS got plan");
+  ROS_INFO_STREAM("LCM2ROS received COMMITTED_ROBOT_PLAN");
 
   if (!hasIdx_ && !findIdx(msg)) return;
 
@@ -294,33 +319,151 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
   larm_goal.trajectory.header.stamp = ros::Time::now();
   rarm_goal.trajectory.header.stamp = ros::Time::now();
 
-  // DEBUG BY THEO: Publish larm_goal and rarm_goal (position and velocities)so
-  // we can analyse them
   int64_t lutime = static_cast<int64_t>(
       floor(larm_goal.trajectory.header.stamp.toNSec() / 1000));
   int64_t rutime = static_cast<int64_t>(
       floor(rarm_goal.trajectory.header.stamp.toNSec() / 1000));
 
+  // Theo's velocity debug feedback
+  // Publish larm_goal and rarm_goal (position and velocities) so
+  // we can analyse them
   // left arm
-  PublishArmJointState(lutime, "LEFT_UR5_EXECUTE", larm_goal, msg);
+  // PublishArmJointState(lutime, "LEFT_UR5_EXECUTE", larm_goal, msg);
   // right arm
   // PublishArmJointState(rutime, "RIGHT_UR5_EXECUTE", rarm_goal, msg);
 
-  larm_ac_.sendGoal(larm_goal);
-  rarm_ac_.sendGoal(rarm_goal);
+  // Callbacks: &doneCb, &activeCb, &feedbackCb)
+  larm_ac_.sendGoal(
+      larm_goal, boost::bind(&LCM2ROS::leftArmTrajectoryExecutionGoalCallback,
+                             this),  //, _1, _2),
+      boost::bind(&LCM2ROS::leftArmTrajectoryExecutionActiveCallback,
+                  this));  //, _1,_2));
+  rarm_ac_.sendGoal(
+      rarm_goal, boost::bind(&LCM2ROS::rightArmTrajectoryExecutionGoalCallback,
+                             this),  //, _1, _2),
+      boost::bind(&LCM2ROS::rightArmTrajectoryExecutionActiveCallback,
+                  this));  //, _1,_2));
   ROS_INFO_STREAM("Sending left arm plan with "
                   << larm_goal.trajectory.points.size() << " waypoints");
   ROS_INFO_STREAM("Sending right arm plan with "
                   << rarm_goal.trajectory.points.size() << " waypoints");
+
+  // Set global variables for plan execution status
+  larm_last_plan_msg_utime_ = msg->utime;
+  rarm_last_plan_msg_utime_ = msg->utime;
+
   ros::spinOnce();
 }
 
+/**
+ * @brief      Handles "Stop" commands as executed from Director to interrupt
+ * the current trajectory execution (Soft-E-Stop)
+ *
+ * @param[in]  rbuf     The rbuf
+ * @param[in]  channel  LCM Channel (should be "COMMITTED_PLAN_PAUSE")
+ * @param[in]  msg      The message
+ */
 void LCM2ROS::robotPlanPauseHandler(const lcm::ReceiveBuffer* rbuf,
                                     const std::string& channel,
                                     const drc::plan_control_t* msg) {
   ROS_WARN("Cancelling left and right arm goals.");
   larm_ac_.cancelGoal();
   rarm_ac_.cancelGoal();
+}
+
+/**
+ * @brief      Actionlib-Callback called upon completion of the commanded
+ * trajectory for the left arm
+ */
+// TODO: Add parameters as in
+// http://wiki.ros.org/actionlib_tutorials/Tutorials/Writing%20a%20Callback%20Based%20Simple%20Action%20Client
+void LCM2ROS::leftArmTrajectoryExecutionGoalCallback() {
+  ROS_INFO_STREAM("Left arm trajectory execution completed");
+
+  PublishUR5PlanExecutionStatus(side_t::LEFT,
+                                drc::plan_status_t::EXECUTION_STATUS_FINISHED);
+}
+
+/**
+ * @brief      Actionlib-Callback called upon completion of the commanded
+ * trajectory for the right arm
+ */
+void LCM2ROS::rightArmTrajectoryExecutionGoalCallback() {
+  ROS_INFO_STREAM("Right arm trajectory execution completed");
+
+  PublishUR5PlanExecutionStatus(side_t::RIGHT,
+                                drc::plan_status_t::EXECUTION_STATUS_FINISHED);
+}
+
+/**
+ * @brief      Actionlib-Callback called upon start of the commanded
+ * trajectory for the left arm
+ */
+void LCM2ROS::leftArmTrajectoryExecutionActiveCallback() {
+  ROS_INFO_STREAM("Left arm trajectory execution started");
+
+  larm_last_plan_execution_start_utime_ = timestamp_now();
+  PublishUR5PlanExecutionStatus(side_t::LEFT,
+                                drc::plan_status_t::EXECUTION_STATUS_EXECUTING);
+}
+
+/**
+ * @brief      Actionlib-Callback called upon start of the commanded
+ * trajectory for the right arm
+ */
+void LCM2ROS::rightArmTrajectoryExecutionActiveCallback() {
+  ROS_INFO_STREAM("Right arm trajectory execution started");
+
+  rarm_last_plan_execution_start_utime_ = timestamp_now();
+  PublishUR5PlanExecutionStatus(side_t::RIGHT,
+                                drc::plan_status_t::EXECUTION_STATUS_EXECUTING);
+}
+
+/**
+ * @brief      Actionlib-Callback called upon preemption of the commanded
+ * trajectory for the left arm
+ */
+void LCM2ROS::leftArmTrajectoryExecutionPreemptCallback() {
+  ROS_INFO_STREAM("Left arm trajectory execution preempted");
+
+  PublishUR5PlanExecutionStatus(side_t::LEFT,
+                                drc::plan_status_t::EXECUTION_STATUS_NO_PLAN);
+}
+
+/**
+ * @brief      Actionlib-Callback called upon preemption of the commanded
+ * trajectory for the right arm
+ */
+void LCM2ROS::rightArmTrajectoryExecutionPreemptCallback() {
+  ROS_INFO_STREAM("Right arm trajectory execution preempted");
+
+  PublishUR5PlanExecutionStatus(side_t::RIGHT,
+                                drc::plan_status_t::EXECUTION_STATUS_NO_PLAN);
+}
+
+/**
+ * @brief      Publish a drc::plan_status_t message for the arms with the
+ * current execution status (to be combined in another node)
+ *
+ * @param[in]  side              The side (side_t enum - left or right)
+ * @param[in]  execution_status  The execution status (drc::plan_status_t enum)
+ */
+void LCM2ROS::PublishUR5PlanExecutionStatus(int8_t side,
+                                            int8_t execution_status) {
+  drc::plan_status_t msg_out;
+  msg_out.utime = timestamp_now();
+  msg_out.plan_type = drc::plan_status_t::MANIPULATING;
+  msg_out.execution_status = execution_status;
+
+  if (side == side_t::LEFT) {
+    msg_out.last_plan_msg_utime = larm_last_plan_msg_utime_;
+    msg_out.last_plan_start_utime = larm_last_plan_execution_start_utime_;
+    lcm_->publish("LEFT_UR5_PLAN_STATUS", &msg_out);
+  } else if (side == side_t::RIGHT) {
+    msg_out.last_plan_msg_utime = rarm_last_plan_msg_utime_;
+    msg_out.last_plan_start_utime = rarm_last_plan_execution_start_utime_;
+    lcm_->publish("RIGHT_UR5_PLAN_STATUS", &msg_out);
+  }
 }
 
 bool LCM2ROS::findIdx(const drc::robot_plan_t* msg) {
@@ -350,7 +493,6 @@ void LCM2ROS::PublishArmJointState(
     int64_t utime, std::string channel,
     const control_msgs::FollowJointTrajectoryGoal msg,
     const drc::robot_plan_t* robot_msg) {
-
   // arm
   size_t num_waypoints = msg.trajectory.points.size();
 
@@ -361,17 +503,16 @@ void LCM2ROS::PublishArmJointState(
 
   // waypoints in the trajectory
   for (int i = 0; i < num_waypoints; i++) {
-
     // debugging
 
     // ROS_INFO_STREAM(
-    // 	"Publisher right arm plan with
+    //  "Publisher right arm plan with
     // "<<floor(msg.trajectory.points[i].time_from_start.toSec())<<"
     // waypoints");
     // ROS_INFO_STREAM(
-    // 	"Utime "<< utime << " ros time "<< secs );
-    // 	ROS_INFO_STREAM(
-    //	"Utime plan "<<robot_msg->plan[i].utime);
+    //  "Utime "<< utime << " ros time "<< secs );
+    //  ROS_INFO_STREAM(
+    //  "Utime plan "<<robot_msg->plan[i].utime);
 
     // time of the message exactly the same as the time-indexing of the planned
     // motion
@@ -389,7 +530,6 @@ void LCM2ROS::PublishArmJointState(
     // Iterate over joints and set positions and velocities
     for (int joint_number = 0; joint_number < lcm_msg.num_joints;
          joint_number++) {
-
       std::string name = msg.trajectory.joint_names[joint_number];
 
       double position = (msg.trajectory.points.size() > 0)
@@ -428,4 +568,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-
