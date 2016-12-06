@@ -371,10 +371,8 @@ void LCM2ROS::robotPlanHandler(const lcm::ReceiveBuffer* rbuf,
   // Theo's velocity debug feedback
   // Publish larm_goal and rarm_goal (position and velocities) so
   // we can analyse them
-  // left arm
-  // PublishArmJointState(lutime, "LEFT_UR5_EXECUTE", larm_goal, msg);
-  // right arm
-  // PublishArmJointState(rutime, "RIGHT_UR5_EXECUTE", rarm_goal, msg);
+  PublishArmJointState(lutime, "LEFT_UR5_EXECUTE", larm_goal, msg);
+  PublishArmJointState(rutime, "RIGHT_UR5_EXECUTE", rarm_goal, msg);
 
   // Callbacks: &doneCb, &activeCb, &feedbackCb)
   // TODO: Add parameters for feedback
