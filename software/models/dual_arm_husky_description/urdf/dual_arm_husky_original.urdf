@@ -4793,6 +4793,28 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <origin rpy="0 -0.785 -1.57" xyz="0.125 0.15 0.135"/>
   </joint>
 
+  <!-- Fixed Xtion Mount at the back (added by wxm 2016-12-02) -->
+  <link name="fixed_xtion_mount">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.82" radius="0.06"/>
+      </geometry>
+      <material name="aluminium"><color rgba="0.7 0.7 0.7 1" /></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.82" radius="0.06"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="fixed_xtion_mount_joint" type="fixed">
+    <parent link="dual_arm_bulkhead_link" />
+    <child link="fixed_xtion_mount" />
+    <origin rpy="0 0 0" xyz="-.24 0 .605" />
+  </joint>
+
   <!-- Director Requirement: Add virtual palm link -->
   <link name="left_palm" />
   <joint name="l_palm_to_left_palm_fixed_joint" type="fixed">
