@@ -28,6 +28,7 @@ uint8_t* local_img_buffer_ =
     new uint8_t[local_img_buffer_size_];  // x4 used for zlib, x10 for jpeg in
                                           // kinect_lcm
 bool compress_images;
+bool flip_rgb;
 
 void callback(const sensor_msgs::ImageConstPtr& rgb,
               const sensor_msgs::ImageConstPtr& depth) {
@@ -43,16 +44,23 @@ void callback(const sensor_msgs::ImageConstPtr& rgb,
   if (!compress_images) {
     lcm_rgb.pixelformat = bot_core::image_t::PIXEL_FORMAT_RGB;
     lcm_rgb.size = isize;
-    // cv::cvtColor(mat, mat, CV_BGR2RGB);
-    // lcm_rgb.image_data.resize(mat.step*mat.rows);
-    // std::copy(mat.data, mat.data + mat.step*mat.rows,
-    //            lcm_rgb.image_data.begin());
-    lcm_rgb.data = rgb->data;
+
+    if (flip_rgb) {
+      void* bytes =
+          const_cast<void*>(static_cast<const void*>(rgb->data.data()));
+      cv::Mat mat(rgb->height, rgb->width, CV_8UC3, bytes,
+                  n_colors * rgb->width);
+      cv::cvtColor(mat, mat, CV_BGR2RGB);
+      lcm_rgb.data.resize(mat.step * mat.rows);
+      std::copy(mat.data, mat.data + mat.step * mat.rows, lcm_rgb.data.begin());
+    } else {
+      lcm_rgb.data = rgb->data;
+    }
   } else {
     // TODO(tbd): reallocate to speed?
     void* bytes = const_cast<void*>(static_cast<const void*>(rgb->data.data()));
     cv::Mat mat(rgb->height, rgb->width, CV_8UC3, bytes, n_colors * rgb->width);
-    // cv::cvtColor(mat, mat, CV_BGR2RGB);
+    if (flip_rgb) cv::cvtColor(mat, mat, CV_BGR2RGB);
 
     std::vector<int> params;
     params.push_back(cv::IMWRITE_JPEG_QUALITY);
@@ -120,6 +128,7 @@ int main(int argc, char** argv) {
   nh_.param<std::string>("camera", camera_name, "/camera");
   nh_.param<bool>("rectified", use_rectified, false);
   nh_.param<bool>("compress_images", compress_images, true);
+  nh_.param<bool>("flip_rgb", flip_rgb, false);
 
   // rgb: image_color, image_rect_color
   // depth: 32FC1: image, image_rect and 16UC1: image_raw, image_rect_raw
