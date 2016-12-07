@@ -72,7 +72,7 @@ group "3.sensing" {
         host = "localhost";
     }
     cmd "ros2lcm_kinect" {
-        exec = "rosrun oh_translators ros2lcm_kinect _camera:=xtion";
+        exec = "rosrun oh_translators ros2lcm_kinect _camera:=xtion _flip_rgb:=true";
         host = "localhost";
     }
     cmd "multisense-glview" {
