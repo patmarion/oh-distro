@@ -128,9 +128,13 @@ group "8.gazebo" {
 	}
 }
 
-group "9.demo" {
+group "9.perception" {
     cmd "april_tags" {
         exec = "drc-car-tags -q -c OPENNI_FRAME";
+        host = "localhost";
+    }
+    cmd "octomap_server" {
+        exec = "roslaunch oh_translators octomap_server.launch";
         host = "localhost";
     }
 }
@@ -143,13 +147,8 @@ script "start_exotica" {
 
 script "start_minimal" {
     start group "0.params_and_model_pub";
-    wait ms 1000;
+    wait ms 500;
     start cmd "director";
-}
-
-script "real_robot_communication" {
-    start cmd "ros2lcm_translator_husky";
-    start cmd "lcm2ros_translator_husky";
 }
 
 script "start_everything_for_real_robot" {
@@ -161,6 +160,7 @@ script "start_everything_for_real_robot" {
     start cmd "plan-execution-status-sync";
     start cmd "ros_openni";
     start cmd "ros2lcm_kinect";
+    start cmd "octomap_server";
     start group "4.hands";
     start group "5.exotica_planning";
     start group "6.navigation";
