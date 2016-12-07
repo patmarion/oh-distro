@@ -72,24 +72,20 @@ group "3.sensing" {
         host = "localhost";
     }
     cmd "ros2lcm_kinect" {
-        exec = "rosrun oh_translators ros2lcm_kinect camera:=xtion";
+        exec = "rosrun oh_translators ros2lcm_kinect _camera:=xtion";
         host = "localhost";
     }
-
-
     cmd "multisense-glview" {
-        exec = "multisense-glview -c OPENNI_FRAME_LEFT";
+        exec = "multisense-glview -c OPENNI_FRAME";
         host = "localhost";
     }
 }
 
 group "4.hands" {
-    # TODO: move to robot
     cmd "left_robotiq" {
         exec = "robotiq_tcp_node left 192.168.1.17";
         host = "localhost";
     }
-
     cmd "right_robotiq" {
         exec = "robotiq_tcp_node right 192.168.1.19";
         host = "localhost";
