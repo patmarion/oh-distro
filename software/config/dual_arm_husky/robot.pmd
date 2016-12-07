@@ -67,12 +67,15 @@ group "3.sensing" {
     #    host = "localhost";
     #}
 
-
-    # TODO: need translator!
     cmd "ros_openni" {
-        exec = "roslaunch openni_launch openni.launch camera:=xtion";
+        exec = "roslaunch openni2_launch openni2.launch camera:=xtion";
         host = "localhost";
     }
+    cmd "ros2lcm_kinect" {
+        exec = "rosrun oh_translators ros2lcm_kinect camera:=xtion";
+        host = "localhost";
+    }
+
 
     cmd "multisense-glview" {
         exec = "multisense-glview -c OPENNI_FRAME_LEFT";
@@ -158,19 +161,14 @@ script "start_everything_for_real_robot" {
     start group "1.ros_communication_translators";
     wait ms 2500;
     start cmd "joints2frames";
-    #start cmd "lidar-odometry";
-    #wait ms 1000;
-    #start cmd "state-sync_with_lidar_odometry";
     start cmd "state-sync_with_ekf";
     start cmd "plan-execution-status-sync";
     start cmd "ros_openni";
+    start cmd "ros2lcm_kinect";
     start group "4.hands";
     start group "5.exotica_planning";
     start group "6.navigation";
-    #start cmd "april_tags";
-    wait ms 2500;
     start cmd "director";
-
 }
 
 script "start_gazebo" {
