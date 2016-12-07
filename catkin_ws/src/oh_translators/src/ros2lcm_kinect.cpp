@@ -1,137 +1,148 @@
-// Copyright 2015 Maurice Fallon
+// Copyright 2015-2016 Maurice Fallon, Wolfgang Merkt
 
 // ### Standard includes
 #include <algorithm>
 #include <vector>
 
+// ### ROS
 #include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/synchronizer.h>
+#include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+
+// ### LCM
 #include <lcm/lcm-cpp.hpp>
+#include <lcmtypes/bot_core/images_t.hpp>
+
+// ### Image processing
 #include <zlib.h>
-
-#include "lcmtypes/kinect.hpp"
-// #include "lcmtypes/bot_core.hpp"
-
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
-lcm::LCM* lcmThe(new lcm::LCM);
+lcm::LCM* lcm_(new lcm::LCM);
 
-// Maximum size of reserved buffer. This will support and images smaller than this also:
+// Maximum size of reserved buffer - smaller images are supported as well:
 int local_img_buffer_size_ = 640 * 480 * sizeof(int16_t) * 4;
-uint8_t* local_img_buffer_ = new uint8_t[local_img_buffer_size_];  // x4 was used for zlib in kinect_lcm
-// is x10 necessary for  jpeg? thats waht kinect_lcm assumed
+uint8_t* local_img_buffer_ =
+    new uint8_t[local_img_buffer_size_];  // x4 used for zlib, x10 for jpeg in
+                                          // kinect_lcm
+bool compress_images;
 
-void callback(const sensor_msgs::ImageConstPtr& rgb, const sensor_msgs::ImageConstPtr& depth)
-{
-  /*
-   bot_core::image_t lcm_img;
-   lcm_img.utime =0;//msg->image.timestamp;
-   lcm_img.width =rgb->width;
-   lcm_img.height =rgb->height;
-   lcm_img.nmetadata =0;
-   int n_colors = 3;
-   lcm_img.row_stride=n_colors*rgb->width;
-   //    if (msg->image.image_data_format == kinect::image_msg_t::VIDEO_RGB){
-   lcm_img.pixelformat =bot_core::image_t::PIXEL_FORMAT_RGB;
-   lcm_img.size = rgb->data.size();
-   lcm_img.data = rgb->data;
-   lcmThe->publish("KINECT_RGB", &lcm_img);
-   */
-
-  kinect::image_msg_t lcm_rgb;
-  lcm_rgb.timestamp = (int64_t)rgb->header.stamp.toNSec() / 1000;  // from nsec to usec
+void callback(const sensor_msgs::ImageConstPtr& rgb,
+              const sensor_msgs::ImageConstPtr& depth) {
+  int n_colors = 3;
+  bot_core::image_t lcm_rgb;
+  lcm_rgb.utime = static_cast<int64_t>(rgb->header.stamp.toNSec() /
+                                       1000);  // from nsec to usec
   lcm_rgb.width = rgb->width;
   lcm_rgb.height = rgb->height;
-  // lcm_rgb.nmetadata =0;
-  int n_colors = 3;
+  lcm_rgb.row_stride = n_colors * rgb->width;
+  lcm_rgb.nmetadata = 0;
   int isize = rgb->data.size();
-  bool compress_images = true;
-  if (!compress_images)
-  {
-    lcm_rgb.image_data_format = kinect::image_msg_t::VIDEO_RGB;  // bot_core::image_t::PIXEL_FORMAT_RGB;
-    lcm_rgb.image_data_nbytes = isize;
+  if (!compress_images) {
+    lcm_rgb.pixelformat = bot_core::image_t::PIXEL_FORMAT_RGB;
+    lcm_rgb.size = isize;
     // cv::cvtColor(mat, mat, CV_BGR2RGB);
     // lcm_rgb.image_data.resize(mat.step*mat.rows);
     // std::copy(mat.data, mat.data + mat.step*mat.rows,
     //            lcm_rgb.image_data.begin());
-    lcm_rgb.image_data = rgb->data;
-  }
-  else
-  {
+    lcm_rgb.data = rgb->data;
+  } else {
     // TODO(tbd): reallocate to speed?
     void* bytes = const_cast<void*>(static_cast<const void*>(rgb->data.data()));
     cv::Mat mat(rgb->height, rgb->width, CV_8UC3, bytes, n_colors * rgb->width);
-    //cv::cvtColor(mat, mat, CV_BGR2RGB);
+    // cv::cvtColor(mat, mat, CV_BGR2RGB);
 
     std::vector<int> params;
     params.push_back(cv::IMWRITE_JPEG_QUALITY);
     params.push_back(90);
 
-    cv::imencode(".jpg", mat, lcm_rgb.image_data, params);
-    lcm_rgb.image_data_nbytes = lcm_rgb.image_data.size();
-    lcm_rgb.image_data_format = kinect::image_msg_t::VIDEO_RGB_JPEG;
+    cv::imencode(".jpg", mat, lcm_rgb.data, params);
+    lcm_rgb.size = lcm_rgb.data.size();
+    lcm_rgb.pixelformat = bot_core::image_t::PIXEL_FORMAT_MJPEG;
   }
-  // lcmThe->publish("KINECT_RGBX", &lcm_rgb);
+  // lcm_->publish("OPENNI_RGB", &lcm_rgb);
 
-  kinect::depth_msg_t lcm_depth;
-  lcm_depth.timestamp = (int64_t)depth->header.stamp.toNSec() / 1000;  // from nsec to usec
+  bot_core::image_t lcm_depth;
+  lcm_depth.utime = static_cast<int64_t>(depth->header.stamp.toNSec() /
+                                         1000);  // from nsec to usec
   lcm_depth.width = depth->width;
   lcm_depth.height = depth->height;
-  lcm_depth.depth_data_format = kinect::depth_msg_t::DEPTH_MM;
-  lcm_depth.uncompressed_size = 480 * 640 * 2;  // msg->depth.uncompressed_size; // not properly filled in
+  lcm_depth.pixelformat = bot_core::image_t::PIXEL_FORMAT_ANY;
+  lcm_depth.row_stride = lcm_depth.width;
+  lcm_depth.nmetadata = 0;
 
-  if (1 == 0)
-  {
-    lcm_depth.depth_data_nbytes = depth->data.size();
-    lcm_depth.depth_data = depth->data;
-    lcm_depth.compression = 0;  // depth.compression;
-    lcm_depth.compression = kinect::depth_msg_t::COMPRESSION_NONE;
-  }
-  else
-  {
+  if (!compress_images) {
+    lcm_depth.size = depth->data.size();
+    lcm_depth.data = depth->data;
+  } else {
     int uncompressed_size = 480 * 640 * 2;
     unsigned long compressed_size = local_img_buffer_size_;
-    compress2(local_img_buffer_, &compressed_size, (const Bytef*)depth->data.data(), uncompressed_size, Z_BEST_SPEED);
-    lcm_depth.compression = kinect::depth_msg_t::COMPRESSION_ZLIB;
+    compress2(local_img_buffer_, &compressed_size,
+              (const Bytef*)depth->data.data(), uncompressed_size,
+              Z_BEST_SPEED);
 
-    lcm_depth.depth_data.resize(compressed_size);
-    std::copy(local_img_buffer_, local_img_buffer_ + compressed_size, lcm_depth.depth_data.begin());
-    lcm_depth.depth_data_nbytes = compressed_size;
+    lcm_depth.data.resize(compressed_size);
+    std::copy(local_img_buffer_, local_img_buffer_ + compressed_size,
+              lcm_depth.data.begin());
+    lcm_depth.size = compressed_size;
   }
-  // lcmThe->publish("KINECT_DEPTH_ONLY", &lcm_depth);
+  // lcm_->publish("OPENNI_DEPTH_ONLY", &lcm_depth);
 
-  kinect::frame_msg_t out;
-  out.timestamp = (int64_t)rgb->header.stamp.toNSec() / 1000;  // from nsec to usec
-  out.image = lcm_rgb;
-  out.depth = lcm_depth;
-  lcmThe->publish("KINECT_FRAME", &out);
+  bot_core::images_t out;
+  out.utime = static_cast<int64_t>(rgb->header.stamp.toNSec() /
+                                   1000);  // from nsec to usec
+  out.n_images = 2;
+  out.image_types.resize(2);
+  out.image_types[0] = bot_core::images_t::LEFT;
+  if (compress_images)
+    out.image_types[1] = bot_core::images_t::DEPTH_MM_ZIPPED;
+  else
+    out.image_types[1] = bot_core::images_t::DEPTH_MM;
+  out.images.resize(out.n_images);
+  out.images[0] = lcm_rgb;
+  out.images[1] = lcm_depth;
+  lcm_->publish("OPENNI_FRAME", &out);
 }
 
-int main(int argc, char** argv)
-{
-  if (!lcmThe->good())
-  {
+int main(int argc, char** argv) {
+  if (!lcm_->good()) {
     std::cerr << "ERROR: lcm is not good()" << std::endl;
   }
 
-  ros::init(argc, argv, "kinect_node");
+  ros::init(argc, argv, "ros2lcm_kinect");
 
   ros::NodeHandle nh;
+  ros::NodeHandle nh_("~");
+  std::string camera_name;
+  bool use_rectified;
+  nh_.param<std::string>("camera", camera_name, "/camera");
+  nh_.param<bool>("rectified", use_rectified, false);
+  nh_.param<bool>("compress_images", compress_images, true);
+
   // rgb: image_color, image_rect_color
   // depth: 32FC1: image, image_rect and 16UC1: image_raw, image_rect_raw
+  message_filters::Subscriber<sensor_msgs::Image> image1_sub, image2_sub;
+  if (!use_rectified) {
+    image1_sub.subscribe(nh, camera_name + "/rgb/image_raw", 1);
+    image2_sub.subscribe(nh, camera_name + "/depth/image_raw", 1);
+  } else {
+    image1_sub.subscribe(nh, camera_name + "/rgb/image_rect_color", 1);
+    image2_sub.subscribe(nh, camera_name + "/depth/image_rect_raw", 1);
+  }
 
-  message_filters::Subscriber<sensor_msgs::Image> image1_sub(nh, "/camera/rgb/image_color", 1);
-  message_filters::Subscriber<sensor_msgs::Image> image2_sub(nh, "/camera/depth/image_raw", 1);
-  //message_filters::Subscriber<sensor_msgs::Image> image1_sub(nh, "/camera/rgb/image_rect_color", 1);
-  //message_filters::Subscriber<sensor_msgs::Image> image2_sub(nh, "/camera/depth/image_rect_raw", 1);
-
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
-  // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), image1_sub, image2_sub);
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,
+                                                          sensor_msgs::Image>
+      MySyncPolicy;
+  // ApproximateTime takes a queue size as its constructor argument, hence
+  // MySyncPolicy(10)
+  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(1), image1_sub,
+                                                   image2_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
+
+  ROS_INFO_STREAM("ROS2LCM Kinect Translator ready for "
+                  << camera_name << " and using rectified: " << use_rectified);
 
   ros::spin();
 
