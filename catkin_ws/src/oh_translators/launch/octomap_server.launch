@@ -1,0 +1,40 @@
+<launch>
+	<node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen">
+		<param name="num_worker_threads" value="2"/>
+	</node>
+	<node pkg="nodelet" type="nodelet" name="StatisticalOutlierRemoval" args="load pcl/StatisticalOutlierRemoval pcl_manager" output="screen">
+        <remap from="~input" to="/xtion/depth/points"/>
+        <remap from="~output" to="/xtion/sor_filtered_cloud"/>
+        <!-- 30, 0.5 -->
+        <rosparam>
+           mean_k: 50
+           stddev: 1.0
+           negative: False
+        </rosparam>
+	</node>
+	<arg default="" name="path"/>
+	<arg default="/talker/changes" name="changeIdFrame"/>
+	<!-- you can load an exisiting tree with <node ... args="tree.bt">!-->
+	<node args="$(arg path)" name="octomap_server" output="screen" pkg="octomap_server" type="octomap_tracking_server_node">
+		<param name="resolution" value="0.03"/>
+		<param name="frame_id" type="string" value="odom"/>
+		<param name="sensor_model/max_range" value="4.0"/>
+		<param name="pointcloud_min_x" value="0.65"/>
+		<param name="pointcloud_max_z" value="4.0"/>
+		<param name="pointcloud_min_z" value="0.0"/>
+		<param name="pointcloud_max_z" value="2.0"/>
+		<param name="min_x_size" value="0.07"/>
+		<param name="min_y_size" value="0.07"/>
+		<param name="filter_speckles" value="true"/>
+		<param name="filter_ground" value="true"/>
+		<param name="height_map" value="false"/>
+		<param name="colored_map" value="true"/>
+		<param name="save_directory" value="$(optenv OCTOMAP_SAVE_DIR ./)"/>
+		<param name="track_changes" value="true"/>
+		<param name="listen_changes" value="false"/>
+		<param name="topic_changes" value="/octomap_tracking_server/changeset"/>
+		<param name="change_id_frame" value="$(arg changeIdFrame)"/>
+		<param name="min_change_pub" value="0"/>
+		<remap from="cloud_in" to="/xtion/sor_filtered_cloud"/>
+	</node>
+</launch>
