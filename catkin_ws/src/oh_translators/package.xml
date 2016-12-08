@@ -21,19 +21,13 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roslint</build_depend>
 
-  <depend>actionlib_msgs</depend>
-  <depend>move_base_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>husky_msgs</depend>
   <depend>ihmc_msgs</depend>
   <depend>image_transport</depend>
   <depend>ipab_lwr_msgs</depend>
   <depend>ipab_msgs</depend>
   <depend>kdl_conversions</depend>
-  <depend>nav_msgs</depend>
   <depend>octomap_msgs</depend>
   <depend>roscpp</depend>
-  <depend>robotiq_force_torque_sensor_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>trajectory_msgs</depend>
