@@ -1,3 +1,4 @@
 <launch>
+<!-- THIS FILE IS ON THE HUSKY: /etc/ros/indigo/husky-core.d/openni2_static_transform.launch -->
 	<node pkg="tf" type="static_transform_publisher" name="static_transform_publisher_fixed_xtion" args="-.225 0.065 1.225 0.0 0.300705799504 0.0 0.953716950748 base_link xtion_link 100"/><!-- needs to be fixed -->
 </launch>

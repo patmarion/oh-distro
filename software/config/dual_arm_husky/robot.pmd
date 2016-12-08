@@ -7,10 +7,11 @@ group "0.params_and_model_pub" {
         exec = "robot_model_publisher $DRC_BASE/software/models/dual_arm_husky_description/urdf/dual_arm_husky_original.urdf";
         host = "localhost";
     }
-    cmd "static_xtion_transform" {
-        exec = "roslaunch oh_translators dual_arm_husky_bridge.launch";
-        host = "localhost";
-    }
+    # On the Husky!
+    #cmd "static_xtion_transform" {
+    #    exec = "roslaunch oh_translators dual_arm_husky_bridge.launch";
+    #    host = "localhost";
+    #}
 }
  
 cmd "director" {
@@ -23,7 +24,12 @@ cmd "roscore" {
 	host = "localhost";
 }
 
-group "1.ros_communication_translators" {
+cmd "lcm-tunnel" {
+    exec = "bot-lcm-tunnel husky -r \"PMD_INFO2|PMD_PRINTF|OPENNI_FRAME\" -s \"PMD_ORDERS2\"";
+    host = "localhost";
+}
+
+group "1.robot_communication" {
     cmd "ros2lcm_translator_husky" {
         exec = "rosrun oh_translators ros2lcm_dual_arm_husky";
         host = "localhost";
@@ -67,14 +73,14 @@ group "3.sensing" {
     #    host = "localhost";
     #}
 
-    cmd "ros_openni" {
-        exec = "roslaunch openni2_launch openni2.launch camera:=xtion";
-        host = "localhost";
-    }
-    cmd "ros2lcm_kinect" {
-        exec = "rosrun oh_translators ros2lcm_kinect _camera:=xtion _flip_rgb:=true";
-        host = "localhost";
-    }
+    #cmd "ros_openni" {
+    #    exec = "roslaunch openni2_launch openni2.launch camera:=xtion";
+    #    host = "localhost";
+    #}
+    #cmd "ros2lcm_kinect" {
+    #    exec = "rosrun oh_translators ros2lcm_kinect _camera:=xtion _flip_rgb:=true";
+    #    host = "localhost";
+    #}
     cmd "multisense-glview" {
         exec = "multisense-glview -c OPENNI_FRAME";
         host = "localhost";
@@ -153,18 +159,18 @@ script "start_minimal" {
 
 script "start_everything_for_real_robot" {
     start group "0.params_and_model_pub";
-    start group "1.ros_communication_translators";
+    start group "1.robot_communication";
     wait ms 2500;
     start cmd "joints2frames";
     start cmd "state-sync_with_ekf";
     start cmd "plan-execution-status-sync";
-    start cmd "ros_openni";
-    start cmd "ros2lcm_kinect";
     start cmd "octomap_server";
     start group "4.hands";
     start group "5.exotica_planning";
     start group "6.navigation";
     start cmd "director";
+    wait ms 500;
+    start cmd "lcm-tunnel";
 }
 
 script "start_gazebo" {
@@ -173,7 +179,7 @@ script "start_gazebo" {
     start group "8.gazebo";
     wait ms 15000;
     start group "0.params_and_model_pub";
-    start group "1.ros_communication_translators";
+    start group "1.robot_communication";
     start cmd "joints2frames";
     start cmd "state-sync_with_ekf";
     start cmd "director";
