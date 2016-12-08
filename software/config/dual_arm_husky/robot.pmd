@@ -31,11 +31,11 @@ cmd "lcm-tunnel" {
 
 group "1.robot_communication" {
     cmd "ros2lcm_translator_husky" {
-        exec = "rosrun oh_translators ros2lcm_dual_arm_husky";
+        exec = "rosrun dual_arm_husky_ros_lcm_translators ros2lcm_dual_arm_husky";
         host = "localhost";
     }
     cmd "lcm2ros_translator_husky" {
-        exec = "rosrun oh_translators lcm2ros_dual_arm_husky";
+        exec = "rosrun dual_arm_husky_ros_lcm_translators lcm2ros_dual_arm_husky";
         host = "localhost";
     }
 }

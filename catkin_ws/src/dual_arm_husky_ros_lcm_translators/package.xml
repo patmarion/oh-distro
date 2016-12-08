@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>dual_arm_husky_ros_lcm_translators</name>
+  <version>1.0.0</version>
+  <description>Translates messages between the Clearpath Dual UR5 Husky (ROS) and the LCM ecosystem</description>
+
+  <maintainer email="wolfgang.merkt@ed.ac.uk">Wolfgang Merkt</maintainer>
+
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>TODO</license>
+
+  <url type="repository">https://github.com/openhumanoids/oh-distro-private</url>
+  <url type="bugtracker">https://github.com/openhumanoids/oh-distro-private/issues</url>
+  
+  <author email="wolfgang.merkt@ed.ac.uk">Wolfgang Merkt</author>
+  <author email="yiming.yang@ed.ac.uk">Yiming Yang</author>
+  <author email="stoutheo@gmail.com">Theo Stouraitis</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>nav_msgs</depend>
+  <depend>move_base_msgs</depend>
+  <depend>husky_msgs</depend>
+  <depend>robotiq_force_torque_sensor_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>pods</depend>
+  <depend>actionlib</depend>
+
+  <export>
+  </export>
+</package>
