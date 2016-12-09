@@ -1,12 +1,12 @@
 {
   "modelName" : "dual_arm_husky",
   "urdfConfig": {
-    "default": "./urdf/dual_arm_husky_original.urdf",
-    "robotState": "./urdf/dual_arm_husky_original.urdf",
+    "default": "./urdf/dual_arm_husky.urdf",
+    "robotState": "./urdf/dual_arm_husky.urdf",
     "ik":         "./urdf/dual_arm_husky_drake.urdf",
     "chull":      "./urdf/dual_arm_husky_drake.urdf",
-    "playback":   "./urdf/dual_arm_husky_original.urdf",
-    "teleop":     "./urdf/dual_arm_husky_original.urdf"
+    "playback":   "./urdf/dual_arm_husky.urdf",
+    "teleop":     "./urdf/dual_arm_husky.urdf"
   },
 
   "teleopJointGroups" : [
