@@ -96,11 +96,12 @@ class App {
 App::App(ros::NodeHandle node) : node_(node) {
   if (!lcmPublish_.good()) std::cerr << "ERROR: lcm is not good()" << std::endl;
 
-  left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states", 100,
-                                      &App::leftRobotiqStatesCallback, this);
+  // The hand driver publishes this status message
+  // left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states", 100,
+  //                                     &App::leftRobotiqStatesCallback, this);
 
-  right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states", 100,
-                                       &App::rightRobotiqStatesCallback, this);
+  // right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states", 100,
+  //                                      &App::rightRobotiqStatesCallback, this);
 
   left_ft_sub_ =
       node_.subscribe("/husky_left_gripper/robotiq_force_torque_sensor", 100,
