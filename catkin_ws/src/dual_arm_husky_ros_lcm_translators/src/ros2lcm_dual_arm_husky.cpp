@@ -1,19 +1,20 @@
 // ### ROS
-#include <ros/ros.h>
+#include <actionlib_msgs/GoalStatusArray.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <husky_msgs/HuskyStatus.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Odometry.h>
+#include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 #include <ros/console.h>
+#include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/Imu.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
-#include <husky_msgs/HuskyStatus.h>
-#include <actionlib_msgs/GoalStatusArray.h>
 
 // ### Standard includes
-#include <cstdlib>
 #include <sys/time.h>
 #include <time.h>
+#include <cstdlib>
 #include <iostream>
 #include <map>
 #include <string>
@@ -31,8 +32,8 @@
 // DRC LCM-Types
 #include <lcmtypes/drc/int64_stamped_t.hpp>
 
-#include <lcm/lcm-cpp.hpp>
 #include <bot_lcmgl_client/lcmgl.h>
+#include <lcm/lcm-cpp.hpp>
 
 inline int64_t timestamp_now() {
   struct timeval tv;
@@ -62,6 +63,10 @@ class App {
   ros::Subscriber wheel_odom_sub_, ekf_odom_sub_;
   void wheel_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
   void ekf_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
+
+  ros::Subscriber amcl_pose_sub_;
+  void amcl_pose_cb(
+      const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
 
   ros::Subscriber imuSensorSub_;
   void imuSensorCallback(const sensor_msgs::ImuConstPtr &msg);
@@ -97,11 +102,14 @@ App::App(ros::NodeHandle node) : node_(node) {
   if (!lcmPublish_.good()) std::cerr << "ERROR: lcm is not good()" << std::endl;
 
   // The hand driver publishes this status message
-  // left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states", 100,
+  // left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states",
+  // 100,
   //                                     &App::leftRobotiqStatesCallback, this);
 
-  // right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states", 100,
-  //                                      &App::rightRobotiqStatesCallback, this);
+  // right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states",
+  // 100,
+  //                                      &App::rightRobotiqStatesCallback,
+  //                                      this);
 
   left_ft_sub_ =
       node_.subscribe("/husky_left_gripper/robotiq_force_torque_sensor", 100,
@@ -120,10 +128,12 @@ App::App(ros::NodeHandle node) : node_(node) {
 
   ekf_odom_sub_ = node_.subscribe(std::string("/odometry/filtered"), 100,
                                   &App::ekf_odometry_cb, this);
-
   wheel_odom_sub_ =
       node_.subscribe(std::string("/husky_velocity_controller/odom"), 100,
                       &App::wheel_odometry_cb, this);
+
+  amcl_pose_sub_ =
+      node_.subscribe(std::string("/amcl_pose"), 100, &App::amcl_pose_cb, this);
 
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
@@ -142,6 +152,29 @@ App::App(ros::NodeHandle node) : node_(node) {
 }
 
 App::~App() {}
+
+/**
+ * @brief      Receives the global pose estimate with regard to the map and
+ * publishes it as a pose to LCM
+ *
+ * @param[in]  msg   The global pose estimate message from AMCL
+ */
+void App::amcl_pose_cb(
+    const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg) {
+  int64_t utime =
+      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+
+  bot_core::pose_t lcm_pose_msg;
+  lcm_pose_msg.utime = utime;
+  lcm_pose_msg.pos[0] = msg->pose.pose.position.x;
+  lcm_pose_msg.pos[1] = msg->pose.pose.position.y;
+  lcm_pose_msg.pos[2] = msg->pose.pose.position.z;
+  lcm_pose_msg.orientation[0] = msg->pose.pose.orientation.w;
+  lcm_pose_msg.orientation[1] = msg->pose.pose.orientation.x;
+  lcm_pose_msg.orientation[2] = msg->pose.pose.orientation.y;
+  lcm_pose_msg.orientation[3] = msg->pose.pose.orientation.z;
+  lcmPublish_.publish("POSE_BODY_AMCL", &lcm_pose_msg);
+}
 
 /**
  * @brief      Receives actionlib_msgs::GoalStatusArray messages and translates
