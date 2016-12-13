@@ -154,7 +154,7 @@ LCM2ROS::LCM2ROS(std::shared_ptr<lcm::LCM>& lcm_in, ros::NodeHandle& nh_in)
 }
 
 /**
- * @brief      Receives bot_core::pose_t base goals in odom-frame, translates
+ * @brief      Receives bot_core::pose_t base goals in map-frame, translates
  *them into move_base_msgs::MoveBaseGoal ROS messages and sets them as a goal
  *using the action client.
  *
@@ -167,7 +167,7 @@ void LCM2ROS::moveBaseGoalHandler(const lcm::ReceiveBuffer* rbuf,
                                   const bot_core::pose_t* msg) {
   move_base_msgs::MoveBaseGoal goal_msg;
   goal_msg.target_pose.header.stamp = ros::Time().fromSec(msg->utime * 1e-6);
-  goal_msg.target_pose.header.frame_id = "odom";
+  goal_msg.target_pose.header.frame_id = "map";
 
   goal_msg.target_pose.pose.position.x = msg->pos[0];
   goal_msg.target_pose.pose.position.y = msg->pos[1];
