@@ -41,20 +41,25 @@ group "1.robot_communication" {
 }
 
 group "2.state_estimation" {
-    cmd "joints2frames" {
-        exec = "oh-joints2frames-dual-arm-husky";
-        host = "localhost";
-    }
+    # The joints2frames node is needed when we have to update bot-frames in response to joint state updates, e.g. for moving frames such as cameras
+    #cmd "joints2frames" {
+    #    exec = "oh-joints2frames-dual-arm-husky";
+    #    host = "localhost";
+    #}
     cmd "state-sync_with_wheel_odometry" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_WHEEL_ODOMETRY";
         host = "localhost";
     }
-    cmd "state-sync_with_lidar_odometry" {
+    cmd "state-sync_with_lidar_scan_matcher" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_SCAN_MATCHER";
         host = "localhost";
     }
     cmd "state-sync_with_ekf" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_EKF";
+        host = "localhost";
+    }
+    cmd "state-sync_with_amcl" {
+        exec = "oh-state-sync-dual-arm-husky POSE_BODY_AMCL";
         host = "localhost";
     }
     cmd "lidar-odometry" {
@@ -109,12 +114,12 @@ group "5.exotica_planning" {
     }
 }
 
-group "6.navigation" {
-	cmd "husky-navigation" {
-		exec = "roslaunch husky_navigation move_base_mapless_demo.launch";
-		host = "localhost";
-	}
-}
+#group "6.navigation" {
+#	cmd "husky-navigation" {
+#		exec = "roslaunch husky_navigation move_base_mapless_demo.launch";
+#		host = "localhost";
+#	}
+#}
 
 group "7.control" {
     cmd "set-payload-right" {
@@ -161,13 +166,13 @@ script "start_everything_for_real_robot" {
     start group "0.params_and_model_pub";
     start group "1.robot_communication";
     wait ms 2500;
-    start cmd "joints2frames";
-    start cmd "state-sync_with_ekf";
+    #start cmd "joints2frames";
+    start cmd "state-sync_with_amcl";
     start cmd "plan-execution-status-sync";
     start cmd "octomap_server";
     start group "4.hands";
     start group "5.exotica_planning";
-    start group "6.navigation";
+    #start group "6.navigation";
     start cmd "director";
     wait ms 500;
     start cmd "lcm-tunnel";
