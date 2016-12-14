@@ -1,6 +1,5 @@
 // ### ROS
 #include <actionlib_msgs/GoalStatusArray.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <husky_msgs/HuskyStatus.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Odometry.h>
@@ -10,6 +9,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/LaserScan.h>
+#include <tf/transform_listener.h>
 
 // ### Standard includes
 #include <sys/time.h>
@@ -49,6 +49,7 @@ class App {
  private:
   lcm::LCM lcmPublish_;
   ros::NodeHandle node_;
+  tf::TransformListener listener_;
 
   ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_;
   void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
@@ -64,9 +65,7 @@ class App {
   void wheel_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
   void ekf_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
 
-  ros::Subscriber amcl_pose_sub_;
-  void amcl_pose_cb(
-      const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
+  void PublishAMCLPose();
 
   ros::Subscriber imuSensorSub_;
   void imuSensorCallback(const sensor_msgs::ImuConstPtr &msg);
@@ -121,8 +120,8 @@ App::App(ros::NodeHandle node) : node_(node) {
   husky_status_sub_ =
       node_.subscribe("/status", 100, &App::huskyStatusCallback, this);
 
-  sick_lidar_sub_ =
-      node_.subscribe(std::string("/scan"), 100, &App::sick_lidar_cb, this);
+  sick_lidar_sub_ = node_.subscribe(std::string("/scan_filtered"), 100,
+                                    &App::sick_lidar_cb, this);
   spinning_lidar_sub_ = node_.subscribe(std::string("/lidar_scan"), 100,
                                         &App::spinning_lidar_cb, this);
 
@@ -131,9 +130,6 @@ App::App(ros::NodeHandle node) : node_(node) {
   wheel_odom_sub_ =
       node_.subscribe(std::string("/husky_velocity_controller/odom"), 100,
                       &App::wheel_odometry_cb, this);
-
-  amcl_pose_sub_ =
-      node_.subscribe(std::string("/amcl_pose"), 100, &App::amcl_pose_cb, this);
 
   imuSensorSub_ = node_.subscribe(std::string("/imu/data"), 100,
                                   &App::imuSensorCallback, this);
@@ -154,25 +150,28 @@ App::App(ros::NodeHandle node) : node_(node) {
 App::~App() {}
 
 /**
- * @brief      Receives the global pose estimate with regard to the map and
- * publishes it as a pose to LCM
+ * @brief      Triggered from the filtered laser scan to look up the transform
+ * from base_link to map and publish it as the AMCL pose (NB: /amcl_pose isn't
+ * published)
  *
- * @param[in]  msg   The global pose estimate message from AMCL
  */
-void App::amcl_pose_cb(
-    const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg) {
-  int64_t utime =
-      static_cast<int64_t>(floor(msg->header.stamp.toNSec() / 1000));
+void App::PublishAMCLPose() {
+  tf::StampedTransform transform;
+  try {
+    listener_.lookupTransform("/map", "/base_link", ros::Time(0), transform);
+  } catch (tf::TransformException ex) {
+    ROS_ERROR("%s", ex.what());
+  }
 
   bot_core::pose_t lcm_pose_msg;
-  lcm_pose_msg.utime = utime;
-  lcm_pose_msg.pos[0] = msg->pose.pose.position.x;
-  lcm_pose_msg.pos[1] = msg->pose.pose.position.y;
-  lcm_pose_msg.pos[2] = msg->pose.pose.position.z;
-  lcm_pose_msg.orientation[0] = msg->pose.pose.orientation.w;
-  lcm_pose_msg.orientation[1] = msg->pose.pose.orientation.x;
-  lcm_pose_msg.orientation[2] = msg->pose.pose.orientation.y;
-  lcm_pose_msg.orientation[3] = msg->pose.pose.orientation.z;
+  lcm_pose_msg.utime = timestamp_now();
+  lcm_pose_msg.pos[0] = transform.getOrigin().x();
+  lcm_pose_msg.pos[1] = transform.getOrigin().y();
+  lcm_pose_msg.pos[2] = transform.getOrigin().z();
+  lcm_pose_msg.orientation[0] = transform.getRotation().w();
+  lcm_pose_msg.orientation[1] = transform.getRotation().x();
+  lcm_pose_msg.orientation[2] = transform.getRotation().y();
+  lcm_pose_msg.orientation[3] = transform.getRotation().z();
   lcmPublish_.publish("POSE_BODY_AMCL", &lcm_pose_msg);
 }
 
@@ -326,6 +325,7 @@ void App::ekf_odometry_cb(const nav_msgs::OdometryConstPtr &msg) {
 
 void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {
   publishLidar(msg, "SICK_SCAN");
+  PublishAMCLPose();
 }
 
 void App::spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {

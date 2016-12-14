@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   trajectory_msgs
   actionlib
   move_base_msgs
+  tf
 )
 
 catkin_package(
@@ -30,6 +31,7 @@ catkin_package(
     trajectory_msgs
     move_base_msgs
     actionlib
+    tf
   DEPENDS system_lib lcm
 )
 
