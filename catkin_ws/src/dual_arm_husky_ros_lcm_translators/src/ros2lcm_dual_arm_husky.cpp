@@ -163,8 +163,11 @@ void App::PublishAMCLPose() {
     ROS_ERROR("%s", ex.what());
   }
 
+  int64_t utime =
+      static_cast<int64_t>(floor(transform.stamp_.toNSec() / 1000));
+
   bot_core::pose_t lcm_pose_msg;
-  lcm_pose_msg.utime = timestamp_now();
+  lcm_pose_msg.utime = utime;
   lcm_pose_msg.pos[0] = transform.getOrigin().x();
   lcm_pose_msg.pos[1] = transform.getOrigin().y();
   lcm_pose_msg.pos[2] = transform.getOrigin().z();
