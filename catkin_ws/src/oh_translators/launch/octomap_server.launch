@@ -17,9 +17,8 @@
 	<node args="$(arg path)" name="octomap_server" output="screen" pkg="octomap_server" type="octomap_tracking_server_node">
 		<param name="resolution" value="0.03"/>
 		<param name="latch" value="false"/>
-		<param name="frame_id" type="string" value="odom"/>
+		<param name="frame_id" type="string" value="map"/>
 		<param name="sensor_model/max_range" value="4.0"/>
-		<!-- <param name="pointcloud_min_x" value="0.65"/> -->
 		<param name="pointcloud_max_z" value="4.0"/>
 		<param name="pointcloud_min_z" value="0.0"/>
 		<param name="pointcloud_max_z" value="2.0"/>

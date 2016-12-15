@@ -1,19 +1,20 @@
 // ### ROS
-#include <ros/ros.h>
+#include <actionlib_msgs/GoalStatusArray.h>
+#include <husky_msgs/HuskyStatus.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Odometry.h>
+#include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
 #include <ros/console.h>
+#include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/Imu.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <robotiq_force_torque_sensor_msgs/ft_sensor.h>
-#include <husky_msgs/HuskyStatus.h>
-#include <actionlib_msgs/GoalStatusArray.h>
+#include <tf/transform_listener.h>
 
 // ### Standard includes
-#include <cstdlib>
 #include <sys/time.h>
 #include <time.h>
+#include <cstdlib>
 #include <iostream>
 #include <map>
 #include <string>
@@ -31,8 +32,8 @@
 // DRC LCM-Types
 #include <lcmtypes/drc/int64_stamped_t.hpp>
 
-#include <lcm/lcm-cpp.hpp>
 #include <bot_lcmgl_client/lcmgl.h>
+#include <lcm/lcm-cpp.hpp>
 
 inline int64_t timestamp_now() {
   struct timeval tv;
@@ -48,6 +49,7 @@ class App {
  private:
   lcm::LCM lcmPublish_;
   ros::NodeHandle node_;
+  tf::TransformListener listener_;
 
   ros::Subscriber sick_lidar_sub_, spinning_lidar_sub_;
   void sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg);
@@ -62,6 +64,8 @@ class App {
   ros::Subscriber wheel_odom_sub_, ekf_odom_sub_;
   void wheel_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
   void ekf_odometry_cb(const nav_msgs::OdometryConstPtr &msg);
+
+  void PublishAMCLPose();
 
   ros::Subscriber imuSensorSub_;
   void imuSensorCallback(const sensor_msgs::ImuConstPtr &msg);
@@ -97,11 +101,14 @@ App::App(ros::NodeHandle node) : node_(node) {
   if (!lcmPublish_.good()) std::cerr << "ERROR: lcm is not good()" << std::endl;
 
   // The hand driver publishes this status message
-  // left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states", 100,
+  // left_robotiq_sub_ = node_.subscribe("/husky_gripper_left/joint_states",
+  // 100,
   //                                     &App::leftRobotiqStatesCallback, this);
 
-  // right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states", 100,
-  //                                      &App::rightRobotiqStatesCallback, this);
+  // right_robotiq_sub_ = node_.subscribe("/husky_gripper_right/joint_states",
+  // 100,
+  //                                      &App::rightRobotiqStatesCallback,
+  //                                      this);
 
   left_ft_sub_ =
       node_.subscribe("/husky_left_gripper/robotiq_force_torque_sensor", 100,
@@ -113,14 +120,13 @@ App::App(ros::NodeHandle node) : node_(node) {
   husky_status_sub_ =
       node_.subscribe("/status", 100, &App::huskyStatusCallback, this);
 
-  sick_lidar_sub_ =
-      node_.subscribe(std::string("/scan"), 100, &App::sick_lidar_cb, this);
+  sick_lidar_sub_ = node_.subscribe(std::string("/scan_filtered"), 100,
+                                    &App::sick_lidar_cb, this);
   spinning_lidar_sub_ = node_.subscribe(std::string("/lidar_scan"), 100,
                                         &App::spinning_lidar_cb, this);
 
   ekf_odom_sub_ = node_.subscribe(std::string("/odometry/filtered"), 100,
                                   &App::ekf_odometry_cb, this);
-
   wheel_odom_sub_ =
       node_.subscribe(std::string("/husky_velocity_controller/odom"), 100,
                       &App::wheel_odometry_cb, this);
@@ -142,6 +148,35 @@ App::App(ros::NodeHandle node) : node_(node) {
 }
 
 App::~App() {}
+
+/**
+ * @brief      Triggered from the filtered laser scan to look up the transform
+ * from base_link to map and publish it as the AMCL pose (NB: /amcl_pose isn't
+ * published)
+ *
+ */
+void App::PublishAMCLPose() {
+  tf::StampedTransform transform;
+  try {
+    listener_.lookupTransform("/map", "/base_link", ros::Time(0), transform);
+  } catch (tf::TransformException ex) {
+    ROS_ERROR("%s", ex.what());
+  }
+
+  int64_t utime =
+      static_cast<int64_t>(floor(transform.stamp_.toNSec() / 1000));
+
+  bot_core::pose_t lcm_pose_msg;
+  lcm_pose_msg.utime = utime;
+  lcm_pose_msg.pos[0] = transform.getOrigin().x();
+  lcm_pose_msg.pos[1] = transform.getOrigin().y();
+  lcm_pose_msg.pos[2] = transform.getOrigin().z();
+  lcm_pose_msg.orientation[0] = transform.getRotation().w();
+  lcm_pose_msg.orientation[1] = transform.getRotation().x();
+  lcm_pose_msg.orientation[2] = transform.getRotation().y();
+  lcm_pose_msg.orientation[3] = transform.getRotation().z();
+  lcmPublish_.publish("POSE_BODY_AMCL", &lcm_pose_msg);
+}
 
 /**
  * @brief      Receives actionlib_msgs::GoalStatusArray messages and translates
@@ -293,6 +328,7 @@ void App::ekf_odometry_cb(const nav_msgs::OdometryConstPtr &msg) {
 
 void App::sick_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {
   publishLidar(msg, "SICK_SCAN");
+  PublishAMCLPose();
 }
 
 void App::spinning_lidar_cb(const sensor_msgs::LaserScanConstPtr &msg) {
