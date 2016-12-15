@@ -59,7 +59,7 @@
   "handCombinations": [
     { "side" : "left",
       "handType" : "left_robotiq",
-      "handLinkName" : "l_robotiq_fts300_fts_toolside",
+      "handLinkName" : "left_palm",
       "handUrdf" : "robotiq_hand_left.urdf",
       "handRootLink" : "left_palm",
       "robotMountLink" : "left_palm",
@@ -67,7 +67,7 @@
     },
     { "side" : "right",
       "handType" : "right_robotiq",
-      "handLinkName" : "r_robotiq_fts300_fts_toolside",
+      "handLinkName" : "right_palm",
       "handUrdf" : "robotiq_hand_right.urdf",
       "handRootLink" : "right_palm",
       "robotMountLink" : "right_palm",
