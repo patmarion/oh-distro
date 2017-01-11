@@ -91,7 +91,7 @@ class TableplanningDemo(object):
         self.footstepsDriver = footstepsDriver
         self.feetConstraint = 'Sliding'
         self.reachingHand = 'right'
-        self.ikPlanner.planningMode = 'drake'
+        self.ikPlanner.planningMode = 'matlabdrake'
         
         self.grasp_plan = None
     def planPlaybackFunction(plans):
