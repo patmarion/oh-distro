@@ -180,7 +180,7 @@ LCM (v1.3.1) is a required dependency which must be installed from source. Furth
 Install Matlab
 --------------
 
-Download Matlab R2016b from `MathWorks <https://mathworks.com/downloads/>`_. Unzip the file you just downloaded (e.g., unzip ./R2016b-linux64.zip)
+Download Matlab R2016a from `MathWorks <https://mathworks.com/downloads/>`_. Unzip the file you just downloaded (e.g., unzip ./R2016a-linux64.zip)
 cd into the resulting directory and run ``sudo ./install``.
 
 When prompted for how to install, choose "Log in with a MathWorks Account."
@@ -191,7 +191,7 @@ After installing MATLAB, two of the symlinks for libraries need to be changed:
 
 ::
 
-   cd /usr/local/MATLAB/R2016b/sys/os/glnxa64
+   cd /usr/local/MATLAB/R2016a/sys/os/glnxa64
    ls -l
 
 The symbolic links for libstdc++.so.6 and libgfortran.so.3 should point to versions in /usr/lib, not local ones.
