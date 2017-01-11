@@ -171,7 +171,7 @@ App::App(ros::NodeHandle node_in, int mode_in, std::string robotName_in, std::st
     // Multisense Joint Angles: only available in simulation anyway:
     headJointStatesSub_ = node_.subscribe(std::string("/multisense/joint_states"), queue_size, &App::headJointStatesCallback,
                                             this);
-    laserScanSub_ = node_.subscribe(std::string("/multisense/lidar_scan"), 100, &App::laserScanCallback, this);
+    laserScanSub_ = node_.subscribe(std::string("/multisense/filtered_cloud"), 100, &App::laserScanCallback, this);
   }
 
 }
