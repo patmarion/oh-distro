@@ -148,6 +148,16 @@ group "9.perception" {
         exec = "roslaunch oh_translators octomap_server.launch";
         host = "localhost";
     }
+
+    cmd "Logitech Webcam" {
+        exec = "oh-webcam-driver -m";
+        host = "localhost";
+    }
+
+    cmd "April tags" {
+        exec = "drc-car-tags -c CAMERA -p 1 -P CAMERA_LEFT_MATCHES -w -s 0.165";
+        host = "localhost";
+    }
 }
 
 script "start_exotica" {
