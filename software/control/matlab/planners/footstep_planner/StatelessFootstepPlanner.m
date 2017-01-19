@@ -198,6 +198,9 @@ classdef StatelessFootstepPlanner
     function plan = snapToIRISRegions(biped, plan)
       % Note: we skip steps 1 and 2 (which are the current feet poses and don't need to be snapped)
       for j = 3:length(plan.footsteps)
+        % Convert from double to logical
+        j = logical(j);
+
         region = plan.safe_regions(plan.region_order(j));
 
         if ~any(plan.footsteps(j).pos_fixed(4:5))
