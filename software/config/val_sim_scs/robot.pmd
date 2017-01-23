@@ -71,7 +71,6 @@ group "3.plan_and_control" {
 }
 
 group "4.maps" {
-
     cmd "data-request-server" {
         exec = "data-request-server";
         host = "localhost";
@@ -90,7 +89,6 @@ group "4.maps" {
 }
 
 group "5.exotica" {
-
     cmd "exotica_bridge" {
         exec = "roslaunch oh_translators exotica_bridge.launch";
         host = "localhost";
@@ -106,19 +104,8 @@ cmd "director" {
     host = "localhost";
 }
 
-cmd "director_exotica" {
-    exec = "director -c $DRC_BASE/software/config/val/robot.cfg -val -exo";
-    host = "localhost";
-}
-
 cmd "pose-util" {
     exec = "drc-robot-pose-util";
-    host = "localhost";
-}
-
-
-cmd "scs" {
-    exec = "$DRC_BASE/software/config/val_sim_scs/runscs.bash";
     host = "localhost";
 }
 
@@ -130,7 +117,7 @@ script "start_ui_exotica" {
     start group "3.plan_and_control";
     start group "4.maps";
     start group "5.exotica";
-    start cmd "director_exotica";
+    start cmd "director";
 }
 
 script "start_ui" {

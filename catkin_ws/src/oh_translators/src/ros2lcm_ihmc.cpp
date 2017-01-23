@@ -197,26 +197,11 @@ void App::footstepStatusCallback(const ihmc_msgs::FootstepStatusRosMessageConstP
   lcmPublish_.publish("IHMC_FOOTSTEP_STATUS", &msg_out);
 }
 
-void App::headJointStatesCallback(const sensor_msgs::JointStateConstPtr& msg)
-{
-  if (msg->name.size() > 1)
-  {
-    // ROS_ERROR("Error: Unrecognised multisense joint: %s",msg->name[0].c_str());
-    return;
-  }
+void App::headJointStatesCallback(const sensor_msgs::JointStateConstPtr& msg) {
+  if (msg->name.size() > 1) return;
 
   int64_t utime = (int64_t)floor(msg->header.stamp.toNSec() / 1000);
   publishMultisenseState(utime, msg->position[0], msg->velocity[0]);
-
-  /*
-   std::string jname = "hokuyo_joint";
-   int i = std::distance( msg->name.begin(), std::find( msg->name.begin(), msg->name.end(), jname ) );
-   if( i == msg->name.size() ){
-   // std::cout << "not found: " << jname << "\n";
-   }else{
-   publishMultisenseState(utime, msg->position[i], msg->velocity[i]);
-   }
-   */
 }
 
 void App::publishMultisenseState(int64_t utime, float position, float velocity)

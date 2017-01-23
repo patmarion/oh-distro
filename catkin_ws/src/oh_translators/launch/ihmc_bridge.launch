@@ -7,7 +7,7 @@
   <node name="lcm2ros_ihmc" type="lcm2ros_ihmc" pkg="oh_translators" output="screen" args="$(arg robotName)"/>
 
   <node name="ros2lcm_camera" type="ros2lcm_camera" pkg="oh_translators" output="screen">
-  	<param name="camera_topic" type="str" value="/multisense/left/image_rect_color" />
+  	<param name="camera_topic" type="str" value="/multisense/left/image_rect_color/compressed" />
   	<param name="flip_rgb" type="bool" value="false" />
   </node>
 </launch>
