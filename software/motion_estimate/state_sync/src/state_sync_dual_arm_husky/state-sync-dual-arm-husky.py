@@ -154,6 +154,9 @@ lc = lcm.LCM()
 def update_internal_robot_state(joint_state_msg):
     global robot_state
     for i in range(joint_state_msg.num_joints):
+        if "finger" in joint_state_msg.joint_name[i]:
+            joint_state_msg.joint_name[i] = joint_state_msg.joint_name[i].replace("left_", "l_")
+            joint_state_msg.joint_name[i] = joint_state_msg.joint_name[i].replace("right_", "r_")
         index = robot_state.joint_name.index(joint_state_msg.joint_name[i])
         robot_state.joint_position[index] = joint_state_msg.joint_position[i]
         robot_state.joint_velocity[index] = joint_state_msg.joint_velocity[i]
@@ -182,13 +185,15 @@ def on_pose_body(channel, data):
 
     # Republish as POSE_BODY to fill in the bot_frames tree
     if channel != "POSE_BODY":
+        # Add z offset - all individual body estimate signals miss the offset
+        pose.pos = [pose.pos[0], pose.pos[1], pose.pos[2] + base_link_offset]
         lc.publish("POSE_BODY", pose.encode())
 
     global robot_state
     robot_state.utime = pose.utime
     robot_state.pose.translation.x = pose.pos[0]
     robot_state.pose.translation.y = pose.pos[1]
-    robot_state.pose.translation.z = pose.pos[2] + base_link_offset
+    robot_state.pose.translation.z = pose.pos[2]
     robot_state.pose.rotation.w = pose.orientation[0]
     robot_state.pose.rotation.x = pose.orientation[1]
     robot_state.pose.rotation.y = pose.orientation[2]
