@@ -18,7 +18,7 @@ set(bot_core_lcmtypes_revision 0ccb7e6272743bdc5355ab5fff36d0ae742964e2)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 
 set(libbot_url https://github.com/openhumanoids/libbot.git)
-set(libbot_revision 88467a834f6a264bfb254ec6d9ed9f94b1b8b821)
+set(libbot_revision f747d2d05b958d4b4c77b6afe25e8afc70a70d7f)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
