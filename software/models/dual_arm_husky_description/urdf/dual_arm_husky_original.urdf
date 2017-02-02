@@ -113,7 +113,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <!-- Can be modified with environment variables in /etc/ros/setup.bash -->
   <link name="imu_link"/>
   <joint name="imu_joint" type="fixed">
-    <origin rpy="0 -1.5708 3.1416" xyz="0.19 0 0.149"/>
+    <origin rpy="-1.5708 0 0" xyz="0.19 0 0.149"/>
     <parent link="base_link"/>
     <child link="imu_link"/>
   </joint>
@@ -491,7 +491,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   </joint>
   <!-- Connect PTU to Husky bulkhead -->
   <joint name="husky_ptu_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.365 0 0.19876"/>
+    <origin rpy="0 0 0" xyz="0.345 0.010414 0.19876"/>
     <parent link="dual_arm_bulkhead_link"/>
     <child link="husky_ptu_base_link"/>
   </joint>
@@ -1173,7 +1173,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     </sensor>
   </gazebo>
   <joint name="bumblebee2_mount_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0.00"/>
+    <origin rpy="0 0 0" xyz="0 0 0.02224"/>
     <parent link="husky_ptu_mount_link"/>
     <child link="bumblebee2"/>
   </joint>
@@ -1262,7 +1262,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <link name="r_robotiq_fts300_fts_toolside"/>
   <!-- joint attaching parent link to robotiq hand -->
   <joint name="l_robotiq_hand_joint" type="fixed">
-    <origin rpy="1.57 0 0" xyz="0 0 0.05398"/>
+    <origin rpy="1.57 0 1.0" xyz="0 0 0.05398"/>
     <parent link="l_robotiq_fts300_fts_toolside"/>
     <child link="l_palm"/>
   </joint>
@@ -3022,7 +3022,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <!-- end of joint list -->
   <!-- joint attaching parent link to robotiq hand -->
   <joint name="r_robotiq_hand_joint" type="fixed">
-    <origin rpy="1.57 0 0" xyz="0 0 0.05398"/>
+    <origin rpy="1.57 0 2.355" xyz="0 0 0.05398"/>
     <parent link="r_robotiq_fts300_fts_toolside"/>
     <child link="r_palm"/>
   </joint>
@@ -4791,6 +4791,28 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <parent link="dual_arm_bulkhead_link"/>
     <child link="l_ur5_arm_base_link"/>
     <origin rpy="0 -0.785 -1.57" xyz="0.125 0.15 0.135"/>
+  </joint>
+
+  <!-- Fixed Xtion Mount at the back (added by wxm 2016-12-02) -->
+  <link name="fixed_xtion_mount">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.82" radius="0.06"/>
+      </geometry>
+      <material name="aluminium"><color rgba="0.7 0.7 0.7 1" /></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.82" radius="0.06"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="fixed_xtion_mount_joint" type="fixed">
+    <parent link="dual_arm_bulkhead_link" />
+    <child link="fixed_xtion_mount" />
+    <origin rpy="0 0 0" xyz="-.24 0 .605" />
   </joint>
 
   <!-- Director Requirement: Add virtual palm link -->

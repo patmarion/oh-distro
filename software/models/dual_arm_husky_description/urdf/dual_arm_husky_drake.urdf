@@ -113,7 +113,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <!-- Can be modified with environment variables in /etc/ros/setup.bash -->
   <link name="imu_link"/>
   <joint name="imu_joint" type="fixed">
-    <origin rpy="0 -1.5708 3.1416" xyz="0.19 0 0.149"/>
+    <origin rpy="-1.5708 0 0" xyz="0.19 0 0.149"/>
     <parent link="base_link"/>
     <child link="imu_link"/>
   </joint>
@@ -1133,6 +1133,81 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <parent link="dual_arm_bulkhead_link"/>
     <child link="l_ur5_arm_base_link"/>
     <origin rpy="0 -0.785 -1.57" xyz="0.125 0.15 0.135"/>
+  </joint>
+
+  <!-- Fixed Xtion Mount at the back (added by wxm 2016-12-02) -->
+  <link name="fixed_xtion_mount">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.82" radius="0.06"/>
+      </geometry>
+      <material name="aluminium"><color rgba="0.7 0.7 0.7 1" /></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.82" radius="0.06"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="fixed_xtion_mount_joint" type="fixed">
+    <parent link="dual_arm_bulkhead_link" />
+    <child link="fixed_xtion_mount" />
+    <origin rpy="0 0 0" xyz="-.24 0 .605" />
+  </joint>
+
+  <link name="l_palm"/>
+  <joint name="l_robotiq_hand_joint" type="fixed">
+    <origin rpy="1.57 0 1.0" xyz="0 0 0.05398"/>
+    <parent link="l_robotiq_fts300_fts_toolside"/>
+    <child link="l_palm"/>
+  </joint>
+  <link name="left_palm">
+    <visual>
+      <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.1"/>
+      </geometry>
+      <material name="aluminium"><color rgba="0.7 0.7 0.7 1" /></material>
+    </visual>
+    <collision>
+      <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.1"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="l_palm_to_left_palm_fixed_joint" type="fixed">
+    <parent link="l_palm"/>
+    <child link="left_palm"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <link name="r_palm"/>
+  <joint name="r_robotiq_hand_joint" type="fixed">
+    <origin rpy="1.57 0 2.355" xyz="0 0 0.05398"/>
+    <parent link="r_robotiq_fts300_fts_toolside"/>
+    <child link="r_palm"/>
+  </joint>
+  <link name="right_palm">
+    <visual>
+      <origin rpy="1.57 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.1"/>
+      </geometry>
+      <material name="aluminium"><color rgba="0.7 0.7 0.7 1" /></material>
+    </visual>
+    <collision>
+      <origin rpy="1.57 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.1"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="r_palm_to_right_palm_fixed_joint" type="fixed">
+    <parent link="r_palm"/>
+    <child link="right_palm"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
 </robot>
 
