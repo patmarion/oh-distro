@@ -197,9 +197,16 @@ class CameraListener {
         mLcmWrapper.reset(new maps::LcmWrapper(mBotWrapper->getLcm()));
         mLcmWrapper->get()->subscribe(camera_name, &CameraListener::onCamera, this);
 
+        std::string camTransName = std::string(camera_name + "_LEFT");
         mCamTransLeft = bot_param_get_new_camtrans(
             mBotWrapper->getBotParam(),
-            std::string(camera_name + "_LEFT").c_str());
+            camTransName.c_str());
+
+        if (!mCamTransLeft) {
+          std::cerr << "Cannot get bot params for camtrans " << camTransName
+                    << std::endl;
+          return false;
+        }
 
         K = Eigen::Matrix3d::Identity();
 
