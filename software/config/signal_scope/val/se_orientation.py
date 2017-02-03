@@ -38,3 +38,6 @@ addSignal('POSE_BODY', msg.utime, msg.pos[1])
 addSignal('POSE_BODY', msg.utime, msg.pos[2])
 
 
+#addPlot(timeWindow=15, yLimits=[-180, 180])
+#addSignalFunction('POSE_BODY_DIFF', yawFunctionPose)
+#addSignal('POSE_BODY_DIFF', msg.utime, msg.accel[2])
