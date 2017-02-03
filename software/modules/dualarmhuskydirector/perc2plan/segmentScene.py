@@ -15,7 +15,7 @@ from director import segmentation
 class segScene(object):
 
     # oDPC --> openniDepthPointCloud
-    def __init__(self, view, oDPC):
+    def __init__(self, view):
 
 
         # internal variable pointing to the view instance of director 
@@ -24,10 +24,10 @@ class segScene(object):
         #  init a seed point for the segmentation
         self.seedSegmPoint = np.array(3)
 
-        self.ptc = oDPC.polyData
+        self.ptc = None
     
 
-    def getPointMouse(self):
+    def getPointMouse(self, oDPC = None):
 
         # internal callback for picking up point with mouse and saving it
         def ppCallback(p):
@@ -37,6 +37,14 @@ class segScene(object):
 
         from director import pointpicker
 
+        # error check
+        if oDPC==None:
+            print 'oDPC (openni) is None'
+            print 'returning None'
+            return None
+
+        self.ptc = oDPC.polyData
+        
         # init a point picker class
         pPicker = pointpicker.PointPicker(view=self.view, numberOfPoints=1, callback=ppCallback)
         # start mouse picking functionality
@@ -204,10 +212,10 @@ class segScene(object):
         newFrame.transform.Translate(pobj1)
 
 
-    def demoSegment(self):
+    def demoSegment(self, oDPC):
 
         # select seed point 
-        self.getPointMouse()
+        self.getPointMouse(oDPC)
 
         # fit plane and table
         self.fitTable()

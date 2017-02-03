@@ -253,6 +253,16 @@
             <string>constrained</string>
            </property>
           </item>
+          <item>
+           <property name="text">
+            <string>x only</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>free</string>
+           </property>
+          </item>
          </widget>
         </item>
        </layout>

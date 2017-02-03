@@ -214,7 +214,13 @@ class HuskyPlanningPanel(object):
             q.tspan = [1.0, 1.0]
             constraints.extend([p, q])
             ikPlanner.setBaseLocked(False)
-        
+        elif self.getBaseConstraint() == 'x only':
+            YZRPY = ['base_y','base_z','base_roll','base_pitch','base_yaw']
+            constraints.append(ikPlanner.createPostureConstraint(startPoseName, YZRPY))
+        elif self.getBaseConstraint() == 'free':
+            ZRP = ['base_z','base_roll','base_pitch']
+            constraints.append(ikPlanner.createPostureConstraint(startPoseName, ZRP))
+            
         self.constraintSet = ikplanner.ConstraintSet(self.ikPlanner, constraints, 'reach_end', startPoseName)
 
     def updateIk(self):

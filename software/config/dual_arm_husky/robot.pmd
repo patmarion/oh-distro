@@ -7,6 +7,11 @@ group "0.params_and_model_pub" {
         exec = "robot_model_publisher $DRC_BASE/software/models/dual_arm_husky_description/urdf/dual_arm_husky.urdf";
         host = "localhost";
     }
+    # On the Husky!
+    #cmd "static_xtion_transform" {
+    #    exec = "roslaunch dual_arm_husky_ros_lcm_translators dual_arm_husky_bridge.launch";
+    #    host = "localhost";
+    #}
 }
  
 cmd "director" {
@@ -14,27 +19,38 @@ cmd "director" {
     host = "localhost";
 }
 
-group "1.ros_communication_translators" {
+cmd "roscore" {
+	exec = "roscore";
+	host = "localhost";
+}
+
+cmd "lcm-tunnel" {
+    exec = "bot-lcm-tunnel husky -r \"PMD_INFO2|PMD_PRINTF|OPENNI_FRAME\" -s \"PMD_ORDERS2\"";
+    host = "localhost";
+}
+
+group "1.robot_communication" {
     cmd "ros2lcm_translator_husky" {
-        exec = "rosrun oh_translators ros2lcm_dual_arm_husky";
+        exec = "rosrun dual_arm_husky_ros_lcm_translators ros2lcm_dual_arm_husky";
         host = "localhost";
     }
     cmd "lcm2ros_translator_husky" {
-        exec = "rosrun oh_translators lcm2ros_dual_arm_husky";
+        exec = "rosrun dual_arm_husky_ros_lcm_translators lcm2ros_dual_arm_husky";
         host = "localhost";
     }
 }
 
 group "2.state_estimation" {
-    cmd "joints2frames" {
-        exec = "oh-joints2frames-dual-arm-husky";
-        host = "localhost";
-    }
+    # The joints2frames node is needed when we have to update bot-frames in response to joint state updates, e.g. for moving frames such as cameras
+    #cmd "joints2frames" {
+    #    exec = "oh-joints2frames-dual-arm-husky";
+    #    host = "localhost";
+    #}
     cmd "state-sync_with_wheel_odometry" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_WHEEL_ODOMETRY";
         host = "localhost";
     }
-    cmd "state-sync_with_lidar_odometry" {
+    cmd "state-sync_with_lidar_scan_matcher" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_SCAN_MATCHER";
         host = "localhost";
     }
@@ -42,36 +58,45 @@ group "2.state_estimation" {
         exec = "oh-state-sync-dual-arm-husky POSE_BODY_EKF";
         host = "localhost";
     }
+    cmd "state-sync_with_amcl" {
+        exec = "oh-state-sync-dual-arm-husky POSE_BODY_AMCL";
+        host = "localhost";
+    }
     cmd "lidar-odometry" {
-        exec = "rpg-scan-matcher -S -l SICK_SCAN -f -R 18.0 -p -pc POSE_BODY_SCAN_MATCHER -d -v -P dual_arm_husky/robot.cfg -a .6";
+        exec = "rpg-scan-matcher -S -l SICK_SCAN -f -R 18.0 -p -pc POSE_BODY_SCAN_MATCHER -v -P dual_arm_husky/robot.cfg -a .9";
+        host = "localhost";
+    }
+    cmd "plan-execution-status-sync" {
+        exec = "oh-plan-execution-status-dual-arm-husky";
         host = "localhost";
     }
 }
 
 group "3.sensing" {
-    cmd "openni2-lcm_robot" {
-        exec = "openni2-camera-lcm";
-        host = "husky";
-    }
+    #cmd "openni2-lcm_local" {
+    #    exec = "openni2-camera-lcm -d 2"; # Skips every 2nd frame for now
+    #    host = "localhost";
+    #}
 
-    cmd "openni2-lcm_local" {
-        exec = "openni2-camera-lcm";
-        host = "localhost";
-    }
-
+    #cmd "ros_openni" {
+    #    exec = "roslaunch openni2_launch openni2.launch camera:=xtion";
+    #    host = "localhost";
+    #}
+    #cmd "ros2lcm_kinect" {
+    #    exec = "rosrun oh_translators ros2lcm_kinect _camera:=xtion _flip_rgb:=true";
+    #    host = "localhost";
+    #}
     cmd "multisense-glview" {
-        exec = "multisense-glview -c OPENNI_FRAME_LEFT";
+        exec = "multisense-glview -c OPENNI_FRAME";
         host = "localhost";
     }
 }
 
 group "4.hands" {
-    # TODO: move to robot
     cmd "left_robotiq" {
         exec = "robotiq_tcp_node left 192.168.1.17";
         host = "localhost";
     }
-
     cmd "right_robotiq" {
         exec = "robotiq_tcp_node right 192.168.1.19";
         host = "localhost";
@@ -89,26 +114,90 @@ group "5.exotica_planning" {
     }
 }
 
-group "9.demo" {
+#group "6.navigation" {
+#	cmd "husky-navigation" {
+#		exec = "roslaunch husky_navigation move_base_mapless_demo.launch";
+#		host = "localhost";
+#	}
+#}
+
+group "7.control" {
+    cmd "set-payload-right" {
+        exec = "rosservice call /husky_right_ur5/ur_driver/set_payload 2.5";
+        host = "localhost";
+    }
+    cmd "set-payload-left" {
+        exec = "rosservice call /husky_left_ur5/ur_driver/set_payload 2.5";
+        host = "localhost";
+    }
+}
+
+group "8.gazebo" {
+	cmd "gazebo" {
+		exec = "FLIR_PTU_ENABLED=true HUSKY_DUAL_UR5_ENABLED=true ROBOTIQ_GRIPPERS_ENABLED=true HUSKY_LASER_ENABLED=false DUAL_ARM_BULKHEAD=true HUSKY_TOP_PLATE_ENABLED=false ROBOTIQ_FT_300_ENABLED=true roslaunch husky_gazebo husky_playpen.launch dual_ur5_enabled:=true robotiq_grippers_enabled:=true laser_enabled:=false";
+		host = "localhost";
+	}
+}
+
+group "9.perception" {
     cmd "april_tags" {
         exec = "drc-car-tags -q -c OPENNI_FRAME";
+        host = "localhost";
+    }
+    cmd "octomap_server" {
+        exec = "roslaunch dual_arm_husky_ros_lcm_translators octomap_server.launch";
+        host = "localhost";
+    }
+
+    cmd "Logitech Webcam" {
+        exec = "oh-webcam-driver -m";
+        host = "localhost";
+    }
+
+    cmd "April tags" {
+        exec = "drc-car-tags -c CAMERA -p 1 -P CAMERA_LEFT_MATCHES -w -s 0.165";
         host = "localhost";
     }
 }
 
 script "start_exotica" {
     start group "0.params_and_model_pub";
-    start group "2.exotica_planning";
+    start group "5.exotica_planning";
     start cmd "director";
 }
 
-script "start" {
+script "start_minimal" {
     start group "0.params_and_model_pub";
-    wait ms 1000;
+    wait ms 500;
     start cmd "director";
 }
 
-script "real_robot_communication" {
-    start cmd "ros2lcm_translator_husky";
-    start cmd "lcm2ros_translator_husky";
+script "start_everything_for_real_robot" {
+    start group "0.params_and_model_pub";
+    start group "1.robot_communication";
+    wait ms 2500;
+    #start cmd "joints2frames";
+    start cmd "state-sync_with_amcl";
+    start cmd "plan-execution-status-sync";
+    start cmd "octomap_server";
+    start group "4.hands";
+    start group "5.exotica_planning";
+    #start group "6.navigation";
+    start cmd "director";
+    wait ms 500;
+    start cmd "lcm-tunnel";
+}
+
+script "start_gazebo" {
+    start cmd "roscore";
+    wait ms 2500;
+    start group "8.gazebo";
+    wait ms 15000;
+    start group "0.params_and_model_pub";
+    start group "1.robot_communication";
+    start cmd "joints2frames";
+    start cmd "state-sync_with_ekf";
+    start cmd "director";
+    start group "5.exotica_planning";
+    start group "6.navigation";
 }

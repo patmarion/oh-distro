@@ -9,12 +9,13 @@ from director import footstepsdriver
 from director import lcmUtils
 from director import visualization as vis
 import os
+import time
 
-import rospy
-from move_base_msgs.msg import MoveBaseActionGoal
-from actionlib_msgs.msg import GoalStatusArray
-from actionlib_msgs.msg import GoalID
-from geometry_msgs.msg import Twist
+# LCM
+from director import lcmUtils
+from director.utime import getUtime
+import bot_core as lcmbot
+import drc as lcmdrc
 
 navigationStatusStrings = ['PENDING', 'ACTIVE', 'PREEMPTED', 'SUCCEEDED', 'ABORTED', 'REJECTED', 'PREEMPTING', 'RECALLING', 'RECALLED', 'LOST']
 
@@ -44,17 +45,19 @@ class HuskyNavigationPanel(object):
         self.widget.setWindowTitle('Husky Navigation Panel')
         self.ui = WidgetDict(self.widget.children())
         
+        # Activate/Deactivate different panels
+        self.ui.navigationPanel.enabled = False
+        self.ui.manualPanel.enabled = False
+        self.ui.navigationControlButton.connect('clicked()', self.onActivateNavigationControl)
+        self.ui.manualControlButton.connect('clicked()', self.onActivateManualControl)
+
+        # Navigation panel control
         self.ui.newGoalButton.connect('clicked()', self.onNewNavigationGoal)
         self.ui.moveButton.connect('clicked()', self.moveToGoal)
         self.ui.stopButton.connect('clicked()', self.cancelGoal)
-        self.currentGoal = None
-        
-        self.goalPub = rospy.Publisher('/move_base/goal', MoveBaseActionGoal, queue_size=10)
-        self.cancelPub = rospy.Publisher('/move_base/cancel', GoalID, queue_size=1)
-        self.cmdVelPub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-        #Some unknown lags in getting live status, TODO
-        self.statusSub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.statusCallback, queue_size=1)
-        rospy.init_node('husky_navigation', anonymous=True)
+
+        # Move Base Status
+        lcmUtils.addSubscriber("HUSKY_MOVE_BASE_STATUS", lcmdrc.int64_stamped_t, self.statusCallback)
         
         # Manual control
         self.ui.forwardButton.connect('clicked()', self.onMoveForward)
@@ -66,11 +69,24 @@ class HuskyNavigationPanel(object):
         self.ui.backwardRightButton.connect('clicked()', self.onMoveBackwardRight)
         self.ui.backwardLeftButton.connect('clicked()', self.onMoveBackwardLeft)
 
+    def removeNavGoal(self):
+        obj = om.findObjectByName('navigation goal')
+        if obj:
+            om.removeFromObjectModel(obj)
+
+    def onActivateNavigationControl(self):
+        self.cancelGoal()
+        self.removeNavGoal()
+        self.ui.navigationPanel.enabled = self.ui.navigationControlButton.checked
+
+    def onActivateManualControl(self):
+        self.ui.manualPanel.enabled = self.ui.manualControlButton.checked
+
     def newNavGoalFrame(self, robotStateModel, distanceForward=1.0):
         t = robotStateModel.getLinkFrame('base_footprint')
         t.PreMultiply()
         t.Translate(distanceForward, 0.0, 0.0)
-        #t.PostMultiply()
+        t.Update()
         return t
     
     def onNewNavigationGoal(self, navGoal=None):
@@ -87,104 +103,97 @@ class HuskyNavigationPanel(object):
     def moveToGoal(self):
         frameObj = om.findObjectByName('navigation goal')
         t = frameObj.transform
-        goal_msg = MoveBaseActionGoal()
-        goal_msg.goal.target_pose.header.frame_id = 'odom'
-        goal_msg.goal.target_pose.pose.position.x = t.GetPosition()[0]
-        goal_msg.goal.target_pose.pose.position.y = t.GetPosition()[1]
-        goal_msg.goal.target_pose.pose.position.z = 0
+        [pos, quat] = transformUtils.poseFromTransform(t)
 
-        goal_msg.goal.target_pose.pose.orientation.x = 0
-        goal_msg.goal.target_pose.pose.orientation.y = 0
-        goal_msg.goal.target_pose.pose.orientation.z = 1
-        goal_msg.goal.target_pose.pose.orientation.w = t.GetOrientation()[2]/180.0
-        
-        self.goalPub.publish(goal_msg)
+        msg = lcmbot.pose_t()
+        msg.utime = getUtime()
+        msg.pos = [pos[0], pos[1], 0]
+        msg.orientation = quat
+
+        msg.vel = [0,0,0]
+        msg.rotation_rate = [0,0,0]
+        msg.accel = [0,0,0]
+
+        lcmUtils.publish("HUSKY_MOVE_BASE_GOAL", msg)
         
     def cancelGoal(self):
-        cancel_msg = GoalID()
-        self.cancelPub.publish(cancel_msg)
+        cancel_msg = lcmbot.utime_t()
+        cancel_msg.utime = getUtime()
+        lcmUtils.publish("HUSKY_MOVE_BASE_CANCEL", cancel_msg)
         
-    def statusCallback(self, data):
-        if data.status_list[0]:
-            self.ui.status.setText(navigationStatusStrings[data.status_list[0].status])
+    def statusCallback(self, msg):
+        self.ui.status.setText(navigationStatusStrings[msg.data])
     
     def getLinearSpeed(self):
         return self.ui.linearSpeedBox.value
     
     def getAngularSpeed(self):
         return self.ui.angularSpeedBox.value
+
+    ##
+    ## @brief      Publishes a bot_core::twist_t message to HUSKY_CMD_VEL
+    ##
+    ## @param      linear_velocity   The linear velocity
+    ## @param      angular_velocity  The angular velocity
+    ##
+    def publishCmdVel(self, linear_velocity=0, angular_velocity=0):
+        assert abs(linear_velocity) < 0.6
+        assert abs(angular_velocity) < 0.6
+
+        msg = lcmbot.twist_t()
+        msg.linear_velocity = lcmbot.vector_3d_t()
+        msg.angular_velocity = lcmbot.vector_3d_t()
+
+        msg.linear_velocity.x = linear_velocity
+        msg.linear_velocity.y = 0
+        msg.linear_velocity.z = 0
+
+        msg.angular_velocity.x = 0
+        msg.angular_velocity.y = 0
+        msg.angular_velocity.z = angular_velocity
+
+        lcmUtils.publish("HUSKY_CMD_VEL", msg)
+
     
     def onMoveForward(self):
-        new_msg = Twist()
-        new_msg.linear.x = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=self.getLinearSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onMoveBackward(self):
-        new_msg = Twist()
-        new_msg.linear.x = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=-self.getLinearSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onTurnRight(self):
-        new_msg = Twist()
-        new_msg.angular.z = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(2.0)
-        new_msg.angular.z = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(angular_velocity=-self.getAngularSpeed())
+        time.sleep(2.0)
+        self.publishCmdVel()
         
     def onTurnLeft(self):
-        new_msg = Twist()
-        new_msg.angular.z = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(2.0)
-        new_msg.angular.z = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(angular_velocity=self.getAngularSpeed())
+        time.sleep(2.0)
+        self.publishCmdVel()
         
     def onMoveForwardRight(self):
-        new_msg = Twist()
-        new_msg.linear.x = self.getLinearSpeed()
-        new_msg.angular.z = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=self.getLinearSpeed(), angular_velocity=-self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
     
     def onMoveForwardLeft(self):
-        new_msg = Twist()
-        new_msg.linear.x = self.getLinearSpeed()
-        new_msg.angular.z = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=self.getLinearSpeed(), angular_velocity=self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onMoveBackwardRight(self):
-        new_msg = Twist()
-        new_msg.linear.x = -self.getLinearSpeed()
-        new_msg.angular.z = self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=-self.getLinearSpeed(), angular_velocity=self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
     def onMoveBackwardLeft(self):
-        new_msg = Twist()
-        new_msg.linear.x = -self.getLinearSpeed()
-        new_msg.angular.z = -self.getLinearSpeed()
-        self.cmdVelPub.publish(new_msg)
-        rospy.sleep(1.0)
-        new_msg.angular.z = 0.0
-        new_msg.linear.x = 0.0
-        self.cmdVelPub.publish(new_msg)
+        self.publishCmdVel(linear_velocity=-self.getLinearSpeed(), angular_velocity=-self.getAngularSpeed())
+        time.sleep(1.0)
+        self.publishCmdVel()
         
 def _getAction():
 

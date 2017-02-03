@@ -2,10 +2,6 @@
 
 // ros2lcm translator for images
 
-// ### Boost
-#include <boost/thread.hpp>
-#include <boost/shared_ptr.hpp>
-
 // ### ROS
 #include <ros/ros.h>
 #include <ros/console.h>

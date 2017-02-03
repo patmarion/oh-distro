@@ -12,6 +12,7 @@ import mappingpanel
 import mappingdemo
 import huskyplanningpanel
 import huskynavigationpanel
+import PTU
 
 def startup(robotSystem, globalsDict=None):
     rs = robotSystem
@@ -20,6 +21,10 @@ def startup(robotSystem, globalsDict=None):
     assert globalsDict is not None
     assert 'directorConfig' in globalsDict
     directorConfig = globalsDict['directorConfig']
+
+    # Initialise the PTU
+    ptu = PTU.PTU()
+    globalsDict['ptu'] = ptu
 
     # Reduce number of SICK_SCAN scan lines
     assert 'perception' in globalsDict
@@ -33,7 +38,7 @@ def startup(robotSystem, globalsDict=None):
     # Automatically activate and set OpenNI settings
     assert 'openniDepthPointCloud' in globalsDict
     openniDepthPointCloud = globalsDict['openniDepthPointCloud']
-    openniDepthPointCloud.setProperty('Target FPS', 15)
+    openniDepthPointCloud.setProperty('Target FPS', 5)
     openniDepthPointCloud.setProperty('Visible', True)
     openniDepthPointCloud.setProperty('Max Range', 4.0)
 

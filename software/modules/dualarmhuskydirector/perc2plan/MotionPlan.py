@@ -90,12 +90,12 @@ class ReachObjects(object):
 
         t = vtk.vtkTransform()
         t.RotateZ(90)
-        t.Translate([0.17,0,0])
+        t.Translate([0.2,0,0])
 
         return t
 
 
-    def reachDualFrames(self, rtarFrame = None, ltarFrame = None):
+    def reachDualFrames(self,  angTol, rtarFrame = None, ltarFrame = None):
         '''
         Init all planning parameters and perform the planning
         '''
@@ -120,12 +120,12 @@ class ReachObjects(object):
         constraints = []
 
         if rtarFrame != None:
-            rpc, roc = self.genArmConstraints(rside, rtarFrame)
+            rpc, roc = self.genArmConstraints(rside, rtarFrame, angleToleranceInDegrees = angTol)
             constraints.append(rpc)
             constraints.append(roc)
         
         if ltarFrame != None:   
-            lpc, loc = self.genArmConstraints(lside, ltarFrame)
+            lpc, loc = self.genArmConstraints(lside, ltarFrame, angleToleranceInDegrees = angTol)
             constraints.append(lpc)
             constraints.append(loc)
 
@@ -142,6 +142,14 @@ class ReachObjects(object):
 
         # realise the plan
         plan = conSet.runIkTraj()
+
+
+    def synchRobot(self):
+    	'''
+    	To synch the class with the actual robot state 
+    	'''
+
+    	self.configlist.append(np.asarray(self.pU.getPlanningStartPose()))
 
 
     def plan_q1_q2(self, startq = None, endq = None):
@@ -178,7 +186,7 @@ class ReachObjects(object):
         return constraintSet
 
 
-    def genArmConstraints(self, side, targetFrame):
+    def genArmConstraints(self, side, targetFrame, angleToleranceInDegrees = 5.0):
         '''
         Introduce arm constraints
         '''
@@ -186,7 +194,7 @@ class ReachObjects(object):
         graspToHandLinkFrame = self.ikP.newGraspToHandFrame(side, self.graspToPalmFrame)
         posCon, orientCon = self.ikP.createPositionOrientationGraspConstraints(side, \
                 targetFrame, graspToHandLinkFrame, \
-                positionTolerance=0.0, angleToleranceInDegrees=0.0)
+                positionTolerance=0.0, angleToleranceInDegrees = angleToleranceInDegrees)
     
         posCon.tspan = [1.0, 1.0]
         orientCon.tspan = [1.0, 1.0]
@@ -202,14 +210,15 @@ class ReachObjects(object):
 
         # reach the target object
         #if rframe != None and lframe != None:
-        self.reachDualFrames(rtarFrame = om.findObjectByName(rframe), \
-                             ltarFrame = om.findObjectByName(lframe))
+        self.reachDualFrames( angTol = 5,
+                            rtarFrame = om.findObjectByName(rframe), \
+                            ltarFrame = om.findObjectByName(lframe))
         #else: 
 
         #   print "Not enough goal frames were provided!"
 
 
-    def reachLeft(self, name):
+    def reachLeft(self, name, angTol):
         '''
         The left arm is planning a reaching motion to the goal frame
         
@@ -217,10 +226,10 @@ class ReachObjects(object):
         '''
 
         # reach the target object
-        self.reachDualFrames(ltarFrame = om.findObjectByName(name))
+        self.reachDualFrames(angTol, ltarFrame = om.findObjectByName(name))
 
 
-    def reachRight(self, name):
+    def reachRight(self, name, angTol):
         '''
         The right arm is planning a reaching motion to the goal frame
 
@@ -228,4 +237,4 @@ class ReachObjects(object):
         '''
 
         # reach the target object
-        self.reachDualFrames(rtarFrame = om.findObjectByName(name))
+        self.reachDualFrames(angTol, rtarFrame = om.findObjectByName(name))
