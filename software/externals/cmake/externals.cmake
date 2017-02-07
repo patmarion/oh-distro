@@ -1,3 +1,13 @@
+if(CMAKE_VERSION VERSION_LESS 3.5)
+    message(STATUS "Automatically providing CMake 3.5.2 for installed CMake < 3.5")
+    set(cmake3_url https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz)
+    set(cmake3_download_hash c7a119aad057a3c0508a2c6d281c6291)
+    set(cmake3_external_args ${download_only_args})
+    set(cmake3_depends)
+    set(cmake3_args CMAKE_COMMAND ${PROJECT_BINARY_DIR}/src/cmake3/bin/cmake)
+    set(cmake3_proj cmake3)
+endif()
+
 if(NOT USE_SYSTEM_LCM)
   # This tracks master which still requires some more fixes.
   # If we switch to this, also include CMake 3.5 as an external
@@ -280,6 +290,7 @@ set(husky_lcmtypes_revision 3ae91bc01135e15343af291babd67052fb939f1d)
 set(husky_lcmtypes_depends ${lcm_proj})
 
 set(externals
+  ${cmake3_proj}
   Eigen_pod
   ${lcm_proj}
   bot_core_lcmtypes
