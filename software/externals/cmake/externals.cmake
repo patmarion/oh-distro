@@ -4,7 +4,7 @@ if(CMAKE_VERSION VERSION_LESS 3.5)
     set(cmake3_download_hash c7a119aad057a3c0508a2c6d281c6291)
     set(cmake3_external_args ${download_only_args})
     set(cmake3_depends)
-    set(cmake3_args CMAKE_COMMAND ${PROJECT_BINARY_DIR}/src/cmake3/bin/cmake)
+    set(cmake3_args CMAKE_COMMAND ${PROJECT_SOURCE_DIR}/cmake3/bin/cmake)
     set(cmake3_proj cmake3)
 endif()
 
