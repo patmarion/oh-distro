@@ -166,8 +166,9 @@ set(swigmake_depends )
 
 set(iris_url https://github.com/rdeits/iris-distro.git)
 set(iris_revision a895e8af0850242c09641c31ea8b12bacb34fd2b)
-set(iris_depends Eigen_pod)
+set(iris_depends Eigen_pod ${cmake3_proj})
 set(iris_external_args
+  ${cmake3_args}
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
     ${python_args}
