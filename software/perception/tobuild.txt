@@ -8,7 +8,7 @@ image-passthrough
 particle_filter
 jpl-tags
 car-tags
-registration
+aicp
 octrees_difference
 scan_matcher
 
