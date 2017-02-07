@@ -171,6 +171,7 @@ set(iris_external_args
   ${cmake3_args}
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
+    -DCMAKE_MODULE_PATH:PATH=${CMAKE_INSTALL_PREFIX}/share/cmake
     ${python_args}
     -DIRIS_WITH_EIGEN:BOOL=OFF
   )
