@@ -55,12 +55,14 @@ if(APPLE)
   set(PYTHON_LIBRARY "${python_prefix}/lib/libpython2.7${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "Python library.")
 else()
   find_package(PythonLibs 2.7 REQUIRED)
+  find_package(PythonInterp 2.7 REQUIRED)
 endif()
 
 set(python_args
   -DPYTHON_INCLUDE_DIR:PATH=${PYTHON_INCLUDE_DIR}
   -DPYTHON_INCLUDE_DIR2:PATH=${PYTHON_INCLUDE_DIR}
   -DPYTHON_LIBRARY:PATH=${PYTHON_LIBRARY}
+  -DPYTHON_EXECUTABLE:FILEPATH=${PYTHON_EXECUTABLE}
   )
 
 
