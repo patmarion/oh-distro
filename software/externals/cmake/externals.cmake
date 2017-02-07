@@ -160,9 +160,8 @@ set(iris_depends Eigen_pod)
 set(iris_external_args
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
+    ${python_args}
     -DIRIS_WITH_EIGEN:BOOL=OFF
-    -DPYTHON_INCLUDE_DIR:PATH=${PYTHON_INCLUDE_DIRS}
-    -DPYTHON_EXECUTABLE:FILEPATH=${PYTHON_EXECUTABLE}
   )
 
 set(pypolyhedron_url https://github.com/rdeits/pypolyhedron.git)
