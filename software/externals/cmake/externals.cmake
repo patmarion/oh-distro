@@ -1,3 +1,13 @@
+if(CMAKE_VERSION VERSION_LESS 3.5)
+    message(STATUS "Automatically providing CMake 3.5.2 for installed CMake < 3.5")
+    set(cmake3_url https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz)
+    set(cmake3_download_hash c7a119aad057a3c0508a2c6d281c6291)
+    set(cmake3_external_args ${download_only_args})
+    set(cmake3_depends)
+    set(cmake3_args CMAKE_COMMAND ${PROJECT_SOURCE_DIR}/cmake3/bin/cmake)
+    set(cmake3_proj cmake3)
+endif()
+
 if(NOT USE_SYSTEM_LCM)
   # This tracks master which still requires some more fixes.
   # If we switch to this, also include CMake 3.5 as an external
@@ -155,11 +165,13 @@ set(swigmake_revision 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_depends )
 
 set(iris_url https://github.com/rdeits/iris-distro.git)
-set(iris_revision f6cdf5a4f7896054922fd93276754f83a5497eff)
-set(iris_depends Eigen_pod)
+set(iris_revision a895e8af0850242c09641c31ea8b12bacb34fd2b)
+set(iris_depends Eigen_pod ${cmake3_proj})
 set(iris_external_args
+  ${cmake3_args}
   CMAKE_CACHE_ARGS
     ${default_cmake_args}
+    ${python_args}
     -DIRIS_WITH_EIGEN:BOOL=OFF
   )
 
@@ -279,6 +291,7 @@ set(husky_lcmtypes_revision 3ae91bc01135e15343af291babd67052fb939f1d)
 set(husky_lcmtypes_depends ${lcm_proj})
 
 set(externals
+  ${cmake3_proj}
   Eigen_pod
   ${lcm_proj}
   bot_core_lcmtypes
