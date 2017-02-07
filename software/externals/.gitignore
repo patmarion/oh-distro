@@ -46,3 +46,4 @@ isam
 bot_core_lcmtypes
 yaml_cpp
 husky_lcmtypes
+cmake3
